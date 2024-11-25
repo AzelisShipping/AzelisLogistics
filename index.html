@@ -4,40 +4,33 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Azelis Shipping Calculator</title>
-    <!-- Add Azelis favicon -->
     <link rel="icon" href="https://www.azelis.com/themes/custom/azelis_theme/favicon.ico" type="image/x-icon">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
     <script src="https://unpkg.com/react@17/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <style>
-        .azelis-blue {
-            background-color: #003087;
-        }
-        .azelis-blue-hover:hover {
-            background-color: #002670;
-        }
+        .azelis-blue { background-color: #003087; }
+        .azelis-blue-hover:hover { background-color: #002670; }
     </style>
 </head>
 <body class="bg-gray-50">
-    <!-- Header -->
-<header class="azelis-blue text-white p-4 shadow-lg">
-    <div class="max-w-7xl mx-auto flex justify-between items-center">
-        <div class="flex items-center space-x-4">
-            <img src="https://www.azelis.com/themes/custom/azelis_theme/logo.svg" alt="Azelis Logo" class="h-8">
-            <h1 class="text-xl font-bold">Shipping Calculator</h1>
+    <header class="azelis-blue text-white p-4 shadow-lg">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-4">
+                <img src="https://www.azelis.com/themes/custom/azelis_theme/logo.svg" alt="Azelis Logo" class="h-8">
+                <h1 class="text-xl font-bold">Shipping Calculator</h1>
+            </div>
+            <nav class="flex space-x-4">
+                <a href="index.html" class="text-white hover:text-gray-200 font-bold">Calculator</a>
+                <a href="hauliers.html" class="text-white hover:text-gray-200">Haulier Management</a>
+            </nav>
         </div>
-        <nav class="flex space-x-4">
-            <a href="index.html" class="text-white hover:text-gray-200 font-bold">Calculator</a>
-            <a href="hauliers.html" class="text-white hover:text-gray-200">Haulier Management</a>
-        </nav>
-    </div>
-</header>
+    </header>
 
     <div id="root"></div>
 
     <script type="text/babel">
-    // Main Calculator Component
     const Calculator = () => {
         const [collection, setCollection] = React.useState({ country: '', location: '', postcode: '' });
         const [delivery, setDelivery] = React.useState({ country: '', location: '', postcode: '' });
@@ -50,11 +43,9 @@
         const countries = ["UK", "BEL", "FRA", "GER", "NLD", "ESP", "ITA"];
 
         const handleCalculate = () => {
-            // Simulate price calculation
             if (collection.country && delivery.country) {
                 const hasExistingRate = Math.random() > 0.5;
                 if (hasExistingRate) {
-                    // Sample price calculation
                     const basePrice = 350 + (Math.random() * 200);
                     const palletsMultiplier = isFullTruckLoad ? 24 : pallets;
                     setPrice(basePrice * palletsMultiplier);
@@ -227,7 +218,7 @@
                         <div className="bg-white rounded-lg p-6 max-w-md w-full">
                             <h3 className="text-lg font-semibold mb-4">Request Quote for Route</h3>
                             <p className="text-sm text-gray-600 mb-4">
-                                An email will be sent to request quotes from our approved carriers.
+                                Quote requests will be sent to approved hauliers operating in these countries.
                             </p>
                             <div className="space-y-2 text-sm mb-4">
                                 <p><strong>Collection:</strong> {collection.location}, {collection.country}</p>
@@ -237,8 +228,44 @@
                             <div className="flex gap-2">
                                 <button 
                                     onClick={() => {
-                                        // In production, this would trigger an email to carriers
-                                        alert('Quote request sent successfully!');
+                                        // Get hauliers from localStorage
+                                        const hauliers = JSON.parse(localStorage.getItem('hauliers') || '[]');
+                                        const relevantHauliers = hauliers.filter(h => 
+                                            h.active && 
+                                            (h.countries.includes(collection.country) || h.countries.includes(delivery.country))
+                                        );
+                                        
+                                        if (relevantHauliers.length === 0) {
+                                            alert('No active hauliers found for these countries. Please add hauliers first.');
+                                            return;
+                                        }
+
+                                        // Create email content
+                                        const emailSubject = `Quote Request: ${collection.country} to ${delivery.country}`;
+                                        const emailBody = `
+Quote Request Details:
+
+Collection:
+Country: ${collection.country}
+Location: ${collection.location}
+Postcode: ${collection.postcode}
+
+Delivery:
+Country: ${delivery.country}
+Location: ${delivery.location}
+Postcode: ${delivery.postcode}
+
+Shipment Details:
+Type: ${isFullTruckLoad ? 'Full Truck Load' : `${pallets} Pallets`}
+Delivery Type: ${deliveryType}
+
+Please reply with your best quote for this route.
+`;
+                                        
+                                        // Create mailto link with all hauliers in BCC
+                                        const mailtoLink = `mailto:greg.michell@azelis.com?subject=${encodeURIComponent(emailSubject)}&bcc=${encodeURIComponent(relevantHauliers.map(h => h.email).join(','))}&body=${encodeURIComponent(emailBody)}`;
+                                        
+                                        window.location.href = mailtoLink;
                                         setShowTenderForm(false);
                                     }}
                                     className="flex-1 azelis-blue text-white p-2 rounded hover:bg-blue-700"
