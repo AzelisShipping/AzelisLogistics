@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Azelis Shipping Calculator</title>
-    <link rel="icon" href="https://www.azelis.com/themes/custom/azelis_theme/favicon.ico" type="image/x-icon">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script>
@@ -20,15 +19,6 @@
     </style>
 </head>
 <body class="bg-gray-50">
-    <header class="azelis-blue text-white p-4">
-        <div class="max-w-7xl mx-auto flex justify-between items-center">
-            <div class="flex items-center space-x-4">
-                <img src="https://www.azelis.com/themes/custom/azelis_theme/logo.svg" alt="Azelis Logo" class="h-8" />
-                <h1 class="text-xl font-bold">Shipping Calculator</h1>
-            </div>
-        </div>
-    </header>
-
     <div id="root"></div>
 
     <script type="text/babel">
@@ -39,12 +29,12 @@
             const [deliveryType, setDeliveryType] = React.useState('STD');
             const [price, setPrice] = React.useState(null);
             const [sending, setSending] = React.useState(false);
-            const [showQuoteForm, setShowQuoteForm] = React.useState(false);
+            const [showModal, setShowModal] = React.useState(false);
             const [isFullTruck, setIsFullTruck] = React.useState(false);
 
             const countries = ["UK", "BEL", "FRA", "GER", "NLD", "ESP", "ITA"];
 
-            const handleSendQuote = async () => {
+            const sendQuoteRequests = async () => {
                 setSending(true);
                 try {
                     const hauliers = JSON.parse(localStorage.getItem('hauliers') || '[]');
@@ -73,8 +63,8 @@ Shipment Details:
 Type: ${isFullTruck ? 'Full Truck Load' : `${pallets} Pallets`}
 Delivery Type: ${deliveryType}`;
 
-                    for (const haulier of relevantHauliers) {
-                        await emailjs.send(
+                    await Promise.all(relevantHauliers.map(haulier => 
+                        emailjs.send(
                             'Azelis_Logistics',
                             'template_qff4wum',
                             {
@@ -83,11 +73,11 @@ Delivery Type: ${deliveryType}`;
                                 subject: `Quote Request: ${collection.country} to ${delivery.country}`,
                                 message: emailBody
                             }
-                        );
-                    }
+                        )
+                    ));
 
-                    alert('Quotes requested successfully!');
-                    setShowQuoteForm(false);
+                    alert('Quote requests sent successfully!');
+                    setShowModal(false);
                 } catch (error) {
                     console.error('Failed to send emails:', error);
                     alert('Failed to send quote requests. Please try again.');
@@ -97,16 +87,19 @@ Delivery Type: ${deliveryType}`;
             };
 
             const calculatePrice = () => {
-                if (collection.country && delivery.country) {
-                    const hasRate = Math.random() > 0.5;
-                    if (hasRate) {
-                        const basePrice = 350 + (Math.random() * 200);
-                        setPrice(basePrice * (isFullTruck ? 24 : pallets));
-                    } else {
-                        setPrice(null);
-                        if (confirm('No existing rate found. Request quotes?')) {
-                            setShowQuoteForm(true);
-                        }
+                if (!collection.country || !delivery.country) {
+                    alert('Please fill in both collection and delivery details');
+                    return;
+                }
+                
+                const hasRate = Math.random() > 0.5;
+                if (hasRate) {
+                    const basePrice = 350 + (Math.random() * 200);
+                    setPrice(basePrice * (isFullTruck ? 24 : pallets));
+                } else {
+                    setPrice(null);
+                    if (confirm('No existing rate found. Request quotes?')) {
+                        setShowModal(true);
                     }
                 }
             };
@@ -114,159 +107,150 @@ Delivery Type: ${deliveryType}`;
             return (
                 <div className="max-w-4xl mx-auto p-4">
                     <div className="bg-white rounded-lg shadow p-6">
-                        {/* Collection Address */}
-                        <div className="mb-6">
-                            <h2 className="text-lg font-semibold mb-4">Collection Address</h2>
-                            <div className="grid grid-cols-3 gap-4">
+                        <h1 className="text-2xl font-bold mb-6">Shipping Calculator</h1>
+                        
+                        {/* Form Content */}
+                        <div className="space-y-6">
+                            {/* Addresses */}
+                            <div className="grid grid-cols-1 gap-6">
                                 <div>
-                                    <label className="block text-sm mb-1">Country</label>
-                                    <select 
-                                        className="w-full p-2 border rounded"
-                                        value={collection.country}
-                                        onChange={e => setCollection({...collection, country: e.target.value})}
-                                    >
-                                        <option value="">Select Country</option>
-                                        {countries.map(c => (
-                                            <option key={c} value={c}>{c}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="block text-sm mb-1">Location</label>
-                                    <input 
-                                        type="text"
-                                        className="w-full p-2 border rounded"
-                                        value={collection.location}
-                                        onChange={e => setCollection({...collection, location: e.target.value})}
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm mb-1">Postcode</label>
-                                    <input 
-                                        type="text"
-                                        className="w-full p-2 border rounded"
-                                        value={collection.postcode}
-                                        onChange={e => setCollection({...collection, postcode: e.target.value})}
-                                    />
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Delivery Address */}
-                        <div className="mb-6">
-                            <h2 className="text-lg font-semibold mb-4">Delivery Address</h2>
-                            <div className="grid grid-cols-3 gap-4">
-                                <div>
-                                    <label className="block text-sm mb-1">Country</label>
-                                    <select 
-                                        className="w-full p-2 border rounded"
-                                        value={delivery.country}
-                                        onChange={e => setDelivery({...delivery, country: e.target.value})}
-                                    >
-                                        <option value="">Select Country</option>
-                                        {countries.map(c => (
-                                            <option key={c} value={c}>{c}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="block text-sm mb-1">Location</label>
-                                    <input 
-                                        type="text"
-                                        className="w-full p-2 border rounded"
-                                        value={delivery.location}
-                                        onChange={e => setDelivery({...delivery, location: e.target.value})}
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm mb-1">Postcode</label>
-                                    <input 
-                                        type="text"
-                                        className="w-full p-2 border rounded"
-                                        value={delivery.postcode}
-                                        onChange={e => setDelivery({...delivery, postcode: e.target.value})}
-                                    />
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Shipping Details */}
-                        <div className="mb-6">
-                            <h2 className="text-lg font-semibold mb-4">Shipping Details</h2>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm mb-1">Type</label>
-                                    <select 
-                                        className="w-full p-2 border rounded"
-                                        value={isFullTruck ? 'full' : 'partial'}
-                                        onChange={e => setIsFullTruck(e.target.value === 'full')}
-                                    >
-                                        <option value="partial">Partial Load</option>
-                                        <option value="full">Full Truck</option>
-                                    </select>
-                                </div>
-                                {!isFullTruck && (
-                                    <div>
-                                        <label className="block text-sm mb-1">Pallets</label>
-                                        <input 
-                                            type="number"
-                                            min="1"
-                                            max="24"
-                                            className="w-full p-2 border rounded"
-                                            value={pallets}
-                                            onChange={e => setPallets(parseInt(e.target.value) || 1)}
-                                        />
+                                    <h2 className="text-lg font-medium mb-2">Collection Details</h2>
+                                    <div className="grid grid-cols-3 gap-4">
+                                        <div>
+                                            <select 
+                                                className="w-full p-2 border rounded"
+                                                value={collection.country}
+                                                onChange={e => setCollection({...collection, country: e.target.value})}
+                                            >
+                                                <option value="">Select Country</option>
+                                                {countries.map(c => (
+                                                    <option key={c} value={c}>{c}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <input 
+                                                placeholder="Location"
+                                                className="w-full p-2 border rounded"
+                                                value={collection.location}
+                                                onChange={e => setCollection({...collection, location: e.target.value})}
+                                            />
+                                        </div>
+                                        <div>
+                                            <input 
+                                                placeholder="Postcode"
+                                                className="w-full p-2 border rounded"
+                                                value={collection.postcode}
+                                                onChange={e => setCollection({...collection, postcode: e.target.value})}
+                                            />
+                                        </div>
                                     </div>
-                                )}
+                                </div>
+
                                 <div>
-                                    <label className="block text-sm mb-1">Delivery Type</label>
-                                    <select
-                                        className="w-full p-2 border rounded"
-                                        value={deliveryType}
-                                        onChange={e => setDeliveryType(e.target.value)}
-                                    >
-                                        <option value="STD">Standard</option>
-                                        <option value="ADR">ADR</option>
-                                    </select>
+                                    <h2 className="text-lg font-medium mb-2">Delivery Details</h2>
+                                    <div className="grid grid-cols-3 gap-4">
+                                        <div>
+                                            <select 
+                                                className="w-full p-2 border rounded"
+                                                value={delivery.country}
+                                                onChange={e => setDelivery({...delivery, country: e.target.value})}
+                                            >
+                                                <option value="">Select Country</option>
+                                                {countries.map(c => (
+                                                    <option key={c} value={c}>{c}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <input 
+                                                placeholder="Location"
+                                                className="w-full p-2 border rounded"
+                                                value={delivery.location}
+                                                onChange={e => setDelivery({...delivery, location: e.target.value})}
+                                            />
+                                        </div>
+                                        <div>
+                                            <input 
+                                                placeholder="Postcode"
+                                                className="w-full p-2 border rounded"
+                                                value={delivery.postcode}
+                                                onChange={e => setDelivery({...delivery, postcode: e.target.value})}
+                                            />
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
+
+                            {/* Shipping Options */}
+                            <div>
+                                <h2 className="text-lg font-medium mb-2">Shipping Options</h2>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <select 
+                                            className="w-full p-2 border rounded"
+                                            value={isFullTruck ? 'full' : 'partial'}
+                                            onChange={e => setIsFullTruck(e.target.value === 'full')}
+                                        >
+                                            <option value="partial">Partial Load</option>
+                                            <option value="full">Full Truck</option>
+                                        </select>
+                                    </div>
+                                    {!isFullTruck && (
+                                        <div>
+                                            <input 
+                                                type="number"
+                                                min="1"
+                                                max="24"
+                                                placeholder="Number of Pallets"
+                                                className="w-full p-2 border rounded"
+                                                value={pallets}
+                                                onChange={e => setPallets(parseInt(e.target.value) || 1)}
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Calculate Button */}
+                            <button
+                                onClick={calculatePrice}
+                                className="w-full bg-blue-600 text-white p-3 rounded font-medium hover:bg-blue-700"
+                            >
+                                Calculate Price
+                            </button>
+
+                            {/* Price Display */}
+                            {price && (
+                                <div className="p-4 bg-green-50 border border-green-200 rounded">
+                                    <p className="text-xl font-bold text-green-700">
+                                        Price: £{price.toFixed(2)}
+                                    </p>
+                                </div>
+                            )}
                         </div>
-
-                        <button
-                            onClick={calculatePrice}
-                            className="w-full azelis-blue text-white p-3 rounded font-medium hover:opacity-90"
-                        >
-                            Calculate Price
-                        </button>
-
-                        {price && (
-                            <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded">
-                                <div className="text-xl font-bold text-green-700">
-                                    Price: £{price.toFixed(2)}
-                                </div>
-                            </div>
-                        )}
                     </div>
 
-                    {showQuoteForm && (
+                    {/* Quote Request Modal */}
+                    {showModal && (
                         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
                             <div className="bg-white rounded-lg p-6 max-w-md w-full">
                                 <h3 className="text-lg font-semibold mb-4">Request Quotes</h3>
-                                <div className="space-y-2 text-sm mb-4">
+                                <div className="space-y-2 mb-4">
                                     <p><strong>Collection:</strong> {collection.location}, {collection.country}</p>
                                     <p><strong>Delivery:</strong> {delivery.location}, {delivery.country}</p>
                                     <p><strong>Type:</strong> {isFullTruck ? 'Full Truck Load' : `${pallets} Pallets`}</p>
                                 </div>
                                 <div className="flex gap-2">
                                     <button 
-                                        onClick={handleSendQuote}
+                                        onClick={sendQuoteRequests}
                                         disabled={sending}
-                                        className="flex-1 azelis-blue text-white p-2 rounded hover:opacity-90 disabled:opacity-50"
+                                        className="flex-1 bg-blue-600 text-white p-2 rounded hover:bg-blue-700 disabled:opacity-50"
                                     >
-                                        {sending ? "Sending..." : "Send Request"}
+                                        {sending ? "Sending..." : "Send Requests"}
                                     </button>
                                     <button 
-                                        onClick={() => setShowQuoteForm(false)}
+                                        onClick={() => setShowModal(false)}
                                         disabled={sending}
                                         className="flex-1 bg-gray-200 p-2 rounded hover:bg-gray-300"
                                     >
