@@ -11,7 +11,7 @@
     <!-- React and Babel -->
     <script src="https://unpkg.com/react@17/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone@7/babel.min.js"></script>
     <!-- XLSX.js for Excel Import/Export -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
     <style>
@@ -22,7 +22,7 @@
 <body class="bg-gray-50">
     <header class="azelis-blue text-white p-4 shadow-lg">
         <div class="max-w-7xl mx-auto flex justify-between items-center">
-            <div class="flex items-center space-x-4">
+            <div className="flex items-center space-x-4">
                 <img src="https://www.azelis.com/themes/custom/azelis_theme/logo.svg" alt="Azelis Logo" class="h-8">
                 <h1 class="text-xl font-bold">Haulier and Rates Management</h1>
             </div>
@@ -204,13 +204,159 @@
 
                                 <div className="overflow-x-auto">
                                     <table className="w-full">
-                                        <!-- Table Head and Body (Same as your original code) -->
+                                        <thead className="bg-gray-50">
+                                            <tr>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    Company
+                                                </th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    Email
+                                                </th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    Countries
+                                                </th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    Status
+                                                </th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    Actions
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="bg-white divide-y divide-gray-200">
+                                            {hauliers.map(haulier => (
+                                                <tr key={haulier.id}>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        {haulier.name}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        {haulier.email}
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex flex-wrap gap-1">
+                                                            {haulier.countries.map(country => (
+                                                                <span 
+                                                                    key={country}
+                                                                    className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs"
+                                                                >
+                                                                    {country}
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <button
+                                                            onClick={() => handleToggleActive(haulier.id)}
+                                                            className={`px-2 py-1 rounded-full text-xs ${
+                                                                haulier.active
+                                                                    ? 'bg-green-100 text-green-800'
+                                                                    : 'bg-red-100 text-red-800'
+                                                            }`}
+                                                        >
+                                                            {haulier.active ? 'Active' : 'Inactive'}
+                                                        </button>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <div className="flex space-x-2">
+                                                            <button
+                                                                onClick={() => handleEdit(haulier)}
+                                                                className="text-blue-600 hover:text-blue-800"
+                                                            >
+                                                                Edit
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleDelete(haulier.id)}
+                                                                className="text-red-600 hover:text-red-800"
+                                                            >
+                                                                Delete
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
                                     </table>
                                 </div>
 
                                 {/* Haulier Form Modal */}
                                 {showForm && (
-                                    <!-- Haulier Form (Same as your original code) -->
+                                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+                                        <div className="bg-white rounded-lg p-6 max-w-2xl w-full">
+                                            <div className="flex justify-between items-start mb-4">
+                                                <h3 className="text-lg font-semibold">
+                                                    {editingHaulier ? 'Edit Haulier' : 'Add New Haulier'}
+                                                </h3>
+                                                <button 
+                                                    onClick={() => {
+                                                        setShowForm(false);
+                                                        setEditingHaulier(null);
+                                                    }}
+                                                    className="text-gray-400 hover:text-gray-600"
+                                                >
+                                                    ×
+                                                </button>
+                                            </div>
+                                            
+                                            <form onSubmit={handleSubmit} className="space-y-4">
+                                                <div>
+                                                    <label className="block text-sm font-medium mb-1">Company Name</label>
+                                                    <input 
+                                                        name="name"
+                                                        type="text"
+                                                        required
+                                                        defaultValue={editingHaulier?.name}
+                                                        className="w-full p-2 border rounded"
+                                                    />
+                                                </div>
+                                                
+                                                <div>
+                                                    <label className="block text-sm font-medium mb-1">Email Address</label>
+                                                    <input 
+                                                        name="email"
+                                                        type="email"
+                                                        required
+                                                        defaultValue={editingHaulier?.email}
+                                                        className="w-full p-2 border rounded"
+                                                    />
+                                                </div>
+
+                                                <div>
+                                                    <label className="block text-sm font-medium mb-2">Operating Countries</label>
+                                                    <div className="grid grid-cols-3 gap-2">
+                                                        {countries.map(country => (
+                                                            <label key={country} className="flex items-center space-x-2">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    name={`country-${country}`}
+                                                                    defaultChecked={editingHaulier?.countries.includes(country)}
+                                                                />
+                                                                <span>{country}</span>
+                                                            </label>
+                                                        ))}
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex gap-2">
+                                                    <button 
+                                                        type="submit"
+                                                        className="flex-1 azelis-blue text-white p-2 rounded hover:bg-blue-700"
+                                                    >
+                                                        {editingHaulier ? 'Update' : 'Add'} Haulier
+                                                    </button>
+                                                    <button 
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setShowForm(false);
+                                                            setEditingHaulier(null);
+                                                        }}
+                                                        className="flex-1 bg-gray-200 text-gray-700 p-2 rounded hover:bg-gray-300"
+                                                    >
+                                                        Cancel
+                                                    </button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
                                 )}
                             </div>
                         )}
