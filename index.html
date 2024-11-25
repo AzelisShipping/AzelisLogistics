@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Azelis Shipping Calculator</title>
+    <!-- Add Azelis favicon -->
+    <link rel="icon" href="https://www.azelis.com/themes/custom/azelis_theme/favicon.ico" type="image/x-icon">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <script src="https://unpkg.com/react@17/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        .azelis-blue {
+            background-color: #003087;
+        }
+        .azelis-blue-hover:hover {
+            background-color: #002670;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header class="azelis-blue text-white p-4 shadow-lg">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-4">
+                <img src="https://www.azelis.com/themes/custom/azelis_theme/logo.svg" alt="Azelis Logo" class="h-8">
+                <h1 class="text-xl font-bold">Shipping Calculator</h1>
+            </div>
+            <div class="text-sm">
+                Internal Use Only
+            </div>
+        </div>
+    </header>
+
+    <div id="root"></div>
+
+    <script type="text/babel">
+    // Main Calculator Component
+    const Calculator = () => {
+        const [collection, setCollection] = React.useState({ country: '', location: '', postcode: '' });
+        const [delivery, setDelivery] = React.useState({ country: '', location: '', postcode: '' });
+        const [pallets, setPallets] = React.useState(1);
+        const [deliveryType, setDeliveryType] = React.useState('STD');
+        const [price, setPrice] = React.useState(null);
+        const [showTenderForm, setShowTenderForm] = React.useState(false);
+        const [isFullTruckLoad, setIsFullTruckLoad] = React.useState(false);
+        
+        const countries = ["UK", "BEL", "FRA", "GER", "NLD", "ESP", "ITA"];
+
+        const handleCalculate = () => {
+            // Simulate price calculation
+            if (collection.country && delivery.country) {
+                const hasExistingRate = Math.random() > 0.5;
+                if (hasExistingRate) {
+                    // Sample price calculation
+                    const basePrice = 350 + (Math.random() * 200);
+                    const palletsMultiplier = isFullTruckLoad ? 24 : pallets;
+                    setPrice(basePrice * palletsMultiplier);
+                } else {
+                    setPrice(null);
+                    if (confirm('No existing rate found for this route. Would you like to request a quote?')) {
+                        setShowTenderForm(true);
+                    }
+                }
+            }
+        };
+
+        return (
+            <div className="max-w-4xl mx-auto p-4">
+                <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+                    {/* Collection Address */}
+                    <div className="mb-6">
+                        <h2 className="text-lg font-semibold mb-4 text-gray-700">Collection Address</h2>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium mb-1 text-gray-600">Country</label>
+                                <select 
+                                    className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    value={collection.country}
+                                    onChange={(e) => setCollection({...collection, country: e.target.value})}
+                                >
+                                    <option value="">Select Country</option>
+                                    {countries.map(country => (
+                                        <option key={country} value={country}>{country}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-1 text-gray-600">Location</label>
+                                <input 
+                                    type="text"
+                                    className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    value={collection.location}
+                                    onChange={(e) => setCollection({...collection, location: e.target.value})}
+                                    placeholder="City/Town"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-1 text-gray-600">Postcode</label>
+                                <input 
+                                    type="text"
+                                    className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    value={collection.postcode}
+                                    onChange={(e) => setCollection({...collection, postcode: e.target.value})}
+                                    placeholder="Postcode"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Delivery Address */}
+                    <div className="mb-6">
+                        <h2 className="text-lg font-semibold mb-4 text-gray-700">Delivery Address</h2>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium mb-1 text-gray-600">Country</label>
+                                <select 
+                                    className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    value={delivery.country}
+                                    onChange={(e) => setDelivery({...delivery, country: e.target.value})}
+                                >
+                                    <option value="">Select Country</option>
+                                    {countries.map(country => (
+                                        <option key={country} value={country}>{country}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-1 text-gray-600">Location</label>
+                                <input 
+                                    type="text"
+                                    className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    value={delivery.location}
+                                    onChange={(e) => setDelivery({...delivery, location: e.target.value})}
+                                    placeholder="City/Town"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-1 text-gray-600">Postcode</label>
+                                <input 
+                                    type="text"
+                                    className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    value={delivery.postcode}
+                                    onChange={(e) => setDelivery({...delivery, postcode: e.target.value})}
+                                    placeholder="Postcode"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Shipping Details */}
+                    <div className="mb-6">
+                        <h2 className="text-lg font-semibold mb-4 text-gray-700">Shipping Details</h2>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium mb-2 text-gray-600">Shipment Type</label>
+                                <div className="flex gap-4">
+                                    <button
+                                        className={`px-4 py-2 rounded-lg ${!isFullTruckLoad 
+                                            ? 'azelis-blue text-white' 
+                                            : 'bg-gray-200 text-gray-700'}`}
+                                        onClick={() => setIsFullTruckLoad(false)}
+                                    >
+                                        Partial Load
+                                    </button>
+                                    <button
+                                        className={`px-4 py-2 rounded-lg ${isFullTruckLoad 
+                                            ? 'azelis-blue text-white' 
+                                            : 'bg-gray-200 text-gray-700'}`}
+                                        onClick={() => setIsFullTruckLoad(true)}
+                                    >
+                                        Full Truck Load
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {!isFullTruckLoad && (
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1 text-gray-600">Number of Pallets</label>
+                                        <input
+                                            type="number"
+                                            className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                            min="1"
+                                            max="24"
+                                            value={pallets}
+                                            onChange={(e) => setPallets(parseInt(e.target.value) || 1)}
+                                        />
+                                    </div>
+                                )}
+                                <div>
+                                    <label className="block text-sm font-medium mb-1 text-gray-600">Delivery Type</label>
+                                    <select
+                                        className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        value={deliveryType}
+                                        onChange={(e) => setDeliveryType(e.target.value)}
+                                    >
+                                        <option value="STD">Standard</option>
+                                        <option value="ADR">ADR</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button
+                        onClick={handleCalculate}
+                        className="w-full azelis-blue text-white p-3 rounded-lg font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                    >
+                        Calculate Price
+                    </button>
+
+                    {price && (
+                        <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+                            <div className="text-xl font-bold text-green-700">
+                                Price: £{price.toFixed(2)}
+                                {isFullTruckLoad && <span className="text-sm ml-2">(Full Truck Load)</span>}
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                {showTenderForm && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+                        <div className="bg-white rounded-lg p-6 max-w-md w-full">
+                            <h3 className="text-lg font-semibold mb-4">Request Quote for Route</h3>
+                            <p className="text-sm text-gray-600 mb-4">
+                                An email will be sent to request quotes from our approved carriers.
+                            </p>
+                            <div className="space-y-2 text-sm mb-4">
+                                <p><strong>Collection:</strong> {collection.location}, {collection.country}</p>
+                                <p><strong>Delivery:</strong> {delivery.location}, {delivery.country}</p>
+                                <p><strong>Type:</strong> {isFullTruckLoad ? 'Full Truck Load' : `${pallets} Pallets`}</p>
+                            </div>
+                            <div className="flex gap-2">
+                                <button 
+                                    onClick={() => {
+                                        // In production, this would trigger an email to carriers
+                                        alert('Quote request sent successfully!');
+                                        setShowTenderForm(false);
+                                    }}
+                                    className="flex-1 azelis-blue text-white p-2 rounded hover:bg-blue-700"
+                                >
+                                    Send Request
+                                </button>
+                                <button 
+                                    onClick={() => setShowTenderForm(false)}
+                                    className="flex-1 bg-gray-200 text-gray-700 p-2 rounded hover:bg-gray-300"
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
+        );
+    };
+
+    ReactDOM.render(<Calculator />, document.getElementById('root'));
+    </script>
+</body>
+</html>
