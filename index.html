@@ -56,8 +56,8 @@
     <!-- React Component -->
     <script type="text/babel">
     const Calculator = () => {
-        const [collection, setCollection] = React.useState({ country: '', location: '', postcode: '' });
-        const [delivery, setDelivery] = React.useState({ country: '', location: '', postcode: '' });
+        const [collection, setCollection] = React.useState({ country: '', postcode: '' });
+        const [delivery, setDelivery] = React.useState({ country: '', postcode: '' });
         const [pallets, setPallets] = React.useState(1);
         const [deliveryType, setDeliveryType] = React.useState('STD');
         const [hideDocuments, setHideDocuments] = React.useState(false);
@@ -70,7 +70,8 @@
         const [rates, setRates] = React.useState([]);
         const [loading, setLoading] = React.useState(true);
 
-        const countries = ["UK", "BEL", "FRA", "GER", "NLD", "ESP", "ITA"];
+        const [collectionCountries, setCollectionCountries] = React.useState([]);
+        const [deliveryCountries, setDeliveryCountries] = React.useState([]);
 
         React.useEffect(() => {
             // Fetch hauliers from Firestore
@@ -92,6 +93,11 @@
                     ...doc.data()
                 }));
                 setRates(ratesData);
+                // Extract unique collection and delivery countries
+                const uniqueCollectionCountries = [...new Set(ratesData.map(rate => rate.collectionCountry))];
+                const uniqueDeliveryCountries = [...new Set(ratesData.map(rate => rate.deliveryCountry))];
+                setCollectionCountries(uniqueCollectionCountries);
+                setDeliveryCountries(uniqueDeliveryCountries);
                 setLoading(false);
             }, error => {
                 console.error("Error fetching rates:", error);
@@ -109,8 +115,8 @@
         const handleCalculate = () => {
             setError(null);
 
-            if (!collection.country || !delivery.country) {
-                setError('Please select both collection and delivery countries.');
+            if (!collection.country || !delivery.country || !collection.postcode || !delivery.postcode) {
+                setError('Please select both collection and delivery countries and enter postcodes.');
                 return;
             }
 
@@ -169,12 +175,10 @@ We are seeking quotes for the following shipping route:
 
 Collection:
 Country: ${collection.country}
-Location: ${collection.location}
 Postcode: ${collection.postcode}
 
 Delivery:
 Country: ${delivery.country}
-Location: ${delivery.location}
 Postcode: ${delivery.postcode}
 
 Shipping Details:
@@ -222,7 +226,7 @@ Important Notes:
                     {/* Collection Address */}
                     <div className="mb-6">
                         <h2 className="text-lg font-semibold mb-4 text-gray-700">Collection Address</h2>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label htmlFor="collection-country" className="block text-sm font-medium mb-1 text-gray-600">
                                     Country
@@ -234,23 +238,10 @@ Important Notes:
                                     onChange={(e) => setCollection({...collection, country: e.target.value})}
                                 >
                                     <option value="">Select Country</option>
-                                    {countries.map(country => (
+                                    {collectionCountries.map(country => (
                                         <option key={country} value={country}>{country}</option>
                                     ))}
                                 </select>
-                            </div>
-                            <div>
-                                <label htmlFor="collection-location" className="block text-sm font-medium mb-1 text-gray-600">
-                                    Location
-                                </label>
-                                <input 
-                                    id="collection-location"
-                                    type="text"
-                                    className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    value={collection.location}
-                                    onChange={(e) => setCollection({...collection, location: e.target.value})}
-                                    placeholder="City/Town"
-                                />
                             </div>
                             <div>
                                 <label htmlFor="collection-postcode" className="block text-sm font-medium mb-1 text-gray-600">
@@ -271,7 +262,7 @@ Important Notes:
                     {/* Delivery Address */}
                     <div className="mb-6">
                         <h2 className="text-lg font-semibold mb-4 text-gray-700">Delivery Address</h2>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label htmlFor="delivery-country" className="block text-sm font-medium mb-1 text-gray-600">
                                     Country
@@ -283,23 +274,10 @@ Important Notes:
                                     onChange={(e) => setDelivery({...delivery, country: e.target.value})}
                                 >
                                     <option value="">Select Country</option>
-                                    {countries.map(country => (
+                                    {deliveryCountries.map(country => (
                                         <option key={country} value={country}>{country}</option>
                                     ))}
                                 </select>
-                            </div>
-                            <div>
-                                <label htmlFor="delivery-location" className="block text-sm font-medium mb-1 text-gray-600">
-                                    Location
-                                </label>
-                                <input 
-                                    id="delivery-location"
-                                    type="text"
-                                    className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    value={delivery.location}
-                                    onChange={(e) => setDelivery({...delivery, location: e.target.value})}
-                                    placeholder="City/Town"
-                                />
                             </div>
                             <div>
                                 <label htmlFor="delivery-postcode" className="block text-sm font-medium mb-1 text-gray-600">
@@ -415,8 +393,8 @@ Important Notes:
                                 An email will be sent to request quotes from our approved carriers.
                             </p>
                             <div className="space-y-2 text-sm mb-4">
-                                <p><strong>Collection:</strong> {collection.location}, {collection.country}</p>
-                                <p><strong>Delivery:</strong> {delivery.location}, {delivery.country}</p>
+                                <p><strong>Collection:</strong> {collection.postcode}, {collection.country}</p>
+                                <p><strong>Delivery:</strong> {delivery.postcode}, {delivery.country}</p>
                                 <p><strong>Type:</strong> {isFullTruckLoad ? 'Full Truck Load' : `${pallets} Pallets`}</p>
                                 <p><strong>Delivery Type:</strong> {deliveryType}</p>
                                 <p><strong>Hide Documents:</strong> {hideDocuments ? 'Yes' : 'No'}</p>
