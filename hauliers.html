@@ -1,181 +1,499 @@
-import React, { useState, useEffect } from 'react';
-import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
-
-// Firebase configuration
-const firebaseConfig = {
-  apiKey: "AIzaSyDiIRLwLeMAf1VZbZ7ygvGDu-gZH6sA424",
-  authDomain: "azelislogistics.firebaseapp.com",
-  projectId: "azelislogistics",
-  storageBucket: "azelislogistics.firebasestorage.app",
-  messagingSenderId: "13102382958",
-  appId: "1:13102382958:web:82a3324843432519cb8b7f",
-  measurementId: "G-Q6JNN8DHJQ"
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-
-const HaulierManagement = () => {
-  const [activeTab, setActiveTab] = useState('hauliers');
-  const [hauliers, setHauliers] = useState([]);
-  const [rates, setRates] = useState([]);
-  const [showForm, setShowForm] = useState(false);
-  const [editingHaulier, setEditingHaulier] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  const countries = ["UK", "BEL", "FRA", "GER", "NLD", "ESP", "ITA"];
-
-  // Fetch data from Firebase on component mount
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // Fetch hauliers
-        const hauliersSnapshot = await getDocs(collection(db, 'hauliers'));
-        const hauliersData = hauliersSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
-        setHauliers(hauliersData);
-
-        // Fetch rates
-        const ratesSnapshot = await getDocs(collection(db, 'rates'));
-        const ratesData = ratesSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
-        setRates(ratesData);
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
-
-  // Handle haulier form submission
-  const handleHaulierSubmit = async (e) => {
-    e.preventDefault();
-    const formData = new FormData(e.target);
-    const selectedCountries = countries.filter(country => 
-      formData.get(`country-${country}`)
-    );
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Azelis Shipping - Haulier Management</title>
+    <link rel="icon" href="https://www.azelis.com/themes/custom/azelis_theme/favicon.ico" type="image/x-icon">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
     
-    const haulierData = {
-      name: formData.get('name'),
-      email: formData.get('email'),
-      countries: selectedCountries,
-      active: true
-    };
+    <!-- Load dependencies in correct order -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+    <script src="https://unpkg.com/react@17/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-    try {
-      if (editingHaulier) {
-        // Update existing haulier
-        await updateDoc(doc(db, 'hauliers', editingHaulier.id), haulierData);
-        setHauliers(hauliers.map(h => 
-          h.id === editingHaulier.id ? {...haulierData, id: editingHaulier.id} : h
-        ));
-      } else {
-        // Add new haulier
-        const docRef = await addDoc(collection(db, 'hauliers'), haulierData);
-        setHauliers([...hauliers, { ...haulierData, id: docRef.id }]);
-      }
-      
-      setShowForm(false);
-      setEditingHaulier(null);
-    } catch (error) {
-      console.error('Error saving haulier:', error);
-      alert('Error saving haulier. Please try again.');
-    }
-  };
-
-  // Handle rate import from Excel
-  const handleRatesImport = async (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      try {
-        const data = new Uint8Array(e.target.result);
-        const workbook = XLSX.read(data, { type: 'array' });
-        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-        const jsonData = XLSX.utils.sheet_to_json(firstSheet, { defval: '' });
-
-        // Process and save each rate to Firebase
-        for (const row of jsonData) {
-          const rateData = {
-            collectionCountry: row['Collection Country'] || '',
-            deliveryCountry: row['Delivery Country'] || '',
-            deliveryType: row['Delivery Type'] || 'STD',
-            priceValidity: row['Price Validity'] || '2024-12-31',
-            isFullTruckLoad: row['Is Full Truck Load']?.toLowerCase() === 'yes',
-            fullTruckLoadPrice: row['Full Truck Load Price'] ? parseFloat(row['Full Truck Load Price']) : null,
-            prices: {
-              1: row['1 Pallet'] ? parseFloat(row['1 Pallet']) : null,
-              2: row['2 Pallets'] ? parseFloat(row['2 Pallets']) : null,
-              3: row['3 Pallets'] ? parseFloat(row['3 Pallets']) : null,
-              4: row['4 Pallets'] ? parseFloat(row['4 Pallets']) : null,
-              5: row['5 Pallets'] ? parseFloat(row['5 Pallets']) : null,
-            }
-          };
-
-          await addDoc(collection(db, 'rates'), rateData);
-        }
-
-        // Refresh rates data
-        const ratesSnapshot = await getDocs(collection(db, 'rates'));
-        const ratesData = ratesSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
-        setRates(ratesData);
-
-        alert('Rates imported successfully!');
-      } catch (error) {
-        console.error('Error importing rates:', error);
-        alert('Failed to import rates. Please check the file format.');
-      }
-    };
-
-    reader.readAsArrayBuffer(file);
-  };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-lg">Loading...</div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="max-w-7xl mx-auto p-4">
-      <div className="bg-white rounded-lg shadow-lg p-6">
-        {/* Tabs */}
-        <div className="flex border-b mb-4">
-          <button
-            onClick={() => setActiveTab('hauliers')}
-            className={`mr-4 pb-2 ${activeTab === 'hauliers' ? 'border-b-2 border-blue-600' : ''}`}
-          >
-            Hauliers
-          </button>
-          <button
-            onClick={() => setActiveTab('rates')}
-            className={`pb-2 ${activeTab === 'rates' ? 'border-b-2 border-blue-600' : ''}`}
-          >
-            Rates
-          </button>
+    <style>
+        .azelis-blue { background-color: #003087; }
+        .azelis-blue-hover:hover { background-color: #002670; }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <header class="azelis-blue text-white p-4 shadow-lg">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-4">
+                <img src="https://www.azelis.com/themes/custom/azelis_theme/logo.svg" alt="Azelis Logo" class="h-8">
+                <h1 class="text-xl font-bold">Haulier Management</h1>
+            </div>
+            <nav class="flex space-x-4">
+                <a href="index.html" class="text-white hover:text-gray-200">Calculator</a>
+                <a href="hauliers.html" class="text-white hover:text-gray-200 font-bold">Haulier Management</a>
+            </nav>
         </div>
+    </header>
 
-        {/* Rest of your existing UI components */}
-        {/* ... (Keep your existing JSX for tables and forms) ... */}
-      </div>
-    </div>
-  );
-};
+    <div id="root"></div>
 
-export default HaulierManagement;
+    <!-- Initialize Firebase -->
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyDiIRLwLeMAf1VZbZ7ygvGDu-gZH6sA424",
+            authDomain: "azelislogistics.firebaseapp.com",
+            projectId: "azelislogistics",
+            storageBucket: "azelislogistics.firebasestorage.app",
+            messagingSenderId: "13102382958",
+            appId: "1:13102382958:web:82a3324843432519cb8b7f",
+            measurementId: "G-Q6JNN8DHJQ"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+    </script>
+
+    <!-- React Component -->
+    <script type="text/babel">
+        const HaulierManagement = () => {
+            const [activeTab, setActiveTab] = React.useState('hauliers');
+            const [hauliers, setHauliers] = React.useState([]);
+            const [rates, setRates] = React.useState([]);
+            const [showForm, setShowForm] = React.useState(false);
+            const [editingHaulier, setEditingHaulier] = React.useState(null);
+            const [loading, setLoading] = React.useState(true);
+            
+            const countries = ["UK", "BEL", "FRA", "GER", "NLD", "ESP", "ITA"];
+
+            React.useEffect(() => {
+                // Fetch hauliers from Firebase
+                const unsubscribeHauliers = db.collection('hauliers').onSnapshot(snapshot => {
+                    const hauliersData = snapshot.docs.map(doc => ({
+                        id: doc.id,
+                        ...doc.data()
+                    }));
+                    setHauliers(hauliersData);
+                    setLoading(false);
+                });
+
+                // Fetch rates from Firebase
+                const unsubscribeRates = db.collection('rates').onSnapshot(snapshot => {
+                    const ratesData = snapshot.docs.map(doc => ({
+                        id: doc.id,
+                        ...doc.data()
+                    }));
+                    setRates(ratesData);
+                });
+
+                // Cleanup subscriptions
+                return () => {
+                    unsubscribeHauliers();
+                    unsubscribeRates();
+                };
+            }, []);
+
+            const handleHaulierSubmit = async (e) => {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                const selectedCountries = countries.filter(country => 
+                    formData.get(`country-${country}`)
+                );
+                
+                const haulierData = {
+                    name: formData.get('name'),
+                    email: formData.get('email'),
+                    countries: selectedCountries,
+                    active: true
+                };
+
+                try {
+                    if (editingHaulier) {
+                        await db.collection('hauliers').doc(editingHaulier.id).update(haulierData);
+                    } else {
+                        await db.collection('hauliers').add(haulierData);
+                    }
+                    setShowForm(false);
+                    setEditingHaulier(null);
+                } catch (error) {
+                    console.error('Error saving haulier:', error);
+                    alert('Error saving haulier. Please try again.');
+                }
+            };
+
+            const handleHaulierDelete = async (id) => {
+                if (confirm('Are you sure you want to delete this haulier?')) {
+                    try {
+                        await db.collection('hauliers').doc(id).delete();
+                    } catch (error) {
+                        console.error('Error deleting haulier:', error);
+                        alert('Error deleting haulier. Please try again.');
+                    }
+                }
+            };
+
+            const handleToggleActive = async (id, currentActive) => {
+                try {
+                    await db.collection('hauliers').doc(id).update({
+                        active: !currentActive
+                    });
+                } catch (error) {
+                    console.error('Error updating haulier status:', error);
+                    alert('Error updating haulier status. Please try again.');
+                }
+            };
+
+            const handleRatesImport = async (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = async (e) => {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                        const jsonData = XLSX.utils.sheet_to_json(firstSheet, { defval: '' });
+
+                        // Process and save each rate to Firebase
+                        const batch = db.batch();
+                        jsonData.forEach((row) => {
+                            const rateRef = db.collection('rates').doc();
+                            batch.set(rateRef, {
+                                collectionCountry: row['Collection Country'] || '',
+                                deliveryCountry: row['Delivery Country'] || '',
+                                deliveryType: row['Delivery Type'] || 'STD',
+                                priceValidity: row['Price Validity'] || '2024-12-31',
+                                isFullTruckLoad: row['Is Full Truck Load']?.toLowerCase() === 'yes',
+                                fullTruckLoadPrice: row['Full Truck Load Price'] ? parseFloat(row['Full Truck Load Price']) : null,
+                                prices: {
+                                    1: row['1 Pallet'] ? parseFloat(row['1 Pallet']) : null,
+                                    2: row['2 Pallets'] ? parseFloat(row['2 Pallets']) : null,
+                                    3: row['3 Pallets'] ? parseFloat(row['3 Pallets']) : null,
+                                    4: row['4 Pallets'] ? parseFloat(row['4 Pallets']) : null,
+                                    5: row['5 Pallets'] ? parseFloat(row['5 Pallets']) : null,
+                                }
+                            });
+                        });
+
+                        await batch.commit();
+                        alert('Rates imported successfully!');
+                        event.target.value = ''; // Reset file input
+                    } catch (error) {
+                        console.error('Error importing rates:', error);
+                        alert('Failed to import rates. Please check the file format.');
+                    }
+                };
+                reader.readAsArrayBuffer(file);
+            };
+
+            const handleRatesExport = () => {
+                if (rates.length === 0) {
+                    alert('No rates to export.');
+                    return;
+                }
+
+                const exportData = rates.map(rate => ({
+                    'Collection Country': rate.collectionCountry,
+                    'Delivery Country': rate.deliveryCountry,
+                    'Delivery Type': rate.deliveryType,
+                    'Price Validity': rate.priceValidity,
+                    'Is Full Truck Load': rate.isFullTruckLoad ? 'Yes' : 'No',
+                    'Full Truck Load Price': rate.fullTruckLoadPrice,
+                    '1 Pallet': rate.prices?.[1],
+                    '2 Pallets': rate.prices?.[2],
+                    '3 Pallets': rate.prices?.[3],
+                    '4 Pallets': rate.prices?.[4],
+                    '5 Pallets': rate.prices?.[5],
+                }));
+
+                const ws = XLSX.utils.json_to_sheet(exportData);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "Rates");
+                XLSX.writeFile(wb, "azelis_rates.xlsx");
+            };
+
+            if (loading) {
+                return (
+                    <div className="flex items-center justify-center h-64">
+                        <div className="text-lg">Loading...</div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="max-w-7xl mx-auto p-4">
+                    <div className="bg-white rounded-lg shadow-lg p-6">
+                        {/* Tabs */}
+                        <div className="flex border-b mb-4">
+                            <button
+                                onClick={() => setActiveTab('hauliers')}
+                                className={`mr-4 pb-2 ${activeTab === 'hauliers' ? 'border-b-2 border-blue-600' : ''}`}
+                            >
+                                Hauliers
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('rates')}
+                                className={`pb-2 ${activeTab === 'rates' ? 'border-b-2 border-blue-600' : ''}`}
+                            >
+                                Rates
+                            </button>
+                        </div>
+
+                        {/* Content based on active tab */}
+                        {activeTab === 'hauliers' && (
+                            <div>
+                                <div className="flex justify-between items-center mb-6">
+                                    <h2 className="text-xl font-bold">Registered Hauliers</h2>
+                                    <button
+                                        onClick={() => setShowForm(true)}
+                                        className="azelis-blue text-white px-4 py-2 rounded hover:bg-blue-700"
+                                    >
+                                        Add Haulier
+                                    </button>
+                                </div>
+
+                                {/* Hauliers Table */}
+                                <div className="overflow-x-auto">
+                                    <table className="w-full">
+                                        <thead className="bg-gray-50">
+                                            <tr>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    Company
+                                                </th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    Email
+                                                </th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    Countries
+                                                </th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    Status
+                                                </th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    Actions
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="bg-white divide-y divide-gray-200">
+                                            {hauliers.map(haulier => (
+                                                <tr key={haulier.id}>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        {haulier.name}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        {haulier.email}
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex flex-wrap gap-1">
+                                                            {haulier.countries.map(country => (
+                                                                <span 
+                                                                    key={country}
+                                                                    className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs"
+                                                                >
+                                                                    {country}
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <button
+                                                            onClick={() => handleToggleActive(haulier.id, haulier.active)}
+                                                            className={`px-2 py-1 rounded-full text-xs ${
+                                                                haulier.active
+                                                                    ? 'bg-green-100 text-green-800'
+                                                                    : 'bg-red-100 text-red-800'
+                                                            }`}
+                                                        >
+                                                            {haulier.active ? 'Active' : 'Inactive'}
+                                                        </button>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <div className="flex space-x-2">
+                                                            <button
+                                                                onClick={() => {
+                                                                    setEditingHaulier(haulier);
+                                                                    setShowForm(true);
+                                                                }}
+                                                                className="text-blue-600 hover:text-blue-800"
+                                                            >
+                                                                Edit
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleHaulierDelete(haulier.id)}
+                                                                className="text-red-600 hover:text-red-800"
+                                                            >
+                                                                Delete
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'rates' && (
+                            <div>
+                                <h2 className="text-xl font-bold mb-4">Rates Management</h2>
+                                
+                                {/* Import/Export Section */}
+                                <div className="mb-6 p-4 border rounded bg-gray-50">
+                                    <h3 className="text-lg font-semibold mb-2">Import/Export Rates</h3>
+                                    <div className="flex gap-4">
+                                        <div>
+                                            <input
+                                                type="file"
+                                                accept=".xlsx,.xls"
+                                                onChange={handleRatesImport}
+                                                className="mb-2"
+                                            />
+                                            <div className="text-sm text-gray-600">Import from Excel</div>
+                                        </div>
+                                        <button
+                                            onClick={handleRatesExport}
+                                            className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+                                        >
+                                            Export to Excel
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Rates Table */}
+                                <div className="overflow-x-auto">
+                                    <table className="w-full">
+                                        <thead className="bg-gray-50">
+                                            <tr>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Collection</th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Delivery</th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Valid Until</th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">FTL Price</th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">1 Pallet</th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">2 Pallets</th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">3 Pallets</th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">4 Pallets</th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">5 Pallets</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="bg-white divide-y divide-gray-200">
+                                            {rates.map(rate => (
+                                                <tr key={rate.id}>
+                                                    <td className="px-6 py-4 whitespace-nowrap">{rate.collectionCountry}</td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">{rate.deliveryCountry}</td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">{rate.deliveryType}</td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">{rate.priceValidity}</td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        {rate.fullTruckLoadPrice ? `£${rate.fullTruckLoadPrice}` : '-'}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        {rate.prices?.[1] ? `£${rate.prices[1]}` : '-'}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        {rate.prices?.[2] ? `£${rate.prices[2]}` : '-'}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        {rate.prices?.[3] ? `£${rate.prices[3]}` : '-'}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        {rate.prices?.[4] ? `£${rate.prices[4]}` : '-'}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        {rate.prices?.[5] ? `£${rate.prices[5]}` : '-'}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Haulier Form Modal */}
+                        {showForm && (
+                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+                                <div className="bg-white rounded-lg p-6 max-w-2xl w-full">
+                                    <div className="flex justify-between items-start mb-4">
+                                        <h3 className="text-lg font-semibold">
+                                            {editingHaulier ? 'Edit Haulier' : 'Add New Haulier'}
+                                        </h3>
+                                        <button 
+                                            onClick={() => {
+                                                setShowForm(false);
+                                                setEditingHaulier(null);
+                                            }}
+                                            className="text-gray-400 hover:text-gray-600"
+                                        >
+                                            ×
+                                        </button>
+                                    </div>
+                                    
+                                    <form onSubmit={handleHaulierSubmit} className="space-y-4">
+                                        <div>
+                                            <label className="block text-sm font-medium mb-1">Company Name</label>
+                                            <input 
+                                                name="name"
+                                                type="text"
+                                                required
+                                                defaultValue={editingHaulier?.name}
+                                                className="w-full p-2 border rounded"
+                                            />
+                                        </div>
+                                        
+                                        <div>
+                                            <label className="block text-sm font-medium mb-1">Email Address</label>
+                                            <input 
+                                                name="email"
+                                                type="email"
+                                                required
+                                                defaultValue={editingHaulier?.email}
+                                                className="w-full p-2 border rounded"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium mb-2">Operating Countries</label>
+                                            <div className="grid grid-cols-3 gap-2">
+                                                {countries.map(country => (
+                                                    <label key={country} className="flex items-center space-x-2">
+                                                        <input
+                                                            type="checkbox"
+                                                            name={`country-${country}`}
+                                                            defaultChecked={editingHaulier?.countries.includes(country)}
+                                                        />
+                                                        <span>{country}</span>
+                                                    </label>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        <div className="flex gap-2">
+                                            <button 
+                                                type="submit"
+                                                className="flex-1 azelis-blue text-white p-2 rounded hover:bg-blue-700"
+                                            >
+                                                {editingHaulier ? 'Update' : 'Add'} Haulier
+                                            </button>
+                                            <button 
+                                                type="button"
+                                                onClick={() => {
+                                                    setShowForm(false);
+                                                    setEditingHaulier(null);
+                                                }}
+                                                className="flex-1 bg-gray-200 text-gray-700 p-2 rounded hover:bg-gray-300"
+                                            >
+                                                Cancel
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        ReactDOM.render(<HaulierManagement />, document.getElementById('root'));
+    </script>
+</body>
+</html>
