@@ -1,533 +1,181 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <!-- Head Content -->
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Azelis Shipping - Haulier and Rates Management</title>
-    <link rel="icon" href="https://www.azelis.com/themes/custom/azelis_theme/favicon.ico" type="image/x-icon">
-    <!-- Tailwind CSS -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
-    <!-- React and Babel -->
-    <script src="https://unpkg.com/react@17/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone@7/babel.min.js"></script>
-    <!-- XLSX.js for Excel Import/Export -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
-    <style>
-        .azelis-blue { background-color: #003087; }
-        .azelis-blue-hover:hover { background-color: #002670; }
-    </style>
-</head>
-<body class="bg-gray-50">
-    <header class="azelis-blue text-white p-4 shadow-lg">
-        <div class="max-w-7xl mx-auto flex justify-between items-center">
-            <div class="flex items-center space-x-4">
-                <img src="https://www.azelis.com/themes/custom/azelis_theme/logo.svg" alt="Azelis Logo" class="h-8">
-                <h1 class="text-xl font-bold">Haulier and Rates Management</h1>
-            </div>
-            <nav class="flex space-x-4">
-                <a href="index.html" class="text-white hover:text-gray-200">Calculator</a>
-                <a href="hauliers.html" class="text-white hover:text-gray-200 font-bold">Haulier Management</a>
-            </nav>
+import React, { useState, useEffect } from 'react';
+import { initializeApp } from 'firebase/app';
+import { getFirestore, collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
+
+// Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyDiIRLwLeMAf1VZbZ7ygvGDu-gZH6sA424",
+  authDomain: "azelislogistics.firebaseapp.com",
+  projectId: "azelislogistics",
+  storageBucket: "azelislogistics.firebasestorage.app",
+  messagingSenderId: "13102382958",
+  appId: "1:13102382958:web:82a3324843432519cb8b7f",
+  measurementId: "G-Q6JNN8DHJQ"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const HaulierManagement = () => {
+  const [activeTab, setActiveTab] = useState('hauliers');
+  const [hauliers, setHauliers] = useState([]);
+  const [rates, setRates] = useState([]);
+  const [showForm, setShowForm] = useState(false);
+  const [editingHaulier, setEditingHaulier] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const countries = ["UK", "BEL", "FRA", "GER", "NLD", "ESP", "ITA"];
+
+  // Fetch data from Firebase on component mount
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Fetch hauliers
+        const hauliersSnapshot = await getDocs(collection(db, 'hauliers'));
+        const hauliersData = hauliersSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        setHauliers(hauliersData);
+
+        // Fetch rates
+        const ratesSnapshot = await getDocs(collection(db, 'rates'));
+        const ratesData = ratesSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        setRates(ratesData);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  // Handle haulier form submission
+  const handleHaulierSubmit = async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const selectedCountries = countries.filter(country => 
+      formData.get(`country-${country}`)
+    );
+    
+    const haulierData = {
+      name: formData.get('name'),
+      email: formData.get('email'),
+      countries: selectedCountries,
+      active: true
+    };
+
+    try {
+      if (editingHaulier) {
+        // Update existing haulier
+        await updateDoc(doc(db, 'hauliers', editingHaulier.id), haulierData);
+        setHauliers(hauliers.map(h => 
+          h.id === editingHaulier.id ? {...haulierData, id: editingHaulier.id} : h
+        ));
+      } else {
+        // Add new haulier
+        const docRef = await addDoc(collection(db, 'hauliers'), haulierData);
+        setHauliers([...hauliers, { ...haulierData, id: docRef.id }]);
+      }
+      
+      setShowForm(false);
+      setEditingHaulier(null);
+    } catch (error) {
+      console.error('Error saving haulier:', error);
+      alert('Error saving haulier. Please try again.');
+    }
+  };
+
+  // Handle rate import from Excel
+  const handleRatesImport = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+        const jsonData = XLSX.utils.sheet_to_json(firstSheet, { defval: '' });
+
+        // Process and save each rate to Firebase
+        for (const row of jsonData) {
+          const rateData = {
+            collectionCountry: row['Collection Country'] || '',
+            deliveryCountry: row['Delivery Country'] || '',
+            deliveryType: row['Delivery Type'] || 'STD',
+            priceValidity: row['Price Validity'] || '2024-12-31',
+            isFullTruckLoad: row['Is Full Truck Load']?.toLowerCase() === 'yes',
+            fullTruckLoadPrice: row['Full Truck Load Price'] ? parseFloat(row['Full Truck Load Price']) : null,
+            prices: {
+              1: row['1 Pallet'] ? parseFloat(row['1 Pallet']) : null,
+              2: row['2 Pallets'] ? parseFloat(row['2 Pallets']) : null,
+              3: row['3 Pallets'] ? parseFloat(row['3 Pallets']) : null,
+              4: row['4 Pallets'] ? parseFloat(row['4 Pallets']) : null,
+              5: row['5 Pallets'] ? parseFloat(row['5 Pallets']) : null,
+            }
+          };
+
+          await addDoc(collection(db, 'rates'), rateData);
+        }
+
+        // Refresh rates data
+        const ratesSnapshot = await getDocs(collection(db, 'rates'));
+        const ratesData = ratesSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        setRates(ratesData);
+
+        alert('Rates imported successfully!');
+      } catch (error) {
+        console.error('Error importing rates:', error);
+        alert('Failed to import rates. Please check the file format.');
+      }
+    };
+
+    reader.readAsArrayBuffer(file);
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-lg">Loading...</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-7xl mx-auto p-4">
+      <div className="bg-white rounded-lg shadow-lg p-6">
+        {/* Tabs */}
+        <div className="flex border-b mb-4">
+          <button
+            onClick={() => setActiveTab('hauliers')}
+            className={`mr-4 pb-2 ${activeTab === 'hauliers' ? 'border-b-2 border-blue-600' : ''}`}
+          >
+            Hauliers
+          </button>
+          <button
+            onClick={() => setActiveTab('rates')}
+            className={`pb-2 ${activeTab === 'rates' ? 'border-b-2 border-blue-600' : ''}`}
+          >
+            Rates
+          </button>
         </div>
-    </header>
 
-    <div id="root"></div>
+        {/* Rest of your existing UI components */}
+        {/* ... (Keep your existing JSX for tables and forms) ... */}
+      </div>
+    </div>
+  );
+};
 
-    <script type="text/babel">
-        const HaulierManagement = () => {
-            const [activeTab, setActiveTab] = React.useState('hauliers'); // 'hauliers' or 'rates'
-
-            // Hauliers State
-            const [hauliers, setHauliers] = React.useState(() => {
-                const saved = localStorage.getItem('hauliers');
-                return saved ? JSON.parse(saved) : [
-                    {
-                        id: 1,
-                        name: 'Test Haulier',
-                        email: 'greg.michell@azelis.com',
-                        countries: ['UK', 'FRA', 'BEL'],
-                        active: true
-                    }
-                ];
-            });
-            const [showForm, setShowForm] = React.useState(false);
-            const [editingHaulier, setEditingHaulier] = React.useState(null);
-
-            // Rates State
-            const [rates, setRates] = React.useState(() => {
-                const saved = localStorage.getItem('rates');
-                return saved ? JSON.parse(saved) : [];
-            });
-            const [showDeleteConfirm, setShowDeleteConfirm] = React.useState(null);
-
-            const countries = ["UK", "BEL", "FRA", "GER", "NLD", "ESP", "ITA", "AUS"];
-
-            // Update Local Storage
-            React.useEffect(() => {
-                localStorage.setItem('hauliers', JSON.stringify(hauliers));
-            }, [hauliers]);
-
-            React.useEffect(() => {
-                localStorage.setItem('rates', JSON.stringify(rates));
-            }, [rates]);
-
-            // Haulier Functions
-            const handleHaulierSubmit = (e) => {
-                e.preventDefault();
-                const formData = new FormData(e.target);
-                const selectedCountries = countries.filter(country => 
-                    formData.get(`country-${country}`)
-                );
-                
-                const newHaulier = {
-                    id: editingHaulier ? editingHaulier.id : Date.now(),
-                    name: formData.get('name'),
-                    email: formData.get('email'),
-                    countries: selectedCountries,
-                    active: true
-                };
-
-                if (editingHaulier) {
-                    setHauliers(hauliers.map(h => 
-                        h.id === editingHaulier.id ? newHaulier : h
-                    ));
-                } else {
-                    setHauliers([...hauliers, newHaulier]);
-                }
-                
-                setShowForm(false);
-                setEditingHaulier(null);
-            };
-
-            const handleHaulierEdit = (haulier) => {
-                setEditingHaulier(haulier);
-                setShowForm(true);
-            };
-
-            const handleHaulierToggleActive = (id) => {
-                setHauliers(hauliers.map(h => 
-                    h.id === id ? {...h, active: !h.active} : h
-                ));
-            };
-
-            const handleHaulierDelete = (id) => {
-                if (confirm('Are you sure you want to delete this haulier?')) {
-                    setHauliers(hauliers.filter(h => h.id !== id));
-                }
-            };
-
-            // Rates Functions
-            const handleRatesImport = (event) => {
-                const file = event.target.files[0];
-                if (!file) return;
-
-                const reader = new FileReader();
-
-                reader.onload = (e) => {
-                    try {
-                        const data = new Uint8Array(e.target.result);
-                        const workbook = XLSX.read(data, { type: 'array' });
-                        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                        const jsonData = XLSX.utils.sheet_to_json(firstSheet, { defval: '' });
-
-                        const newRates = jsonData.map(row => ({
-                            collectionCountry: row['Collection Country'] || '',
-                            collectionLocation: row['Collection Location'] || '',
-                            collectionPostcode: row['Collection Postcode'] || '',
-                            deliveryCountry: row['Delivery Country'] || '',
-                            deliveryLocation: row['Delivery Location'] || '',
-                            deliveryPostcode: row['Delivery Postcode'] || '',
-                            deliveryType: row['Delivery Type'] || 'STD',
-                            priceValidity: row['Price Validity'] || '2099-12-31',
-                            isFullTruckLoad: row['Is Full Truck Load'].toLowerCase() === 'yes',
-                            fullTruckLoadPrice: row['Full Truck Load Price'] ? parseFloat(row['Full Truck Load Price']) : null,
-                            prices: {
-                                1: row['1 Pallet'] ? parseFloat(row['1 Pallet']) : null,
-                                2: row['2 Pallets'] ? parseFloat(row['2 Pallets']) : null,
-                                3: row['3 Pallets'] ? parseFloat(row['3 Pallets']) : null,
-                                4: row['4 Pallets'] ? parseFloat(row['4 Pallets']) : null,
-                                5: row['5 Pallets'] ? parseFloat(row['5 Pallets']) : null,
-                                // Extend up to 24 pallets if needed
-                            }
-                        }));
-
-                        setRates([...rates, ...newRates]);
-                        alert('Rates imported successfully!');
-                    } catch (error) {
-                        console.error('Error importing rates:', error);
-                        alert('Failed to import rates. Please check the file format.');
-                    }
-                };
-
-                reader.readAsArrayBuffer(file);
-            };
-
-            const handleRatesExport = () => {
-                if (rates.length === 0) {
-                    alert('No rates to export.');
-                    return;
-                }
-
-                const exportData = rates.map(rate => ({
-                    'Collection Country': rate.collectionCountry,
-                    'Collection Location': rate.collectionLocation,
-                    'Collection Postcode': rate.collectionPostcode,
-                    'Delivery Country': rate.deliveryCountry,
-                    'Delivery Location': rate.deliveryLocation,
-                    'Delivery Postcode': rate.deliveryPostcode,
-                    'Delivery Type': rate.deliveryType,
-                    'Price Validity': rate.priceValidity,
-                    'Is Full Truck Load': rate.isFullTruckLoad ? 'Yes' : 'No',
-                    'Full Truck Load Price': rate.fullTruckLoadPrice,
-                    '1 Pallet': rate.prices[1],
-                    '2 Pallets': rate.prices[2],
-                    '3 Pallets': rate.prices[3],
-                    '4 Pallets': rate.prices[4],
-                    '5 Pallets': rate.prices[5],
-                    // Extend up to 24 pallets if needed
-                }));
-
-                const ws = XLSX.utils.json_to_sheet(exportData);
-                const wb = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(wb, ws, "Rates");
-                XLSX.writeFile(wb, "rates.xlsx");
-            };
-
-            return (
-                <div className="max-w-7xl mx-auto p-4">
-                    <div className="bg-white rounded-lg shadow-lg p-6">
-                        {/* Tabs */}
-                        <div className="flex border-b mb-4">
-                            <button
-                                onClick={() => setActiveTab('hauliers')}
-                                className={`mr-4 pb-2 ${activeTab === 'hauliers' ? 'border-b-2 border-blue-600' : ''}`}
-                            >
-                                Hauliers
-                            </button>
-                            <button
-                                onClick={() => setActiveTab('rates')}
-                                className={`pb-2 ${activeTab === 'rates' ? 'border-b-2 border-blue-600' : ''}`}
-                            >
-                                Rates
-                            </button>
-                        </div>
-
-                        {activeTab === 'hauliers' && (
-                            <div>
-                                {/* Haulier Management UI */}
-                                <div className="flex justify-between items-center mb-6">
-                                    <h2 className="text-xl font-bold">Registered Hauliers</h2>
-                                    <button
-                                        onClick={() => setShowForm(true)}
-                                        className="azelis-blue text-white px-4 py-2 rounded hover:bg-blue-700"
-                                    >
-                                        Add Haulier
-                                    </button>
-                                </div>
-
-                                <div className="overflow-x-auto">
-                                    <table className="w-full">
-                                        <thead className="bg-gray-50">
-                                            <tr>
-                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Company
-                                                </th>
-                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Email
-                                                </th>
-                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Countries
-                                                </th>
-                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Status
-                                                </th>
-                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Actions
-                                                </th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="bg-white divide-y divide-gray-200">
-                                            {hauliers.map(haulier => (
-                                                <tr key={haulier.id}>
-                                                    <td className="px-6 py-4 whitespace-nowrap">
-                                                        {haulier.name}
-                                                    </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap">
-                                                        {haulier.email}
-                                                    </td>
-                                                    <td className="px-6 py-4">
-                                                        <div className="flex flex-wrap gap-1">
-                                                            {haulier.countries.map(country => (
-                                                                <span 
-                                                                    key={country}
-                                                                    className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs"
-                                                                >
-                                                                    {country}
-                                                                </span>
-                                                            ))}
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap">
-                                                        <button
-                                                            onClick={() => handleHaulierToggleActive(haulier.id)}
-                                                            className={`px-2 py-1 rounded-full text-xs ${
-                                                                haulier.active
-                                                                    ? 'bg-green-100 text-green-800'
-                                                                    : 'bg-red-100 text-red-800'
-                                                            }`}
-                                                        >
-                                                            {haulier.active ? 'Active' : 'Inactive'}
-                                                        </button>
-                                                    </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap">
-                                                        <div className="flex space-x-2">
-                                                            <button
-                                                                onClick={() => handleHaulierEdit(haulier)}
-                                                                className="text-blue-600 hover:text-blue-800"
-                                                            >
-                                                                Edit
-                                                            </button>
-                                                            <button
-                                                                onClick={() => handleHaulierDelete(haulier.id)}
-                                                                className="text-red-600 hover:text-red-800"
-                                                            >
-                                                                Delete
-                                                            </button>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-
-                                {/* Haulier Form Modal */}
-                                {showForm && (
-                                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-                                        <div className="bg-white rounded-lg p-6 max-w-2xl w-full">
-                                            <div className="flex justify-between items-start mb-4">
-                                                <h3 className="text-lg font-semibold">
-                                                    {editingHaulier ? 'Edit Haulier' : 'Add New Haulier'}
-                                                </h3>
-                                                <button 
-                                                    onClick={() => {
-                                                        setShowForm(false);
-                                                        setEditingHaulier(null);
-                                                    }}
-                                                    className="text-gray-400 hover:text-gray-600"
-                                                >
-                                                    ×
-                                                </button>
-                                            </div>
-                                            
-                                            <form onSubmit={handleHaulierSubmit} className="space-y-4">
-                                                <div>
-                                                    <label className="block text-sm font-medium mb-1">Company Name</label>
-                                                    <input 
-                                                        name="name"
-                                                        type="text"
-                                                        required
-                                                        defaultValue={editingHaulier?.name}
-                                                        className="w-full p-2 border rounded"
-                                                    />
-                                                </div>
-                                                
-                                                <div>
-                                                    <label className="block text-sm font-medium mb-1">Email Address</label>
-                                                    <input 
-                                                        name="email"
-                                                        type="email"
-                                                        required
-                                                        defaultValue={editingHaulier?.email}
-                                                        className="w-full p-2 border rounded"
-                                                    />
-                                                </div>
-
-                                                <div>
-                                                    <label className="block text-sm font-medium mb-2">Operating Countries</label>
-                                                    <div className="grid grid-cols-3 gap-2">
-                                                        {countries.map(country => (
-                                                            <label key={country} className="flex items-center space-x-2">
-                                                                <input
-                                                                    type="checkbox"
-                                                                    name={`country-${country}`}
-                                                                    defaultChecked={editingHaulier?.countries.includes(country)}
-                                                                />
-                                                                <span>{country}</span>
-                                                            </label>
-                                                        ))}
-                                                    </div>
-                                                </div>
-
-                                                <div className="flex gap-2">
-                                                    <button 
-                                                        type="submit"
-                                                        className="flex-1 azelis-blue text-white p-2 rounded hover:bg-blue-700"
-                                                    >
-                                                        {editingHaulier ? 'Update' : 'Add'} Haulier
-                                                    </button>
-                                                    <button 
-                                                        type="button"
-                                                        onClick={() => {
-                                                            setShowForm(false);
-                                                            setEditingHaulier(null);
-                                                        }}
-                                                        className="flex-1 bg-gray-200 text-gray-700 p-2 rounded hover:bg-gray-300"
-                                                    >
-                                                        Cancel
-                                                    </button>
-                                                </div>
-                                            </form>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-
-                        {activeTab === 'rates' && (
-                            <div>
-                                <h2 className="text-xl font-bold mb-4">Rates Management</h2>
-                                {/* Import/Export Section */}
-                                <div className="mb-4 p-4 border rounded bg-gray-50">
-                                    <h3 className="text-lg font-semibold mb-2">Import/Export Rates</h3>
-                                    <div className="flex gap-4">
-                                        <div>
-                                            <input
-                                                type="file"
-                                                accept=".xlsx,.xls"
-                                                onChange={handleRatesImport}
-                                                className="mb-2"
-                                            />
-                                            <div className="text-sm text-gray-600">Import from Excel</div>
-                                        </div>
-                                        <button
-                                            onClick={handleRatesExport}
-                                            className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
-                                        >
-                                            Export to Excel
-                                        </button>
-                                    </div>
-                                </div>
-
-                                {/* Rates List */}
-                                <div>
-                                    <h3 className="text-lg font-semibold mb-2">Current Rates ({rates.length})</h3>
-                                    <div className="overflow-x-auto">
-                                        <table className="w-full">
-                                            <thead className="bg-gray-50">
-                                                <tr>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                        Collection Country
-                                                    </th>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                        Collection Location
-                                                    </th>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                        Collection Postcode
-                                                    </th>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                        Delivery Country
-                                                    </th>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                        Delivery Location
-                                                    </th>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                        Delivery Postcode
-                                                    </th>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                        Delivery Type
-                                                    </th>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                        Price Validity
-                                                    </th>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                        Is Full Truck Load
-                                                    </th>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                        Full Truck Load Price
-                                                    </th>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                        1 Pallet
-                                                    </th>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                        2 Pallets
-                                                    </th>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                        3 Pallets
-                                                    </th>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                        4 Pallets
-                                                    </th>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                        5 Pallets
-                                                    </th>
-                                                    <!-- Extend up to 24 pallets as needed -->
-                                                </tr>
-                                            </thead>
-                                            <tbody className="bg-white divide-y divide-gray-200">
-                                                {rates.map((rate, index) => (
-                                                    <tr key={index}>
-                                                        <td className="px-6 py-4 whitespace-nowrap">
-                                                            {rate.collectionCountry}
-                                                        </td>
-                                                        <td className="px-6 py-4 whitespace-nowrap">
-                                                            {rate.collectionLocation}
-                                                        </td>
-                                                        <td className="px-6 py-4 whitespace-nowrap">
-                                                            {rate.collectionPostcode}
-                                                        </td>
-                                                        <td className="px-6 py-4 whitespace-nowrap">
-                                                            {rate.deliveryCountry}
-                                                        </td>
-                                                        <td className="px-6 py-4 whitespace-nowrap">
-                                                            {rate.deliveryLocation}
-                                                        </td>
-                                                        <td className="px-6 py-4 whitespace-nowrap">
-                                                            {rate.deliveryPostcode}
-                                                        </td>
-                                                        <td className="px-6 py-4 whitespace-nowrap">
-                                                            {rate.deliveryType}
-                                                        </td>
-                                                        <td className="px-6 py-4 whitespace-nowrap">
-                                                            {new Date(rate.priceValidity).toLocaleDateString()}
-                                                        </td>
-                                                        <td className="px-6 py-4 whitespace-nowrap">
-                                                            {rate.isFullTruckLoad ? 'Yes' : 'No'}
-                                                        </td>
-                                                        <td className="px-6 py-4 whitespace-nowrap">
-                                                            {rate.fullTruckLoadPrice ? `£${rate.fullTruckLoadPrice}` : 'N/A'}
-                                                        </td>
-                                                        <td className="px-6 py-4 whitespace-nowrap">
-                                                            {rate.prices[1] ? `£${rate.prices[1]}` : 'N/A'}
-                                                        </td>
-                                                        <td className="px-6 py-4 whitespace-nowrap">
-                                                            {rate.prices[2] ? `£${rate.prices[2]}` : 'N/A'}
-                                                        </td>
-                                                        <td className="px-6 py-4 whitespace-nowrap">
-                                                            {rate.prices[3] ? `£${rate.prices[3]}` : 'N/A'}
-                                                        </td>
-                                                        <td className="px-6 py-4 whitespace-nowrap">
-                                                            {rate.prices[4] ? `£${rate.prices[4]}` : 'N/A'}
-                                                        </td>
-                                                        <td className="px-6 py-4 whitespace-nowrap">
-                                                            {rate.prices[5] ? `£${rate.prices[5]}` : 'N/A'}
-                                                        </td>
-                                                        <!-- Extend up to 24 pallets as needed -->
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                );
-            };
-
-            ReactDOM.render(<HaulierManagement />, document.getElementById('root'));
-        </script>
-    </body>
-</html>
+export default HaulierManagement;
