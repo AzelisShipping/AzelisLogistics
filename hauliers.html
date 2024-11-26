@@ -53,6 +53,29 @@
 
     <!-- React Component -->
     <script type="text/babel">
+        const allowedCountries = [
+            "AFG", "ALB", "DZA", "AND", "AGO", "ATG", "ARG", "ARM", "AUS", "AUT",
+            "AZE", "BHS", "BHR", "BGD", "BRB", "BLR", "BEL", "BLZ", "BEN", "BTN",
+            "BOL", "BIH", "BWA", "BRA", "BRN", "BGR", "BFA", "BDI", "CPV", "KHM",
+            "CMR", "CAN", "CAF", "TCD", "CHL", "CHN", "COL", "COM", "COG", "COD",
+            "CRI", "CIV", "HRV", "CUB", "CYP", "CZE", "DNK", "DJI", "DMA", "DOM",
+            "ECU", "EGY", "SLV", "GNQ", "ERI", "EST", "SWZ", "ETH", "FJI", "FIN",
+            "FRA", "GAB", "GMB", "GEO", "GER", "GHA", "GRC", "GRD", "GTM", "GIN",
+            "GNB", "GUY", "HTI", "HND", "HUN", "ISL", "IND", "IDN", "IRN", "IRQ",
+            "IRL", "ISR", "ITA", "JAM", "JPN", "JOR", "KAZ", "KEN", "KIR", "PRK",
+            "KOR", "KWT", "KGZ", "LAO", "LVA", "LBN", "LSO", "LBR", "LBY", "LIE",
+            "LTU", "LUX", "MDG", "MWI", "MYS", "MDV", "MLI", "MLT", "MHL", "MRT",
+            "MUS", "MEX", "FSM", "MDA", "MCO", "MNG", "MNE", "MAR", "MOZ", "MMR",
+            "NAM", "NRU", "NPL", "NLD", "NZL", "NIC", "NER", "NGA", "NOR", "OMN",
+            "PAK", "PLW", "PAN", "PNG", "PRY", "PER", "PHL", "POL", "PRT", "QAT",
+            "ROU", "RUS", "RWA", "KNA", "LCA", "VCT", "WSM", "SMR", "STP", "SAU",
+            "SEN", "SRB", "SYC", "SLE", "SGP", "SVK", "SVN", "SLB", "SOM", "ZAF",
+            "SSD", "ESP", "LKA", "SDN", "SUR", "SWE", "CHE", "SYR", "TWN", "TJK",
+            "TZA", "THA", "TLS", "TGO", "TON", "TTO", "TUN", "TUR", "TKM", "TUV",
+            "UGA", "UKR", "ARE", "GBR", "USA", "URY", "UZB", "VUT", "VAT", "VEN",
+            "VNM", "YEM", "ZMB", "ZWE"
+        ];
+
         const HaulierManagement = () => {
             const [activeTab, setActiveTab] = React.useState('hauliers');
             const [hauliers, setHauliers] = React.useState([]);
@@ -60,8 +83,7 @@
             const [showForm, setShowForm] = React.useState(false);
             const [editingHaulier, setEditingHaulier] = React.useState(null);
             const [loading, setLoading] = React.useState(true);
-            
-            const countries = ["UK", "BEL", "FRA", "GER", "NLD", "ESP", "ITA"];
+            const [importErrors, setImportErrors] = React.useState([]);
 
             React.useEffect(() => {
                 // Fetch hauliers from Firebase
@@ -93,10 +115,15 @@
             const handleHaulierSubmit = async (e) => {
                 e.preventDefault();
                 const formData = new FormData(e.target);
-                const selectedCountries = countries.filter(country => 
+                const selectedCountries = allowedCountries.filter(country => 
                     formData.get(`country-${country}`)
                 );
                 
+                if (selectedCountries.length === 0) {
+                    alert('Please select at least one operating country.');
+                    return;
+                }
+
                 const haulierData = {
                     name: formData.get('name'),
                     email: formData.get('email'),
@@ -152,51 +179,77 @@
                         const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
                         const jsonData = XLSX.utils.sheet_to_json(firstSheet, { defval: '' });
 
-                        // Process and save each rate to Firebase
-                        const batch = db.batch();
-                        jsonData.forEach((row) => {
-                            const rateRef = db.collection('rates').doc();
-                            batch.set(rateRef, {
-                                collectionCountry: row['Collection Country'] || '',
-                                collectionPostcode: row['Collection Postcode'] || '',
-                                deliveryCountry: row['Delivery Country'] || '',
-                                deliveryPostcode: row['Delivery Postcode'] || '',
-                                deliveryType: row['Delivery Type'] || 'STD',
-                                priceValidity: row['Price Validity'] || '2024-12-31',
-                                isFullTruckLoad: row['Is Full Truck Load']?.toLowerCase() === 'yes',
-                                fullTruckLoadPrice: row['Full Truck Load Price'] ? parseFloat(row['Full Truck Load Price']) : null,
-                                prices: {
-                                    1: row['1 Pallet'] ? parseFloat(row['1 Pallet']) : null,
-                                    2: row['2 Pallets'] ? parseFloat(row['2 Pallets']) : null,
-                                    3: row['3 Pallets'] ? parseFloat(row['3 Pallets']) : null,
-                                    4: row['4 Pallets'] ? parseFloat(row['4 Pallets']) : null,
-                                    5: row['5 Pallets'] ? parseFloat(row['5 Pallets']) : null,
-                                    6: row['6 Pallets'] ? parseFloat(row['6 Pallets']) : null,
-                                    7: row['7 Pallets'] ? parseFloat(row['7 Pallets']) : null,
-                                    8: row['8 Pallets'] ? parseFloat(row['8 Pallets']) : null,
-                                    9: row['9 Pallets'] ? parseFloat(row['9 Pallets']) : null,
-                                    10: row['10 Pallets'] ? parseFloat(row['10 Pallets']) : null,
-                                    11: row['11 Pallets'] ? parseFloat(row['11 Pallets']) : null,
-                                    12: row['12 Pallets'] ? parseFloat(row['12 Pallets']) : null,
-                                    13: row['13 Pallets'] ? parseFloat(row['13 Pallets']) : null,
-                                    14: row['14 Pallets'] ? parseFloat(row['14 Pallets']) : null,
-                                    15: row['15 Pallets'] ? parseFloat(row['15 Pallets']) : null,
-                                    16: row['16 Pallets'] ? parseFloat(row['16 Pallets']) : null,
-                                    17: row['17 Pallets'] ? parseFloat(row['17 Pallets']) : null,
-                                    18: row['18 Pallets'] ? parseFloat(row['18 Pallets']) : null,
-                                    19: row['19 Pallets'] ? parseFloat(row['19 Pallets']) : null,
-                                    20: row['20 Pallets'] ? parseFloat(row['20 Pallets']) : null,
-                                    21: row['21 Pallets'] ? parseFloat(row['21 Pallets']) : null,
-                                    22: row['22 Pallets'] ? parseFloat(row['22 Pallets']) : null,
-                                    23: row['23 Pallets'] ? parseFloat(row['23 Pallets']) : null,
-                                    24: row['24 Pallets'] ? parseFloat(row['24 Pallets']) : null
-                                }
-                            });
+                        const errors = [];
+                        const validData = [];
+
+                        jsonData.forEach((row, index) => {
+                            const collectionCountry = row['Collection Country']?.trim();
+                            const deliveryCountry = row['Delivery Country']?.trim();
+
+                            const isValidCollectionCountry = allowedCountries.includes(collectionCountry);
+                            const isValidDeliveryCountry = allowedCountries.includes(deliveryCountry);
+
+                            if (!isValidCollectionCountry || !isValidDeliveryCountry) {
+                                errors.push(`Row ${index + 2}: Invalid country code(s).`);
+                            } else {
+                                validData.push(row);
+                            }
                         });
 
-                        await batch.commit();
-                        alert('Rates imported successfully!');
-                        event.target.value = ''; // Reset file input
+                        if (errors.length > 0) {
+                            setImportErrors(errors);
+                            alert('Some records have invalid country codes. Please review the errors.');
+                        }
+
+                        if (validData.length > 0) {
+                            // Process and save each valid rate to Firebase
+                            const batch = db.batch();
+                            validData.forEach((row) => {
+                                const rateRef = db.collection('rates').doc();
+                                batch.set(rateRef, {
+                                    collectionCountry: row['Collection Country'] || '',
+                                    collectionPostcode: row['Collection Postcode'] || '',
+                                    deliveryCountry: row['Delivery Country'] || '',
+                                    deliveryPostcode: row['Delivery Postcode'] || '',
+                                    deliveryType: row['Delivery Type'] || 'STD',
+                                    priceValidity: row['Price Validity'] || '2024-12-31',
+                                    isFullTruckLoad: row['Is Full Truck Load']?.toLowerCase() === 'yes',
+                                    fullTruckLoadPrice: row['Full Truck Load Price'] ? parseFloat(row['Full Truck Load Price']) : null,
+                                    prices: {
+                                        1: row['1 Pallet'] ? parseFloat(row['1 Pallet']) : null,
+                                        2: row['2 Pallets'] ? parseFloat(row['2 Pallets']) : null,
+                                        3: row['3 Pallets'] ? parseFloat(row['3 Pallets']) : null,
+                                        4: row['4 Pallets'] ? parseFloat(row['4 Pallets']) : null,
+                                        5: row['5 Pallets'] ? parseFloat(row['5 Pallets']) : null,
+                                        6: row['6 Pallets'] ? parseFloat(row['6 Pallets']) : null,
+                                        7: row['7 Pallets'] ? parseFloat(row['7 Pallets']) : null,
+                                        8: row['8 Pallets'] ? parseFloat(row['8 Pallets']) : null,
+                                        9: row['9 Pallets'] ? parseFloat(row['9 Pallets']) : null,
+                                        10: row['10 Pallets'] ? parseFloat(row['10 Pallets']) : null,
+                                        11: row['11 Pallets'] ? parseFloat(row['11 Pallets']) : null,
+                                        12: row['12 Pallets'] ? parseFloat(row['12 Pallets']) : null,
+                                        13: row['13 Pallets'] ? parseFloat(row['13 Pallets']) : null,
+                                        14: row['14 Pallets'] ? parseFloat(row['14 Pallets']) : null,
+                                        15: row['15 Pallets'] ? parseFloat(row['15 Pallets']) : null,
+                                        16: row['16 Pallets'] ? parseFloat(row['16 Pallets']) : null,
+                                        17: row['17 Pallets'] ? parseFloat(row['17 Pallets']) : null,
+                                        18: row['18 Pallets'] ? parseFloat(row['18 Pallets']) : null,
+                                        19: row['19 Pallets'] ? parseFloat(row['19 Pallets']) : null,
+                                        20: row['20 Pallets'] ? parseFloat(row['20 Pallets']) : null,
+                                        21: row['21 Pallets'] ? parseFloat(row['21 Pallets']) : null,
+                                        22: row['22 Pallets'] ? parseFloat(row['22 Pallets']) : null,
+                                        23: row['23 Pallets'] ? parseFloat(row['23 Pallets']) : null,
+                                        24: row['24 Pallets'] ? parseFloat(row['24 Pallets']) : null
+                                    }
+                                });
+                            });
+
+                            await batch.commit();
+                            alert('Valid rates imported successfully!');
+                            event.target.value = ''; // Reset file input
+                        } else {
+                            event.target.value = ''; // Reset file input
+                        }
                     } catch (error) {
                         console.error('Error importing rates:', error);
                         alert('Failed to import rates. Please check the file format.');
@@ -398,6 +451,16 @@
                                             Export to Excel
                                         </button>
                                     </div>
+                                    {importErrors.length > 0 && (
+                                        <div className="mt-4 p-4 bg-red-100 text-red-700 rounded">
+                                            <h4 className="font-semibold mb-2">Import Errors:</h4>
+                                            <ul className="list-disc pl-5">
+                                                {importErrors.map((error, index) => (
+                                                    <li key={index}>{error}</li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Rates Table */}
@@ -574,18 +637,20 @@
 
                                         <div>
                                             <label className="block text-sm font-medium mb-2">Operating Countries</label>
-                                            <div className="grid grid-cols-3 gap-2">
-                                                {countries.map(country => (
-                                                    <label key={country} className="flex items-center space-x-2">
-                                                        <input
-                                                            type="checkbox"
-                                                            name={`country-${country}`}
-                                                            defaultChecked={editingHaulier?.countries.includes(country)}
-                                                        />
-                                                        <span>{country}</span>
-                                                    </label>
+                                            <select
+                                                multiple
+                                                name="operatingCountries"
+                                                required
+                                                defaultValue={editingHaulier?.countries}
+                                                className="w-full p-2 border rounded h-40"
+                                            >
+                                                {allowedCountries.map(country => (
+                                                    <option key={country} value={country}>
+                                                        {country}
+                                                    </option>
                                                 ))}
-                                            </div>
+                                            </select>
+                                            <small className="text-gray-500">Hold down the Ctrl (windows) or Command (Mac) button to select multiple options.</small>
                                         </div>
 
                                         <div className="flex gap-2">
