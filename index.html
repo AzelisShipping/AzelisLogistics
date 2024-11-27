@@ -506,30 +506,6 @@
                 return () => unsubscribe();
             }, []);
 
-                
-                setSavedPostcodes({
-                    collection: Object.fromEntries(
-                        Object.entries(collectionPostcodes).map(([country, set]) => [country, Array.from(set)])
-                    ),
-                    delivery: Object.fromEntries(
-                        Object.entries(deliveryPostcodes).map(([country, set]) => [country, Array.from(set)])
-                    ),
-                });
-
-
-
-                        
-                        setLoading(false);
-                    } catch (error) {
-                        console.error("Error fetching routes:", error);
-                        setError("Failed to load saved routes.");
-                        setLoading(false);
-                    }
-                };
-
-                fetchRoutes();
-            }, []);
-
             const findSimilarRoutes = () => {
                 if (!collection.country || !delivery.country) return;
 
