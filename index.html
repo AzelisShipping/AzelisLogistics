@@ -2,7 +2,6 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Azelis Shipping Calculator</title>
     <!-- Tailwind CSS -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
@@ -92,7 +91,7 @@
     <script>
         // Your web app's Firebase configuration
         const firebaseConfig = {
-            apiKey: "AIzaSyDiIRLwLeMAf1VZbZ7ygvGDu-gZH6sA424",
+            apiKey: "YOUR_API_KEY", // Replace with your actual API key
             authDomain: "azelislogistics.firebaseapp.com",
             projectId: "azelislogistics",
             storageBucket: "azelislogistics.firebasestorage.app",
@@ -370,11 +369,10 @@
             if (!isOpen) return null;
 
             const filteredPostcodes = savedPostcodes
-              .map(postcode => postcode.toString())
-              .filter(postcode =>
-                postcode.toLowerCase().includes(searchTerm.toLowerCase())
-              );
-
+                .map(postcode => postcode.toString())
+                .filter(postcode =>
+                    postcode.toLowerCase().includes(searchTerm.toLowerCase())
+                );
 
             return (
                 <div className="postcode-modal">
@@ -461,53 +459,52 @@
             const [savedPostcodes, setSavedPostcodes] = useState({ collection: [], delivery: [] });
 
             useEffect(() => {
-              // Set up real-time listener for the 'rates' collection
-              const unsubscribe = db.collection('rates').onSnapshot(snapshot => {
-                const routes = snapshot.docs.map(doc => ({
-                  id: doc.id,
-                  ...doc.data()
-                }));
-                setSavedRoutes(routes);
-            
-                // Extract unique postcodes grouped by country
-                const collectionPostcodes = {};
-                const deliveryPostcodes = {};
-            
-                routes.forEach(route => {
-                  const cc = route.collectionCountry;
-                  const pc = route.collectionPostcode ? route.collectionPostcode.toString() : '';
-                  if (pc.trim() !== '') {
-                    if (!collectionPostcodes[cc]) collectionPostcodes[cc] = new Set();
-                    collectionPostcodes[cc].add(pc);
-                  }
-                  const dc = route.deliveryCountry;
-                  const dp = route.deliveryPostcode ? route.deliveryPostcode.toString() : '';
-                  if (dp.trim() !== '') {
-                    if (!deliveryPostcodes[dc]) deliveryPostcodes[dc] = new Set();
-                    deliveryPostcodes[dc].add(dp);
-                  }
-                });
-            
-                setSavedPostcodes({
-                  collection: Object.fromEntries(
-                    Object.entries(collectionPostcodes).map(([country, set]) => [country, Array.from(set)])
-                  ),
-                  delivery: Object.fromEntries(
-                    Object.entries(deliveryPostcodes).map(([country, set]) => [country, Array.from(set)])
-                  ),
-                });
-            
-                setLoading(false);
-              }, error => {
-                console.error("Error fetching routes:", error);
-                setError("Failed to load saved routes.");
-                setLoading(false);
-              });
-            
-              // Cleanup subscription on unmount
-              return () => unsubscribe();
-            }, []);
+                // Set up real-time listener for the 'rates' collection
+                const unsubscribe = db.collection('rates').onSnapshot(snapshot => {
+                    const routes = snapshot.docs.map(doc => ({
+                        id: doc.id,
+                        ...doc.data()
+                    }));
+                    setSavedRoutes(routes);
 
+                    // Extract unique postcodes grouped by country
+                    const collectionPostcodes = {};
+                    const deliveryPostcodes = {};
+
+                    routes.forEach(route => {
+                        const cc = route.collectionCountry;
+                        const pc = route.collectionPostcode ? route.collectionPostcode.toString() : '';
+                        if (pc.trim() !== '') {
+                            if (!collectionPostcodes[cc]) collectionPostcodes[cc] = new Set();
+                            collectionPostcodes[cc].add(pc);
+                        }
+                        const dc = route.deliveryCountry;
+                        const dp = route.deliveryPostcode ? route.deliveryPostcode.toString() : '';
+                        if (dp.trim() !== '') {
+                            if (!deliveryPostcodes[dc]) deliveryPostcodes[dc] = new Set();
+                            deliveryPostcodes[dc].add(dp);
+                        }
+                    });
+
+                    setSavedPostcodes({
+                        collection: Object.fromEntries(
+                            Object.entries(collectionPostcodes).map(([country, set]) => [country, Array.from(set)])
+                        ),
+                        delivery: Object.fromEntries(
+                            Object.entries(deliveryPostcodes).map(([country, set]) => [country, Array.from(set)])
+                        ),
+                    });
+
+                    setLoading(false);
+                }, error => {
+                    console.error("Error fetching routes:", error);
+                    setError("Failed to load saved routes.");
+                    setLoading(false);
+                });
+
+                // Cleanup subscription on unmount
+                return () => unsubscribe();
+            }, []);
 
             const findSimilarRoutes = () => {
                 if (!collection.country || !delivery.country) return;
@@ -903,7 +900,7 @@ Important Notes:
                                 </button>
                             </div>
                         )}
-                    </div>
+                    </div> {/* Closing div for bg-white rounded-lg shadow-lg p-6 */}
 
                     {/* Postcode Selection Modals */}
                     <PostcodeSelector
@@ -923,45 +920,52 @@ Important Notes:
                         type="delivery"
                     />
 
-                    {/* Quote Request Modal */}
-                    {showTenderForm && (
-                        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-                            <div className="bg-white rounded-lg p-6 max-w-md w-full">
-                                <h3 className="text-lg font-semibold mb-4">Request Quote for Route</h3>
-                                <p className="text-sm text-gray-600 mb-4">
-                                    An email will be sent to request quotes from our approved carriers.
-                                </p>
-                                <div className="space-y-2 text-sm mb-4">
-                                    <p><strong>Collection:</strong> {collection.postcode}, {collection.country}</p>
-                                    <p><strong>Delivery:</strong> {delivery.postcode}, {delivery.country}</p>
-                                    <p><strong>Type:</strong> {isFullTruckLoad ? 'Full Truck Load' : `${pallets} Pallets`}</p>
-                                    <p><strong>Delivery Type:</strong> {deliveryType}</p>
-                                    <p><strong>Hide Documents:</strong> {hideDocuments ? 'Yes' : 'No'}</p>
-                                </div>
-                                <div className="flex gap-2">
-                                    <button 
-                                        onClick={sendQuoteRequest}
-                                        disabled={sending}
-                                        className="flex-1 azelis-blue text-white p-2 rounded hover:bg-blue-700 disabled:opacity-50 transition-colors"
-                                    >
-                                        {sending ? "Sending..." : "Send Request"}
-                                    </button>
-                                    <button 
-                                        onClick={() => setShowTenderForm(false)}
-                                        disabled={sending}
-                                        className="flex-1 bg-gray-200 text-gray-700 p-2 rounded hover:bg-gray-300 transition-colors"
-                                    >
-                                        Cancel
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    )}
+                       {/* Quote Request Modal */}
+    {showTenderForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-lg p-6 max-w-md w-full">
+                <h3 className="text-lg font-semibold mb-4">Request Quote for Route</h3>
+                <p className="text-sm text-gray-600 mb-4">
+                    An email will be sent to request quotes from our approved carriers.
+                </p>
+                <div className="space-y-2 text-sm mb-4">
+                    <p><strong>Collection:</strong> {collection.postcode}, {collection.country}</p>
+                    <p><strong>Delivery:</strong> {delivery.postcode}, {delivery.country}</p>
+                    <p><strong>Type:</strong> {isFullTruckLoad ? 'Full Truck Load' : `${pallets} Pallets`}</p>
+                    <p><strong>Delivery Type:</strong> {deliveryType}</p>
+                    <p><strong>Hide Documents:</strong> {hideDocuments ? 'Yes' : 'No'}</p>
                 </div>
-            );
-        };
+                <div className="flex gap-2">
+                    <button 
+                        onClick={sendQuoteRequest}
+                        disabled={sending}
+                        className="flex-1 azelis-blue text-white p-2 rounded hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                    >
+                        {sending ? "Sending..." : "Send Request"}
+                    </button>
+                    <button 
+                        onClick={() => setShowTenderForm(false)}
+                        disabled={sending}
+                        className="flex-1 bg-gray-200 text-gray-700 p-2 rounded hover:bg-gray-300 transition-colors"
+                    >
+                        Cancel
+                    </button>
+                </div>
+                {error && (
+                    <div className="mt-4 p-2 bg-red-100 text-red-700 rounded">
+                        {error}
+                    </div>
+                )}
+            </div>
+        </div>
+    )}
+</div> {/* Closing tag for the main container (bg-white rounded-lg shadow-lg p-6) */}
 
-        ReactDOM.render(<Calculator />, document.getElementById('root'));
-    </script>
-</body>
-</html>
+</div> {/* Closing tag for the outermost div (max-w-4xl mx-auto p-4) */}
+
+); // Closing parenthesis for the return statement
+
+}; // Closing brace for the Calculator component function
+
+// Render the Calculator component into the DOM
+ReactDOM.render(<Calculator />, document.getElementById('root'));
