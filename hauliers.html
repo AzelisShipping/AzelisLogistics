@@ -112,24 +112,15 @@
                 };
             }, []);
 
-            const handleHaulierSubmit = async (e) => {
-                e.preventDefault();
                 const formData = new FormData(e.target);
-                const selectedCountries = allowedCountries.filter(country => 
-                    formData.get(`country-${country}`)
-                );
                 
-                if (selectedCountries.length === 0) {
-                    alert('Please select at least one operating country.');
-                    return;
-                }
-
                 const haulierData = {
                     name: formData.get('name'),
                     email: formData.get('email'),
-                    countries: selectedCountries,
+                    countries: ['GBR'], // Default to GBR
                     active: true
                 };
+
 
                 try {
                     if (editingHaulier) {
@@ -635,24 +626,7 @@
                                             />
                                         </div>
 
-                                        <div>
-                                            <label className="block text-sm font-medium mb-2">Operating Countries</label>
-                                            <select
-                                                multiple
-                                                name="operatingCountries"
-                                                required
-                                                defaultValue={editingHaulier?.countries}
-                                                className="w-full p-2 border rounded h-40"
-                                            >
-                                                {allowedCountries.map(country => (
-                                                    <option key={country} value={country}>
-                                                        {country}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                            <small className="text-gray-500">Hold down the Ctrl (windows) or Command (Mac) button to select multiple options.</small>
-                                        </div>
-
+                              
                                         <div className="flex gap-2">
                                             <button 
                                                 type="submit"
