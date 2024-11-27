@@ -92,7 +92,7 @@
     <script>
         // Your web app's Firebase configuration
         const firebaseConfig = {
-            apiKey: "AIzaSyDiIRLwLeMAf1VZbZ7ygvGDu-gZH6sA424",
+            apiKey: "YOUR_API_KEY",
             authDomain: "azelislogistics.firebaseapp.com",
             projectId: "azelislogistics",
             storageBucket: "azelislogistics.firebasestorage.app",
@@ -580,41 +580,6 @@
                 findSimilarRoutes();
             };
 
-            const handleAddRoute = async () => {
-                try {
-                    const duplicate = await db.collection('rates')
-                        .where('collectionCountry', '==', collection.country)
-                        .where('collectionPostcode', '==', collection.postcode)
-                        .where('deliveryCountry', '==', delivery.country)
-                        .where('deliveryPostcode', '==', delivery.postcode)
-                        .where('deliveryType', '==', deliveryType)
-                        .where('isFullTruckLoad', '==', isFullTruckLoad)
-                        .get();
-
-                    if (!duplicate.empty) {
-                        setError('This route already exists in the database.');
-                        return;
-                    }
-
-                    await db.collection('rates').add({
-                        collectionCountry: collection.country,
-                        collectionPostcode: collection.postcode,
-                        collectionLocation: collection.location,
-                        deliveryCountry: delivery.country,
-                        deliveryPostcode: delivery.postcode,
-                        deliveryLocation: delivery.location,
-                        deliveryType,
-                        isFullTruckLoad,
-                        dateAdded: new Date().toISOString(),
-                    });
-
-                    alert('Route added successfully!');
-                } catch (error) {
-                    console.error('Error adding route:', error);
-                    setError('Failed to add route to database.');
-                }
-            };
-
             const sendQuoteRequest = async () => {
                 setSending(true);
                 setError(null);
@@ -867,97 +832,96 @@ Important Notes:
                             </div>
                         )}
 
-     {/* Similar Routes Display */}
-{showSimilarRoutes && (
-    <div className="mt-6">
-        {exactMatchRate && (
-            <div className="mb-4">
-                <h3 className="text-lg font-semibold mb-2">Exact Match Found</h3>
-                <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <p className="text-sm text-gray-600">
-                                Collection: {exactMatchRate.collectionPostcode}, {exactMatchRate.collectionCountry}
-                            </p>
-                            <p className="text-sm text-gray-600">
-                                Delivery: {exactMatchRate.deliveryPostcode}, {exactMatchRate.deliveryCountry}
-                            </p>
-                        </div>
-                        <div className="text-right">
-                            <p className="text-lg font-semibold text-green-700">
-                                {isFullTruckLoad 
-                                    ? `£${exactMatchRate.fullTruckLoadPrice}`
-                                    : `£${exactMatchRate.prices?.[pallets]}`
-                                }
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        )}
+                        {/* Similar Routes Display */}
+                        {showSimilarRoutes && (
+                            <div className="mt-6">
+                                {exactMatchRate && (
+                                    <div className="mb-4">
+                                        <h3 className="text-lg font-semibold mb-2">Exact Match Found</h3>
+                                        <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div>
+                                                    <p className="text-sm text-gray-600">
+                                                        Collection: {exactMatchRate.collectionPostcode}, {exactMatchRate.collectionCountry}
+                                                    </p>
+                                                    <p className="text-sm text-gray-600">
+                                                        Delivery: {exactMatchRate.deliveryPostcode}, {exactMatchRate.deliveryCountry}
+                                                    </p>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="text-lg font-semibold text-green-700">
+                                                        {isFullTruckLoad 
+                                                            ? `£${exactMatchRate.fullTruckLoadPrice}`
+                                                            : `£${exactMatchRate.prices?.[pallets]}`
+                                                        }
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
 
-        {similarRoutes.length > 0 ? (
-            <div>
-                <h3 className="text-lg font-semibold mb-3">Similar Routes</h3>
-                <div className="space-y-3">
-                    {similarRoutes.map((route, index) => (
-                        <div key={index} className="p-4 bg-gray-50 rounded-lg similar-route">
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <p className="text-sm text-gray-600">
-                                        Collection: {route.collectionPostcode}, {route.collectionCountry}
-                                    </p>
-                                    <p className="text-sm text-gray-600">
-                                        Delivery: {route.deliveryPostcode}, {route.deliveryCountry}
-                                    </p>
-                                </div>
-                                <div className="text-right">
-                                    <p className="font-semibold">
-                                        {isFullTruckLoad 
-                                            ? `£${route.fullTruckLoadPrice}`
-                                            : `£${route.prices?.[pallets]}`
-                                        }
-                                    </p>
-                                </div>
+                                {similarRoutes.length > 0 ? (
+                                    <div>
+                                        <h3 className="text-lg font-semibold mb-3">Similar Routes</h3>
+                                        <div className="space-y-3">
+                                            {similarRoutes.map((route, index) => (
+                                                <div key={index} className="p-4 bg-gray-50 rounded-lg similar-route">
+                                                    <div className="grid grid-cols-2 gap-4">
+                                                        <div>
+                                                            <p className="text-sm text-gray-600">
+                                                                Collection: {route.collectionPostcode}, {route.collectionCountry}
+                                                            </p>
+                                                            <p className="text-sm text-gray-600">
+                                                                Delivery: {route.deliveryPostcode}, {route.deliveryCountry}
+                                                            </p>
+                                                        </div>
+                                                        <div className="text-right">
+                                                            <p className="font-semibold">
+                                                                {isFullTruckLoad 
+                                                                    ? `£${route.fullTruckLoadPrice}`
+                                                                    : `£${route.prices?.[pallets]}`
+                                                                }
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div>
+                                        <p className="text-gray-700">No similar routes found.</p>
+                                    </div>
+                                )}
+
+                                <button
+                                    onClick={() => setShowTenderForm(true)}
+                                    className="mt-4 w-full bg-gray-100 text-gray-700 p-3 rounded-lg font-medium hover:bg-gray-200 transition-colors"
+                                >
+                                    Request New Quote
+                                </button>
                             </div>
-                        </div>
-                    ))}
-                </div>
-            </div>
-        ) : (
-            <div>
-                <p className="text-gray-700">No similar routes found.</p>
-            </div>
-        )}
+                        )}
+                    </div>
 
-        <button
-            onClick={() => setShowTenderForm(true)}
-            className="mt-4 w-full bg-gray-100 text-gray-700 p-3 rounded-lg font-medium hover:bg-gray-200 transition-colors"
-        >
-            Request New Quote
-        </button>
-    </div>
-)}
-
-{/* Postcode Selection Modals */}
-<PostcodeSelector
-    isOpen={showCollectionPostcode}
-    onClose={() => setShowCollectionPostcode(false)}
-    onSelect={(postcode) => setCollection({ ...collection, postcode })}
-    savedPostcodes={savedPostcodes.collection[collection.country] || []}
-    country={collection.country}
-    type="collection"
-/>
-<PostcodeSelector
-    isOpen={showDeliveryPostcode}
-    onClose={() => setShowDeliveryPostcode(false)}
-    onSelect={(postcode) => setDelivery({ ...delivery, postcode })}
-    savedPostcodes={savedPostcodes.delivery[delivery.country] || []}
-    country={delivery.country}
-    type="delivery"
-/>
-
-
+                    {/* Postcode Selection Modals */}
+                    <PostcodeSelector
+                        isOpen={showCollectionPostcode}
+                        onClose={() => setShowCollectionPostcode(false)}
+                        onSelect={(postcode) => setCollection({ ...collection, postcode })}
+                        savedPostcodes={savedPostcodes.collection[collection.country] || []}
+                        country={collection.country}
+                        type="collection"
+                    />
+                    <PostcodeSelector
+                        isOpen={showDeliveryPostcode}
+                        onClose={() => setShowDeliveryPostcode(false)}
+                        onSelect={(postcode) => setDelivery({ ...delivery, postcode })}
+                        savedPostcodes={savedPostcodes.delivery[delivery.country] || []}
+                        country={delivery.country}
+                        type="delivery"
+                    />
 
                     {/* Quote Request Modal */}
                     {showTenderForm && (
