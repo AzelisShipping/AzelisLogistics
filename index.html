@@ -26,30 +26,44 @@
             border-radius: 0.375rem;
             background-color: white;
         }
-        .combobox-list {
-            max-height: 200px;
+        .country-dropdown {
+            max-height: 300px;
             overflow-y: auto;
             border: 1px solid #d1d5db;
             border-radius: 0.375rem;
             background-color: white;
             position: absolute;
             width: 100%;
-            z-index: 10;
+            z-index: 20;
+            top: 100%;
             margin-top: 2px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
-        .combobox-option {
-            padding: 0.5rem;
+        .country-option {
+            padding: 0.75rem;
             cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
-        .combobox-option:hover {
+        .country-option:hover {
             background-color: #f3f4f6;
+        }
+        .postcode-modal {
+            position: fixed;
+            inset: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
         }
         .similar-route {
             transition: all 0.2s;
         }
         .similar-route:hover {
             transform: translateY(-2px);
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
     </style>
 </head>
@@ -81,12 +95,329 @@
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
+
+        // Country mapping (first 20 as requested)
+        const COUNTRY_MAPPING = {
+const countryCodes = {
+    "Afghanistan": "AFG",
+    "Albania": "ALB",
+    "Algeria": "DZA",
+    "Andorra": "AND",
+    "Angola": "AGO",
+    "Antigua and Barbuda": "ATG",
+    "Argentina": "ARG",
+    "Armenia": "ARM",
+    "Australia": "AUS",
+    "Austria": "AUT",
+    "Azerbaijan": "AZE",
+    "Bahamas": "BHS",
+    "Bahrain": "BHR",
+    "Bangladesh": "BGD",
+    "Barbados": "BRB",
+    "Belarus": "BLR",
+    "Belgium": "BEL",
+    "Belize": "BLZ",
+    "Benin": "BEN",
+    "Bhutan": "BTN",
+    "Bolivia": "BOL",
+    "Bosnia and Herzegovina": "BIH",
+    "Botswana": "BWA",
+    "Brazil": "BRA",
+    "Brunei": "BRN",
+    "Bulgaria": "BGR",
+    "Burkina Faso": "BFA",
+    "Burundi": "BDI",
+    "Cabo Verde": "CPV",
+    "Cambodia": "KHM",
+    "Cameroon": "CMR",
+    "Canada": "CAN",
+    "Central African Republic": "CAF",
+    "Chad": "TCD",
+    "Chile": "CHL",
+    "China": "CHN",
+    "Colombia": "COL",
+    "Comoros": "COM",
+    "Republic of the Congo": "COG",
+    "Democratic Republic of the Congo": "COD",
+    "Costa Rica": "CRI",
+    "Côte d'Ivoire": "CIV",
+    "Croatia": "HRV",
+    "Cuba": "CUB",
+    "Cyprus": "CYP",
+    "Czech Republic": "CZE",
+    "Denmark": "DNK",
+    "Djibouti": "DJI",
+    "Dominica": "DMA",
+    "Dominican Republic": "DOM",
+    "Ecuador": "ECU",
+    "Egypt": "EGY",
+    "El Salvador": "SLV",
+    "Equatorial Guinea": "GNQ",
+    "Eritrea": "ERI",
+    "Estonia": "EST",
+    "Eswatini": "SWZ",
+    "Ethiopia": "ETH",
+    "Fiji": "FJI",
+    "Finland": "FIN",
+    "France": "FRA",
+    "Gabon": "GAB",
+    "Gambia": "GMB",
+    "Georgia": "GEO",
+    "Ghana": "GHA",
+    "Greece": "GRC",
+    "Grenada": "GRD",
+    "Guatemala": "GTM",
+    "Guinea": "GIN",
+    "Guinea-Bissau": "GNB",
+    "Guyana": "GUY",
+    "Haiti": "HTI",
+    "Honduras": "HND",
+    "Hungary": "HUN",
+    "Iceland": "ISL",
+    "India": "IND",
+    "Indonesia": "IDN",
+    "Iran": "IRN",
+    "Iraq": "IRQ",
+    "Ireland": "IRL",
+    "Israel": "ISR",
+    "Jamaica": "JAM",
+    "Japan": "JPN",
+    "Jordan": "JOR",
+    "Kazakhstan": "KAZ",
+    "Kenya": "KEN",
+    "Kiribati": "KIR",
+    "North Korea": "PRK",
+    "South Korea": "KOR",
+    "Kuwait": "KWT",
+    "Kyrgyzstan": "KGZ",
+    "Laos": "LAO",
+    "Latvia": "LVA",
+    "Lebanon": "LBN",
+    "Lesotho": "LSO",
+    "Liberia": "LBR",
+    "Libya": "LBY",
+    "Liechtenstein": "LIE",
+    "Lithuania": "LTU",
+    "Luxembourg": "LUX",
+    "Madagascar": "MDG",
+    "Malawi": "MWI",
+    "Malaysia": "MYS",
+    "Maldives": "MDV",
+    "Mali": "MLI",
+    "Malta": "MLT",
+    "Marshall Islands": "MHL",
+    "Mauritania": "MRT",
+    "Mauritius": "MUS",
+    "Mexico": "MEX",
+    "Micronesia": "FSM",
+    "Moldova": "MDA",
+    "Monaco": "MCO",
+    "Mongolia": "MNG",
+    "Montenegro": "MNE",
+    "Morocco": "MAR",
+    "Mozambique": "MOZ",
+    "Myanmar": "MMR",
+    "Namibia": "NAM",
+    "Nauru": "NRU",
+    "Nepal": "NPL",
+    "Netherlands": "NLD",
+    "New Zealand": "NZL",
+    "Nicaragua": "NIC",
+    "Niger": "NER",
+    "Nigeria": "NGA",
+    "Norway": "NOR",
+    "Oman": "OMN",
+    "Pakistan": "PAK",
+    "Palau": "PLW",
+    "Panama": "PAN",
+    "Papua New Guinea": "PNG",
+    "Paraguay": "PRY",
+    "Peru": "PER",
+    "Philippines": "PHL",
+    "Poland": "POL",
+    "Portugal": "PRT",
+    "Qatar": "QAT",
+    "Romania": "ROU",
+    "Russia": "RUS",
+    "Rwanda": "RWA",
+    "Saint Kitts and Nevis": "KNA",
+    "Saint Lucia": "LCA",
+    "Saint Vincent and the Grenadines": "VCT",
+    "Samoa": "WSM",
+    "San Marino": "SMR",
+    "São Tomé and Príncipe": "STP",
+    "Saudi Arabia": "SAU",
+    "Senegal": "SEN",
+    "Serbia": "SRB",
+    "Seychelles": "SYC",
+    "Sierra Leone": "SLE",
+    "Singapore": "SGP",
+    "Slovakia": "SVK",
+    "Slovenia": "SVN",
+    "Solomon Islands": "SLB",
+    "Somalia": "SOM",
+    "South Africa": "ZAF",
+    "South Sudan": "SSD",
+    "Sri Lanka": "LKA",
+    "Sudan": "SDN",
+    "Suriname": "SUR",
+    "Sweden": "SWE",
+    "Switzerland": "CHE",
+    "Syria": "SYR",
+    "Taiwan": "TWN",
+    "Tajikistan": "TJK",
+    "Tanzania": "TZA",
+    "Thailand": "THA",
+    "Timor-Leste": "TLS",
+    "Togo": "TGO",
+    "Tonga": "TON",
+    "Trinidad and Tobago": "TTO",
+    "Tunisia": "TUN",
+    "Turkey": "TUR",
+    "Turkmenistan": "TKM",
+    "Tuvalu": "TUV",
+    "Uganda": "UGA",
+    "Ukraine": "UKR",
+    "United Arab Emirates": "ARE",
+    "United States": "USA",
+    "Uruguay": "URY",
+    "Uzbekistan": "UZB",
+    "Vanuatu": "VUT",
+    "Vatican City": "VAT",
+    "Venezuela": "VEN",
+    "Vietnam": "VNM",
+    "Yemen": "YEM",
+    "Zambia": "ZMB",
+    "Zimbabwe": "ZWE"
+
+        };
+
+        const COUNTRY_CODES = Object.values(COUNTRY_MAPPING);
+        const COUNTRY_NAMES = Object.keys(COUNTRY_MAPPING);
     </script>
 
     <script type="text/babel">
-    const { useState, useEffect, useRef } = React;
+    // CountrySelector component
+    const CountrySelector = ({ value, onChange, label, isOpen, onToggle, searchTerm, onSearchChange }) => {
+        return (
+            <div className="relative">
+                <label className="block text-sm font-medium mb-1 text-gray-600">
+                    {label} *
+                </label>
+                <div className="relative">
+                    <input
+                        type="text"
+                        className="combobox-input pr-10"
+                        value={searchTerm}
+                        onChange={(e) => onSearchChange(e.target.value)}
+                        onClick={() => onToggle(true)}
+                        placeholder="Search or select country"
+                    />
+                    <button
+                        type="button"
+                        className="absolute inset-y-0 right-0 px-3 flex items-center"
+                        onClick={() => onToggle(!isOpen)}
+                    >
+                        ▼
+                    </button>
+                </div>
+                {isOpen && (
+                    <div className="country-dropdown">
+                        {COUNTRY_NAMES.filter(name => 
+                            name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            COUNTRY_MAPPING[name].toLowerCase().includes(searchTerm.toLowerCase())
+                        ).map(name => (
+                            <div
+                                key={name}
+                                className="country-option"
+                                onClick={() => {
+                                    onChange(COUNTRY_MAPPING[name]);
+                                    onToggle(false);
+                                    onSearchChange(name);
+                                }}
+                            >
+                                <span>{name}</span>
+                                <span className="text-gray-500">{COUNTRY_MAPPING[name]}</span>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+        );
+    };
 
-    const Calculator = () => {
+    // PostcodeSelector component
+    const PostcodeSelector = ({ isOpen, onClose, onSelect, savedPostcodes, country, type }) => {
+        const [searchTerm, setSearchTerm] = useState('');
+        const [newPostcode, setNewPostcode] = useState('');
+
+        if (!isOpen) return null;
+
+        const filteredPostcodes = savedPostcodes.filter(postcode => 
+            postcode.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+
+        return (
+            <div className="postcode-modal">
+                <div className="bg-white rounded-lg p-6 w-full max-w-md">
+                    <h3 className="text-lg font-semibold mb-4">Select or Add Postcode</h3>
+                    <input
+                        type="text"
+                        className="combobox-input mb-4"
+                        placeholder="Search existing postcodes"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                    <div className="max-h-60 overflow-y-auto mb-4">
+                        {filteredPostcodes.map(postcode => (
+                            <div
+                                key={postcode}
+                                className="p-2 hover:bg-gray-100 cursor-pointer rounded"
+                                onClick={() => {
+                                    onSelect(postcode);
+                                    onClose();
+                                }}
+                            >
+                                {postcode}
+                            </div>
+                        ))}
+                    </div>
+                    <div className="border-t pt-4">
+                        <p className="text-sm text-gray-600 mb-2">Add new postcode:</p>
+                        <input
+                            type="text"
+                            className="combobox-input mb-2"
+                            placeholder="Enter new postcode"
+                            value={newPostcode}
+                            onChange={(e) => setNewPostcode(e.target.value)}
+                        />
+                        <div className="flex justify-end space-x-2">
+                            <button
+                                onClick={onClose}
+                                className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={() => {
+                                    if (newPostcode) {
+                                        onSelect(newPostcode);
+                                        onClose();
+                                    }
+                                }}
+                                className="px-4 py-2 azelis-blue text-white rounded hover:bg-blue-700"
+                            >
+                                Add & Select
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
+    const { useState, useEffect, useRef } = React;
+const Calculator = () => {
         const [collection, setCollection] = useState({ country: '', location: '', postcode: '' });
         const [delivery, setDelivery] = useState({ country: '', location: '', postcode: '' });
         const [pallets, setPallets] = useState(1);
@@ -97,16 +428,21 @@
         const [sending, setSending] = useState(false);
         const [error, setError] = useState(null);
         const [loading, setLoading] = useState(true);
-        
-        // New states for improved functionality
         const [savedRoutes, setSavedRoutes] = useState([]);
         const [similarRoutes, setSimilarRoutes] = useState([]);
         const [showSimilarRoutes, setShowSimilarRoutes] = useState(false);
-        const [availableCountries, setAvailableCountries] = useState([]);
         const [exactMatchRate, setExactMatchRate] = useState(null);
 
+        // New state for improved dropdowns
+        const [showCollectionCountry, setShowCollectionCountry] = useState(false);
+        const [showDeliveryCountry, setShowDeliveryCountry] = useState(false);
+        const [showCollectionPostcode, setShowCollectionPostcode] = useState(false);
+        const [showDeliveryPostcode, setShowDeliveryPostcode] = useState(false);
+        const [collectionCountrySearch, setCollectionCountrySearch] = useState('');
+        const [deliveryCountrySearch, setDeliveryCountrySearch] = useState('');
+        const [savedPostcodes, setSavedPostcodes] = useState({ collection: [], delivery: [] });
+
         useEffect(() => {
-            // Fetch all routes from Firebase
             const fetchRoutes = async () => {
                 try {
                     const snapshot = await db.collection('rates').get();
@@ -116,13 +452,13 @@
                     }));
                     setSavedRoutes(routes);
 
-                    // Extract unique countries
-                    const countries = new Set();
-                    routes.forEach(route => {
-                        countries.add(route.collectionCountry);
-                        countries.add(route.deliveryCountry);
+                    // Extract unique postcodes
+                    const collectionPostcodes = new Set(routes.map(r => r.collectionPostcode));
+                    const deliveryPostcodes = new Set(routes.map(r => r.deliveryPostcode));
+                    setSavedPostcodes({
+                        collection: Array.from(collectionPostcodes),
+                        delivery: Array.from(deliveryPostcodes)
                     });
-                    setAvailableCountries(Array.from(countries).sort());
                     
                     setLoading(false);
                 } catch (error) {
@@ -138,7 +474,6 @@
         const findSimilarRoutes = () => {
             if (!collection.country || !delivery.country) return;
 
-            // Find routes with matching countries
             let matches = savedRoutes.filter(route => 
                 route.collectionCountry === collection.country &&
                 route.deliveryCountry === delivery.country &&
@@ -146,7 +481,6 @@
                 route.isFullTruckLoad === isFullTruckLoad
             );
 
-            // Look for exact postcode match first
             const exactMatch = matches.find(route =>
                 route.collectionPostcode === collection.postcode &&
                 route.deliveryPostcode === delivery.postcode
@@ -159,7 +493,6 @@
                 setExactMatchRate(null);
             }
 
-            // Sort remaining routes by similarity
             matches.sort((a, b) => {
                 const aCollectionSimilarity = stringSimilarity(a.collectionPostcode, collection.postcode);
                 const aDeliverySimilarity = stringSimilarity(a.deliveryPostcode, delivery.postcode);
@@ -169,11 +502,12 @@
                 return (bCollectionSimilarity + bDeliverySimilarity) - (aCollectionSimilarity + aDeliverySimilarity);
             });
 
-            setSimilarRoutes(matches.slice(0, 5)); // Show top 5 similar routes
+            setSimilarRoutes(matches.slice(0, 5));
             setShowSimilarRoutes(true);
         };
 
         const stringSimilarity = (str1, str2) => {
+            if (!str1 || !str2) return 0;
             const len = Math.min(str1.length, str2.length);
             let matches = 0;
             for (let i = 0; i < len; i++) {
@@ -195,12 +529,21 @@
                 return;
             }
 
+            if (!COUNTRY_CODES.includes(collection.country)) {
+                setError('Invalid collection country code.');
+                return;
+            }
+
+            if (!COUNTRY_CODES.includes(delivery.country)) {
+                setError('Invalid delivery country code.');
+                return;
+            }
+
             findSimilarRoutes();
         };
 
         const handleAddRoute = async () => {
             try {
-                // Check for duplicates
                 const duplicate = await db.collection('rates')
                     .where('collectionCountry', '==', collection.country)
                     .where('collectionPostcode', '==', collection.postcode)
@@ -215,7 +558,6 @@
                     return;
                 }
 
-                // Add new route
                 await db.collection('rates').add({
                     collectionCountry: collection.country,
                     collectionPostcode: collection.postcode,
@@ -225,7 +567,7 @@
                     deliveryLocation: delivery.location,
                     deliveryType,
                     isFullTruckLoad,
-                    // Add other necessary fields
+                    dateAdded: new Date().toISOString(),
                 });
 
                 alert('Route added successfully!');
@@ -240,7 +582,6 @@
             setError(null);
 
             try {
-                // Get relevant hauliers
                 const hauliersSnapshot = await db.collection('hauliers')
                     .where('active', '==', true)
                     .get();
@@ -253,7 +594,6 @@
                     throw new Error('No active hauliers found for these countries.');
                 }
 
-                // Send emails
                 const emailPromises = relevantHauliers.map(haulier => {
                     const templateParams = {
                         to_email: haulier.email,
@@ -317,38 +657,28 @@ Important Notes:
                     <div className="mb-6">
                         <h2 className="text-lg font-semibold mb-4 text-gray-700">Collection Details</h2>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium mb-1 text-gray-600">
-                                    Country *
-                                </label>
-                                <input
-                                    type="text"
-                                    list="collectionCountries"
-                                    className="combobox-input"
-                                    value={collection.country}
-                                    onChange={(e) => setCollection({...collection, country: e.target.value})}
-                                    placeholder="Select or type country"
-                                    required
-                                />
-                                <datalist id="collectionCountries">
-                                    {availableCountries.map(country => (
-                                        <option key={country} value={country} />
-                                    ))}
-                                </datalist>
-                            </div>
+                            <CountrySelector
+                                value={collection.country}
+                                onChange={(code) => setCollection({...collection, country: code})}
+                                label="Collection Country"
+                                isOpen={showCollectionCountry}
+                                onToggle={setShowCollectionCountry}
+                                searchTerm={collectionCountrySearch}
+                                onSearchChange={setCollectionCountrySearch}
+                            />
+                            
                             <div>
                                 <label className="block text-sm font-medium mb-1 text-gray-600">
                                     Postcode *
                                 </label>
-                                <input
-                                    type="text"
-                                    className="combobox-input"
-                                    value={collection.postcode}
-                                    onChange={(e) => setCollection({...collection, postcode: e.target.value})}
-                                    placeholder="Enter postcode"
-                                    required
-                                />
+                                <button
+                                    onClick={() => setShowCollectionPostcode(true)}
+                                    className="combobox-input text-left"
+                                >
+                                    {collection.postcode || "Select or add postcode"}
+                                </button>
                             </div>
+
                             <div>
                                 <label className="block text-sm font-medium mb-1 text-gray-400">
                                     Location (Optional)
@@ -363,42 +693,33 @@ Important Notes:
                             </div>
                         </div>
                     </div>
-{/* Delivery Details */}
+
+                    {/* Delivery Details */}
                     <div className="mb-6">
                         <h2 className="text-lg font-semibold mb-4 text-gray-700">Delivery Details</h2>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium mb-1 text-gray-600">
-                                    Country *
-                                </label>
-                                <input
-                                    type="text"
-                                    list="deliveryCountries"
-                                    className="combobox-input"
-                                    value={delivery.country}
-                                    onChange={(e) => setDelivery({...delivery, country: e.target.value})}
-                                    placeholder="Select or type country"
-                                    required
-                                />
-                                <datalist id="deliveryCountries">
-                                    {availableCountries.map(country => (
-                                        <option key={country} value={country} />
-                                    ))}
-                                </datalist>
-                            </div>
+                            <CountrySelector
+                                value={delivery.country}
+                                onChange={(code) => setDelivery({...delivery, country: code})}
+                                label="Delivery Country"
+                                isOpen={showDeliveryCountry}
+                                onToggle={setShowDeliveryCountry}
+                                searchTerm={deliveryCountrySearch}
+                                onSearchChange={setDeliveryCountrySearch}
+                            />
+                            
                             <div>
                                 <label className="block text-sm font-medium mb-1 text-gray-600">
                                     Postcode *
                                 </label>
-                                <input
-                                    type="text"
-                                    className="combobox-input"
-                                    value={delivery.postcode}
-                                    onChange={(e) => setDelivery({...delivery, postcode: e.target.value})}
-                                    placeholder="Enter postcode"
-                                    required
-                                />
+                                <button
+                                    onClick={() => setShowDeliveryPostcode(true)}
+                                    className="combobox-input text-left"
+                                >
+                                    {delivery.postcode || "Select or add postcode"}
+                                </button>
                             </div>
+
                             <div>
                                 <label className="block text-sm font-medium mb-1 text-gray-400">
                                     Location (Optional)
@@ -471,7 +792,7 @@ Important Notes:
                                         value={deliveryType}
                                         onChange={(e) => setDeliveryType(e.target.value)}
                                     >
-                                        <option value="STD">Standard</option>
+<option value="STD">Standard</option>
                                         <option value="ADR">ADR</option>
                                         <option value="TEMP">Temperature Controlled</option>
                                     </select>
@@ -567,6 +888,24 @@ Important Notes:
                         </div>
                     )}
                 </div>
+
+                {/* Postcode Selection Modals */}
+                <PostcodeSelector
+                    isOpen={showCollectionPostcode}
+                    onClose={() => setShowCollectionPostcode(false)}
+                    onSelect={(postcode) => setCollection({...collection, postcode})}
+                    savedPostcodes={savedPostcodes.collection}
+                    country={collection.country}
+                    type="collection"
+                />
+                <PostcodeSelector
+                    isOpen={showDeliveryPostcode}
+                    onClose={() => setShowDeliveryPostcode(false)}
+                    onSelect={(postcode) => setDelivery({...delivery, postcode})}
+                    savedPostcodes={savedPostcodes.delivery}
+                    country={delivery.country}
+                    type="delivery"
+                />
 
                 {/* Quote Request Modal */}
                 {showTenderForm && (
