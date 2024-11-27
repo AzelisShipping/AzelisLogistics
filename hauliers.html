@@ -112,29 +112,31 @@
                 };
             }, []);
 
-                const formData = new FormData(e.target);
-                
-                const haulierData = {
-                    name: formData.get('name'),
-                    email: formData.get('email'),
-                    countries: ['GBR'], // Default to GBR
-                    active: true
-                };
+const handleHaulierSubmit = async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
 
+    const haulierData = {
+        name: formData.get('name'),
+        email: formData.get('email'),
+        countries: ['GBR'], // Default to GBR
+        active: true
+    };
 
-                try {
-                    if (editingHaulier) {
-                        await db.collection('hauliers').doc(editingHaulier.id).update(haulierData);
-                    } else {
-                        await db.collection('hauliers').add(haulierData);
-                    }
-                    setShowForm(false);
-                    setEditingHaulier(null);
-                } catch (error) {
-                    console.error('Error saving haulier:', error);
-                    alert('Error saving haulier. Please try again.');
-                }
-            };
+    try {
+        if (editingHaulier) {
+            await db.collection('hauliers').doc(editingHaulier.id).update(haulierData);
+        } else {
+            await db.collection('hauliers').add(haulierData);
+        }
+        setShowForm(false);
+        setEditingHaulier(null);
+    } catch (error) {
+        console.error('Error saving haulier:', error);
+        alert('Error saving haulier. Please try again.');
+    }
+};
+
 
             const handleHaulierDelete = async (id) => {
                 if (confirm('Are you sure you want to delete this haulier?')) {
