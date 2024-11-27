@@ -11,7 +11,6 @@
             emailjs.init("ZU_ZvcimnTfLR22wF");
         })();
     </script>
-    <!-- Add Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
     <script src="https://unpkg.com/react@17/umd/react.production.min.js"></script>
@@ -20,7 +19,14 @@
     <style>
         .azelis-blue { background-color: #003087; }
         .azelis-blue-hover:hover { background-color: #002670; }
-        .suggestion-box {
+        .combobox-input {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            background-color: white;
+        }
+        .combobox-list {
             max-height: 200px;
             overflow-y: auto;
             border: 1px solid #d1d5db;
@@ -29,13 +35,21 @@
             position: absolute;
             width: 100%;
             z-index: 10;
+            margin-top: 2px;
         }
-        .suggestion-item {
+        .combobox-option {
             padding: 0.5rem;
             cursor: pointer;
         }
-        .suggestion-item:hover {
+        .combobox-option:hover {
             background-color: #f3f4f6;
+        }
+        .similar-route {
+            transition: all 0.2s;
+        }
+        .similar-route:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
         }
     </style>
 </head>
@@ -55,7 +69,6 @@
 
     <div id="root"></div>
 
-    <!-- Initialize Firebase -->
     <script>
         const firebaseConfig = {
             apiKey: "AIzaSyDiIRLwLeMAf1VZbZ7ygvGDu-gZH6sA424",
@@ -70,7 +83,6 @@
         const db = firebase.firestore();
     </script>
 
-    <!-- React Component -->
     <script type="text/babel">
     const { useState, useEffect, useRef } = React;
 
@@ -84,95 +96,91 @@
         const [isFullTruckLoad, setIsFullTruckLoad] = useState(false);
         const [sending, setSending] = useState(false);
         const [error, setError] = useState(null);
-
-        const [hauliers, setHauliers] = useState([]);
-        const [rates, setRates] = useState([]);
         const [loading, setLoading] = useState(true);
-
-        const [collectionSuggestions, setCollectionSuggestions] = useState([]);
-        const [deliverySuggestions, setDeliverySuggestions] = useState([]);
-        const [showCollectionSuggestions, setShowCollectionSuggestions] = useState(false);
-        const [showDeliverySuggestions, setShowDeliverySuggestions] = useState(false);
-
-        const [debounceCollection, setDebounceCollection] = useState('');
-        const [debounceDelivery, setDebounceDelivery] = useState('');
-
-        const countries = ["UK", "BEL", "FRA", "GER", "NLD", "ESP", "ITA"];
-
-        const collectionRef = useRef(null);
-        const deliveryRef = useRef(null);
+        
+        // New states for improved functionality
+        const [savedRoutes, setSavedRoutes] = useState([]);
+        const [similarRoutes, setSimilarRoutes] = useState([]);
+        const [showSimilarRoutes, setShowSimilarRoutes] = useState(false);
+        const [availableCountries, setAvailableCountries] = useState([]);
+        const [exactMatchRate, setExactMatchRate] = useState(null);
 
         useEffect(() => {
-            // Fetch hauliers from Firestore
-            const unsubscribeHauliers = db.collection('hauliers').onSnapshot(snapshot => {
-                const hauliersData = snapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data()
-                }));
-                setHauliers(hauliersData);
-            }, error => {
-                console.error("Error fetching hauliers:", error);
-                setError("Failed to load hauliers.");
-            });
+            // Fetch all routes from Firebase
+            const fetchRoutes = async () => {
+                try {
+                    const snapshot = await db.collection('rates').get();
+                    const routes = snapshot.docs.map(doc => ({
+                        id: doc.id,
+                        ...doc.data()
+                    }));
+                    setSavedRoutes(routes);
 
-            // Fetch rates from Firestore
-            const unsubscribeRates = db.collection('rates').onSnapshot(snapshot => {
-                const ratesData = snapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data()
-                }));
-                setRates(ratesData);
-                setLoading(false);
-            }, error => {
-                console.error("Error fetching rates:", error);
-                setError("Failed to load rates.");
-                setLoading(false);
-            });
-
-            // Cleanup subscriptions on unmount
-            return () => {
-                unsubscribeHauliers();
-                unsubscribeRates();
+                    // Extract unique countries
+                    const countries = new Set();
+                    routes.forEach(route => {
+                        countries.add(route.collectionCountry);
+                        countries.add(route.deliveryCountry);
+                    });
+                    setAvailableCountries(Array.from(countries).sort());
+                    
+                    setLoading(false);
+                } catch (error) {
+                    console.error("Error fetching routes:", error);
+                    setError("Failed to load saved routes.");
+                    setLoading(false);
+                }
             };
+
+            fetchRoutes();
         }, []);
 
-        // Debounce for collection postcode
-        useEffect(() => {
-            if (debounceCollection.length < 3) {
-                setCollectionSuggestions([]);
-                return;
-            }
-            const timer = setTimeout(() => {
-                fetchSuggestions(debounceCollection, collection.country, setCollectionSuggestions);
-            }, 300);
-            return () => clearTimeout(timer);
-        }, [debounceCollection, collection.country]);
+        const findSimilarRoutes = () => {
+            if (!collection.country || !delivery.country) return;
 
-        // Debounce for delivery postcode
-        useEffect(() => {
-            if (debounceDelivery.length < 3) {
-                setDeliverySuggestions([]);
-                return;
-            }
-            const timer = setTimeout(() => {
-                fetchSuggestions(debounceDelivery, delivery.country, setDeliverySuggestions);
-            }, 300);
-            return () => clearTimeout(timer);
-        }, [debounceDelivery, delivery.country]);
+            // Find routes with matching countries
+            let matches = savedRoutes.filter(route => 
+                route.collectionCountry === collection.country &&
+                route.deliveryCountry === delivery.country &&
+                route.deliveryType === deliveryType &&
+                route.isFullTruckLoad === isFullTruckLoad
+            );
 
-        const fetchSuggestions = async (postcode, country, setSuggestions) => {
-            try {
-                const querySnapshot = await db.collection('rates')
-                    .where('collectionPostcode', '>=', postcode)
-                    .where('collectionPostcode', '<=', postcode + '\uf8ff')
-                    .where('collectionCountry', '==', country)
-                    .limit(5)
-                    .get();
-                const suggestions = querySnapshot.docs.map(doc => doc.data());
-                setSuggestions(suggestions);
-            } catch (err) {
-                console.error("Error fetching suggestions:", err);
+            // Look for exact postcode match first
+            const exactMatch = matches.find(route =>
+                route.collectionPostcode === collection.postcode &&
+                route.deliveryPostcode === delivery.postcode
+            );
+
+            if (exactMatch) {
+                setExactMatchRate(exactMatch);
+                matches = matches.filter(r => r !== exactMatch);
+            } else {
+                setExactMatchRate(null);
             }
+
+            // Sort remaining routes by similarity
+            matches.sort((a, b) => {
+                const aCollectionSimilarity = stringSimilarity(a.collectionPostcode, collection.postcode);
+                const aDeliverySimilarity = stringSimilarity(a.deliveryPostcode, delivery.postcode);
+                const bCollectionSimilarity = stringSimilarity(b.collectionPostcode, collection.postcode);
+                const bDeliverySimilarity = stringSimilarity(b.deliveryPostcode, delivery.postcode);
+                
+                return (bCollectionSimilarity + bDeliverySimilarity) - (aCollectionSimilarity + aDeliverySimilarity);
+            });
+
+            setSimilarRoutes(matches.slice(0, 5)); // Show top 5 similar routes
+            setShowSimilarRoutes(true);
+        };
+
+        // Simple string similarity function (can be improved based on your needs)
+        const stringSimilarity = (str1, str2) => {
+            const len = Math.min(str1.length, str2.length);
+            let matches = 0;
+            for (let i = 0; i < len; i++) {
+                if (str1[i] === str2[i]) matches++;
+            }
+            return matches / Math.max(str1.length, str2.length);
         };
 
         const handleCalculate = () => {
@@ -183,30 +191,48 @@
                 return;
             }
 
-            // Find matching rate
-            const matchingRate = rates.find(rate => 
-                rate.collectionCountry === collection.country &&
-                rate.deliveryCountry === delivery.country &&
-                rate.deliveryType === deliveryType &&
-                rate.isFullTruckLoad === isFullTruckLoad
-            );
+            if (!collection.postcode || !delivery.postcode) {
+                setError('Please enter both collection and delivery postcodes.');
+                return;
+            }
 
-            if (matchingRate) {
-                // Use matching rate
-                if (isFullTruckLoad) {
-                    alert(`Found rate: £${matchingRate.fullTruckLoadPrice}`);
-                } else if (matchingRate.prices && matchingRate.prices[pallets]) {
-                    alert(`Found rate: £${matchingRate.prices[pallets]}`);
-                } else {
-                    if (confirm('No exact rate found for this configuration. Would you like to request a quote?')) {
-                        setShowTenderForm(true);
-                    }
+            findSimilarRoutes();
+        };
+
+        const handleAddRoute = async () => {
+            try {
+                // Check for duplicates
+                const duplicate = await db.collection('rates')
+                    .where('collectionCountry', '==', collection.country)
+                    .where('collectionPostcode', '==', collection.postcode)
+                    .where('deliveryCountry', '==', delivery.country)
+                    .where('deliveryPostcode', '==', delivery.postcode)
+                    .where('deliveryType', '==', deliveryType)
+                    .where('isFullTruckLoad', '==', isFullTruckLoad)
+                    .get();
+
+                if (!duplicate.empty) {
+                    setError('This route already exists in the database.');
+                    return;
                 }
-            } else {
-                // No matching rate found
-                if (confirm('No existing rate found for this route. Would you like to request a quote?')) {
-                    setShowTenderForm(true);
-                }
+
+                // Add new route
+                await db.collection('rates').add({
+                    collectionCountry: collection.country,
+                    collectionPostcode: collection.postcode,
+                    collectionLocation: collection.location,
+                    deliveryCountry: delivery.country,
+                    deliveryPostcode: delivery.postcode,
+                    deliveryLocation: delivery.location,
+                    deliveryType,
+                    isFullTruckLoad,
+                    // Add other necessary fields
+                });
+
+                alert('Route added successfully!');
+            } catch (error) {
+                console.error('Error adding route:', error);
+                setError('Failed to add route to database.');
             }
         };
 
@@ -215,16 +241,20 @@
             setError(null);
 
             try {
-                // Filter hauliers that are active and operate in either collection or delivery country
-                const relevantHauliers = hauliers.filter(h => 
-                    h.active && (h.countries.includes(collection.country) || h.countries.includes(delivery.country))
-                );
+                // Get relevant hauliers
+                const hauliersSnapshot = await db.collection('hauliers')
+                    .where('active', '==', true)
+                    .get();
+
+                const relevantHauliers = hauliersSnapshot.docs
+                    .map(doc => ({ id: doc.id, ...doc.data() }))
+                    .filter(h => h.countries.includes(collection.country) || h.countries.includes(delivery.country));
 
                 if (relevantHauliers.length === 0) {
                     throw new Error('No active hauliers found for these countries.');
                 }
 
-                // Prepare email parameters
+                // Send emails
                 const emailPromises = relevantHauliers.map(haulier => {
                     const templateParams = {
                         to_email: haulier.email,
@@ -238,13 +268,13 @@ We are seeking quotes for the following shipping route:
 
 Collection:
 Country: ${collection.country}
-Location: ${collection.location}
 Postcode: ${collection.postcode}
+${collection.location ? `Location: ${collection.location}` : ''}
 
 Delivery:
 Country: ${delivery.country}
-Location: ${delivery.location}
 Postcode: ${delivery.postcode}
+${delivery.location ? `Location: ${delivery.location}` : ''}
 
 Shipping Details:
 Type: ${isFullTruckLoad ? 'Full Truck Load' : `${pallets} Pallets`}
@@ -259,11 +289,7 @@ Important Notes:
                         reply_to: "AzelisLogistics@outlook.com"
                     };
 
-                    return emailjs.send(
-                        'Azelis_Logistics',
-                        'template_hho0c06',
-                        templateParams
-                    );
+                    return emailjs.send('Azelis_Logistics', 'template_hho0c06', templateParams);
                 });
 
                 await Promise.all(emailPromises);
@@ -288,284 +314,41 @@ Important Notes:
         return (
             <div className="max-w-4xl mx-auto p-4">
                 <div className="bg-white rounded-lg shadow-lg p-6">
-                    {/* Collection Address */}
-                    <div className="mb-6 relative">
-                        <h2 className="text-lg font-semibold mb-4 text-gray-700">Collection Address</h2>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {/* Collection Details */}
+                    <div className="mb-6">
+                        <h2 className="text-lg font-semibold mb-4 text-gray-700">Collection Details</h2>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                             <div>
-                                <label htmlFor="collection-country" className="block text-sm font-medium mb-1 text-gray-600">
-                                    Country
+                                <label className="block text-sm font-medium mb-1 text-gray-600">
+                                    Country *
                                 </label>
-                                <select 
-                                    id="collection-country"
-                                    className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                <input
+                                    type="text"
+                                    list="collectionCountries"
+                                    className="combobox-input"
                                     value={collection.country}
                                     onChange={(e) => setCollection({...collection, country: e.target.value})}
-                                >
-                                    <option value="">Select Country</option>
-                                    {countries.map(country => (
-                                        <option key={country} value={country}>{country}</option>
+                                    placeholder="Select or type country"
+                                    required
+                                />
+                                <datalist id="collectionCountries">
+                                    {availableCountries.map(country => (
+                                        <option key={country} value={country} />
                                     ))}
-                                </select>
+                                </datalist>
                             </div>
                             <div>
-                                <label htmlFor="collection-location" className="block text-sm font-medium mb-1 text-gray-600">
-                                    Location
+                                <label className="block text-sm font-medium mb-1 text-gray-600">
+                                    Postcode *
                                 </label>
-                                <input 
-                                    id="collection-location"
-                                    type="text"
-                                    className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    value={collection.location}
-                                    onChange={(e) => setCollection({...collection, location: e.target.value})}
-                                    placeholder="City/Town"
-                                />
-                            </div>
-                            <div className="relative">
-                                <label htmlFor="collection-postcode" className="block text-sm font-medium mb-1 text-gray-600">
-                                    Postcode
-                                </label>
-                                <input 
-                                    id="collection-postcode"
-                                    type="text"
-                                    className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    value={collection.postcode}
-                                    onChange={(e) => {
-                                        setCollection({...collection, postcode: e.target.value});
-                                        setDebounceCollection(e.target.value);
-                                        setShowCollectionSuggestions(true);
-                                    }}
-                                    placeholder="Postcode"
-                                    autoComplete="off"
-                                    ref={collectionRef}
-                                />
-                                {showCollectionSuggestions && collectionSuggestions.length > 0 && (
-                                    <div className="suggestion-box">
-                                        {collectionSuggestions.map((route, index) => (
-                                            <div 
-                                                key={index}
-                                                className="suggestion-item"
-                                                onClick={() => {
-                                                    setCollection({
-                                                        country: route.collectionCountry,
-                                                        location: route.collectionLocation,
-                                                        postcode: route.collectionPostcode
-                                                    });
-                                                    setShowCollectionSuggestions(false);
-                                                }}
-                                            >
-                                                {route.collectionPostcode} - {route.collectionLocation}, {route.collectionCountry}
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Delivery Address */}
-                    <div className="mb-6 relative">
-                        <h2 className="text-lg font-semibold mb-4 text-gray-700">Delivery Address</h2>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div>
-                                <label htmlFor="delivery-country" className="block text-sm font-medium mb-1 text-gray-600">
-                                    Country
-                                </label>
-                                <select 
-                                    id="delivery-country"
-                                    className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    value={delivery.country}
-                                    onChange={(e) => setDelivery({...delivery, country: e.target.value})}
-                                >
-                                    <option value="">Select Country</option>
-                                    {countries.map(country => (
-                                        <option key={country} value={country}>{country}</option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div>
-                                <label htmlFor="delivery-location" className="block text-sm font-medium mb-1 text-gray-600">
-                                    Location
-                                </label>
-                                <input 
-                                    id="delivery-location"
-                                    type="text"
-                                    className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    value={delivery.location}
-                                    onChange={(e) => setDelivery({...delivery, location: e.target.value})}
-                                    placeholder="City/Town"
-                                />
-                            </div>
-                            <div className="relative">
-                                <label htmlFor="delivery-postcode" className="block text-sm font-medium mb-1 text-gray-600">
-                                    Postcode
-                                </label>
-                                <input 
-                                    id="delivery-postcode"
-                                    type="text"
-                                    className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    value={delivery.postcode}
-                                    onChange={(e) => {
-                                        setDelivery({...delivery, postcode: e.target.value});
-                                        setDebounceDelivery(e.target.value);
-                                        setShowDeliverySuggestions(true);
-                                    }}
-                                    placeholder="Postcode"
-                                    autoComplete="off"
-                                    ref={deliveryRef}
-                                />
-                                {showDeliverySuggestions && deliverySuggestions.length > 0 && (
-                                    <div className="suggestion-box">
-                                        {deliverySuggestions.map((route, index) => (
-                                            <div 
-                                                key={index}
-                                                className="suggestion-item"
-                                                onClick={() => {
-                                                    setDelivery({
-                                                        country: route.deliveryCountry,
-                                                        location: route.deliveryLocation,
-                                                        postcode: route.deliveryPostcode
-                                                    });
-                                                    setShowDeliverySuggestions(false);
-                                                }}
-                                            >
-                                                {route.deliveryPostcode} - {route.deliveryLocation}, {route.deliveryCountry}
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Shipping Details */}
-                    <div className="mb-6">
-                        <h2 className="text-lg font-semibold mb-4 text-gray-700">Shipping Details</h2>
-                        <div className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium mb-2 text-gray-600">Shipment Type</label>
-                                <div className="flex gap-4">
-                                    <button
-                                        type="button"
-                                        className={`px-4 py-2 rounded-lg ${!isFullTruckLoad ? 'azelis-blue text-white' : 'bg-gray-200 text-gray-700'}`}
-                                        onClick={() => setIsFullTruckLoad(false)}
-                                    >
-                                        Partial Load
-                                    </button>
-                                    <button
-                                        type="button"
-                                        className={`px-4 py-2 rounded-lg ${isFullTruckLoad ? 'azelis-blue text-white' : 'bg-gray-200 text-gray-700'}`}
-                                        onClick={() => setIsFullTruckLoad(true)}
-                                    >
-                                        Full Truck Load
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {!isFullTruckLoad && (
-                                    <div>
-                                        <label htmlFor="pallets" className="block text-sm font-medium mb-1 text-gray-600">
-                                            Number of Pallets
-                                        </label>
-                                        <input
-                                            id="pallets"
-                                            type="number"
-                                            className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                            min="1"
-                                            max="24"
-                                            value={pallets}
-                                            onChange={(e) => setPallets(parseInt(e.target.value) || 1)}
-                                        />
-                                    </div>
-                                )}
-                                <div>
-                                    <label htmlFor="delivery-type" className="block text-sm font-medium mb-1 text-gray-600">
-                                        Delivery Type
-                                    </label>
-                                    <select
-                                        id="delivery-type"
-                                        className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                        value={deliveryType}
-                                        onChange={(e) => setDeliveryType(e.target.value)}
-                                    >
-                                        <option value="STD">Standard</option>
-                                        <option value="ADR">ADR</option>
-                                        <option value="TEMP">Temperature Controlled</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center space-x-2">
                                 <input
-                                    type="checkbox"
-                                    id="hideDocuments"
-                                    checked={hideDocuments}
-                                    onChange={(e) => setHideDocuments(e.target.checked)}
-                                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                    type="text"
+                                    className="combobox-input"
+                                    value={collection.postcode}
+                                    onChange={(e) => setCollection({...collection, postcode: e.target.value})}
+                                    placeholder="Enter postcode"
+                                    required
                                 />
-                                <label htmlFor="hideDocuments" className="text-sm text-gray-700">
-                                    Hide Shipping Documents
-                                </label>
                             </div>
-                        </div>
-                    </div>
-
-                    {/* Calculate Button */}
-                    <button
-                        onClick={handleCalculate}
-                        className="w-full azelis-blue text-white p-3 rounded-lg font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                    >
-                        Calculate Price
-                    </button>
-
-                    {/* Error Display */}
-                    {error && (
-                        <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-                            <div className="text-red-700">{error}</div>
-                        </div>
-                    )}
-                </div>
-
-                {/* Quote Request Modal */}
-                {showTenderForm && (
-                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-                        <div className="bg-white rounded-lg p-6 max-w-md w-full">
-                            <h3 className="text-lg font-semibold mb-4">Request Quote for Route</h3>
-                            <p className="text-sm text-gray-600 mb-4">
-                                An email will be sent to request quotes from our approved carriers.
-                            </p>
-                            <div className="space-y-2 text-sm mb-4">
-                                <p><strong>Collection:</strong> {collection.location}, {collection.country}</p>
-                                <p><strong>Delivery:</strong> {delivery.location}, {delivery.country}</p>
-                                <p><strong>Type:</strong> {isFullTruckLoad ? 'Full Truck Load' : `${pallets} Pallets`}</p>
-                                <p><strong>Delivery Type:</strong> {deliveryType}</p>
-                                <p><strong>Hide Documents:</strong> {hideDocuments ? 'Yes' : 'No'}</p>
-                            </div>
-                            <div className="flex gap-2">
-                                <button 
-                                    onClick={sendQuoteRequest}
-                                    disabled={sending}
-                                    className="flex-1 azelis-blue text-white p-2 rounded hover:bg-blue-700 disabled:opacity-50"
-                                >
-                                    {sending ? "Sending..." : "Send Request"}
-                                </button>
-                                <button 
-                                    onClick={() => setShowTenderForm(false)}
-                                    disabled={sending}
-                                    className="flex-1 bg-gray-200 text-gray-700 p-2 rounded hover:bg-gray-300"
-                                >
-                                    Cancel
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )}
-            </div>
-        );
-    };
-
-    ReactDOM.render(<Calculator />, document.getElementById('root'));
-    </script>
-</body>
-</html>
+                            <div>
+                                <label className="block text-sm font-medium mb-1 text-gray-400">
