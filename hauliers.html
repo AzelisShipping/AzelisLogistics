@@ -115,11 +115,17 @@
 const handleHaulierSubmit = async (e) => {
     e.preventDefault();
     const formData = new FormData(e.target);
+    const selectedCountries = formData.getAll('operatingCountries');
+
+    if (selectedCountries.length === 0) {
+        alert('Please select at least one country of delivery.');
+        return;
+    }
 
     const haulierData = {
         name: formData.get('name'),
         email: formData.get('email'),
-        countries: ['GBR'], // Default to GBR
+        countries: selectedCountries,
         active: true
     };
 
@@ -136,6 +142,7 @@ const handleHaulierSubmit = async (e) => {
         alert('Error saving haulier. Please try again.');
     }
 };
+
 
 
             const handleHaulierDelete = async (id) => {
@@ -350,7 +357,7 @@ const handleHaulierSubmit = async (e) => {
                                                     Email
                                                 </th>
                                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Countries
+                                                    Countries of Delivery
                                                 </th>
                                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                     Status
@@ -586,75 +593,89 @@ const handleHaulierSubmit = async (e) => {
                             </div>
                         )}
 
-                        {/* Haulier Form Modal */}
-                        {showForm && (
-                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-                                <div className="bg-white rounded-lg p-6 max-w-2xl w-full">
-                                    <div className="flex justify-between items-start mb-4">
-                                        <h3 className="text-lg font-semibold">
-                                            {editingHaulier ? 'Edit Haulier' : 'Add New Haulier'}
-                                        </h3>
-                                        <button 
-                                            onClick={() => {
-                                                setShowForm(false);
-                                                setEditingHaulier(null);
-                                            }}
-                                            className="text-gray-400 hover:text-gray-600"
-                                        >
-                                            ×
-                                        </button>
-                                    </div>
-                                    
-                                    <form onSubmit={handleHaulierSubmit} className="space-y-4">
-                                        <div>
-                                            <label className="block text-sm font-medium mb-1">Company Name</label>
-                                            <input 
-                                                name="name"
-                                                type="text"
-                                                required
-                                                defaultValue={editingHaulier?.name}
-                                                className="w-full p-2 border rounded"
-                                            />
-                                        </div>
-                                        
-                                        <div>
-                                            <label className="block text-sm font-medium mb-1">Email Address</label>
-                                            <input 
-                                                name="email"
-                                                type="email"
-                                                required
-                                                defaultValue={editingHaulier?.email}
-                                                className="w-full p-2 border rounded"
-                                            />
-                                        </div>
-
-                              
-                                        <div className="flex gap-2">
-                                            <button 
-                                                type="submit"
-                                                className="flex-1 azelis-blue text-white p-2 rounded hover:bg-blue-700"
-                                            >
-                                                {editingHaulier ? 'Update' : 'Add'} Haulier
-                                            </button>
-                                            <button 
-                                                type="button"
-                                                onClick={() => {
-                                                    setShowForm(false);
-                                                    setEditingHaulier(null);
-                                                }}
-                                                className="flex-1 bg-gray-200 text-gray-700 p-2 rounded hover:bg-gray-300"
-                                            >
-                                                Cancel
-                                            </button>
-                                        </div>
-                                    </form>
-                                </div>
-                            </div>
-                        )}
-                    </div>
+{/* Haulier Form Modal */}
+{showForm && (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-lg p-6 max-w-2xl w-full">
+            <div className="flex justify-between items-start mb-4">
+                <h3 className="text-lg font-semibold">
+                    {editingHaulier ? 'Edit Haulier' : 'Add New Haulier'}
+                </h3>
+                <button 
+                    onClick={() => {
+                        setShowForm(false);
+                        setEditingHaulier(null);
+                    }}
+                    className="text-gray-400 hover:text-gray-600"
+                >
+                    ×
+                </button>
+            </div>
+            
+            <form onSubmit={handleHaulierSubmit} className="space-y-4">
+                <div>
+                    <label className="block text-sm font-medium mb-1">Company Name</label>
+                    <input 
+                        name="name"
+                        type="text"
+                        required
+                        defaultValue={editingHaulier?.name}
+                        className="w-full p-2 border rounded"
+                    />
                 </div>
-            );
-        };
+                
+                <div>
+                    <label className="block text-sm font-medium mb-1">Email Address</label>
+                    <input 
+                        name="email"
+                        type="email"
+                        required
+                        defaultValue={editingHaulier?.email}
+                        className="w-full p-2 border rounded"
+                    />
+                </div>
+
+                {/* Updated Countries Field */}
+                <div>
+                    <label className="block text-sm font-medium mb-2">Countries of Delivery</label>
+                    <select
+                        multiple
+                        name="operatingCountries"
+                        required
+                        defaultValue={editingHaulier?.countries || ['GBR']}
+                        className="w-full p-2 border rounded h-40"
+                    >
+                        {allowedCountries.map(country => (
+                            <option key={country} value={country}>
+                                {country}
+                            </option>
+                        ))}
+                    </select>
+                    <small className="text-gray-500">Hold down the Ctrl (windows) or Command (Mac) button to select multiple options.</small>
+                </div>
+
+                <div className="flex gap-2">
+                    <button 
+                        type="submit"
+                        className="flex-1 azelis-blue text-white p-2 rounded hover:bg-blue-700"
+                    >
+                        {editingHaulier ? 'Update' : 'Add'} Haulier
+                    </button>
+                    <button 
+                        type="button"
+                        onClick={() => {
+                            setShowForm(false);
+                            setEditingHaulier(null);
+                        }}
+                        className="flex-1 bg-gray-200 text-gray-700 p-2 rounded hover:bg-gray-300"
+                    >
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+)}
 
         ReactDOM.render(<HaulierManagement />, document.getElementById('root'));
     </script>
