@@ -2,10 +2,9 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Azelis Shipping Calculator</title>
-    <!-- Tailwind CSS (Updated to latest version) -->
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.3.2/dist/tailwind.min.css" rel="stylesheet">
+    <!-- Tailwind CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
     <!-- EmailJS -->
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script>
@@ -16,9 +15,9 @@
     <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-    <!-- React and Babel (Updated to latest versions) -->
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <!-- React and Babel -->
+    <script src="https://unpkg.com/react@17/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js" crossorigin></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <!-- Custom Styles -->
     <style>
@@ -92,10 +91,10 @@
     <script>
         // Your web app's Firebase configuration
         const firebaseConfig = {
-            apiKey: "AIzaSyDiIRLwLeMAf1VZbZ7ygvGDu-gZH6sA424", // Replace with your actual API key
+            apiKey: "YOUR_API_KEY", // Replace with your actual API key
             authDomain: "azelislogistics.firebaseapp.com",
             projectId: "azelislogistics",
-            storageBucket: "azelislogistics.firebasestorage.app", // Corrected storageBucket
+            storageBucket: "azelislogistics.appspot.com", // Corrected storageBucket
             messagingSenderId: "13102382958",
             appId: "1:13102382958:web:82a3324843432519cb8b7f",
             measurementId: "G-Q6JNN8DHJQ"
@@ -378,10 +377,10 @@
             if (!isOpen) return null;
 
             const filteredPostcodes = (savedPostcodes || [])
-              .map(postcode => postcode.toString())
-              .filter(postcode =>
-                postcode.toLowerCase().includes(searchTerm.toLowerCase())
-              );
+                .map(postcode => postcode.toString())
+                .filter(postcode =>
+                    postcode.toLowerCase().includes(searchTerm.toLowerCase())
+                );
 
             return (
                 <div className="postcode-modal">
@@ -472,51 +471,51 @@
             const [savedPostcodes, setSavedPostcodes] = useState({ collection: [], delivery: [] });
 
             useEffect(() => {
-              // Set up real-time listener for the 'rates' collection
-              const unsubscribe = db.collection('rates').onSnapshot(snapshot => {
-                const routes = snapshot.docs.map(doc => ({
-                  id: doc.id,
-                  ...doc.data()
-                }));
-                setSavedRoutes(routes);
-            
-                // Extract unique postcodes grouped by country
-                const collectionPostcodes = {};
-                const deliveryPostcodes = {};
-            
-                routes.forEach(route => {
-                  const cc = route.collectionCountry;
-                  const pc = route.collectionPostcode ? route.collectionPostcode.toString() : '';
-                  if (pc.trim() !== '') {
-                    if (!collectionPostcodes[cc]) collectionPostcodes[cc] = new Set();
-                    collectionPostcodes[cc].add(pc);
-                  }
-                  const dc = route.deliveryCountry;
-                  const dp = route.deliveryPostcode ? route.deliveryPostcode.toString() : '';
-                  if (dp.trim() !== '') {
-                    if (!deliveryPostcodes[dc]) deliveryPostcodes[dc] = new Set();
-                    deliveryPostcodes[dc].add(dp);
-                  }
+                // Set up real-time listener for the 'rates' collection
+                const unsubscribe = db.collection('rates').onSnapshot(snapshot => {
+                    const routes = snapshot.docs.map(doc => ({
+                        id: doc.id,
+                        ...doc.data()
+                    }));
+                    setSavedRoutes(routes);
+
+                    // Extract unique postcodes grouped by country
+                    const collectionPostcodes = {};
+                    const deliveryPostcodes = {};
+
+                    routes.forEach(route => {
+                        const cc = route.collectionCountry;
+                        const pc = route.collectionPostcode ? route.collectionPostcode.toString() : '';
+                        if (pc.trim() !== '') {
+                            if (!collectionPostcodes[cc]) collectionPostcodes[cc] = new Set();
+                            collectionPostcodes[cc].add(pc);
+                        }
+                        const dc = route.deliveryCountry;
+                        const dp = route.deliveryPostcode ? route.deliveryPostcode.toString() : '';
+                        if (dp.trim() !== '') {
+                            if (!deliveryPostcodes[dc]) deliveryPostcodes[dc] = new Set();
+                            deliveryPostcodes[dc].add(dp);
+                        }
+                    });
+
+                    setSavedPostcodes({
+                        collection: Object.fromEntries(
+                            Object.entries(collectionPostcodes).map(([country, set]) => [country, Array.from(set)])
+                        ),
+                        delivery: Object.fromEntries(
+                            Object.entries(deliveryPostcodes).map(([country, set]) => [country, Array.from(set)])
+                        ),
+                    });
+
+                    setLoading(false);
+                }, error => {
+                    console.error("Error fetching routes:", error);
+                    setError("Failed to load saved routes.");
+                    setLoading(false);
                 });
-            
-                setSavedPostcodes({
-                  collection: Object.fromEntries(
-                    Object.entries(collectionPostcodes).map(([country, set]) => [country, Array.from(set)])
-                  ),
-                  delivery: Object.fromEntries(
-                    Object.entries(deliveryPostcodes).map(([country, set]) => [country, Array.from(set)])
-                  ),
-                });
-            
-                setLoading(false);
-              }, error => {
-                console.error("Error fetching routes:", error);
-                setError("Failed to load saved routes.");
-                setLoading(false);
-              });
-            
-              // Cleanup subscription on unmount
-              return () => unsubscribe();
+
+                // Cleanup subscription on unmount
+                return () => unsubscribe();
             }, []);
 
             const findSimilarRoutes = () => {
@@ -556,21 +555,19 @@
 
             const stringSimilarity = (str1, str2) => {
                 if (!str1 || !str2) return 0;
-                let longer = str1;
-                let shorter = str2;
-                if (str1.length < str2.length) {
-                    longer = str2;
-                    shorter = str1;
-                }
-                const longerLength = longer.length;
-                if (longerLength === 0) return 1.0;
-                return (longerLength - editDistance(longer, shorter)) / parseFloat(longerLength);
+                // Implement Levenshtein distance for better similarity
+                const distance = levenshteinDistance(str1, str2);
+                const maxLen = Math.max(str1.length, str2.length);
+                if (maxLen === 0) return 1;
+                return (maxLen - distance) / maxLen;
             };
 
-            const editDistance = (a, b) => {
+            const levenshteinDistance = (a, b) => {
                 const matrix = Array.from({ length: a.length + 1 }, () => Array(b.length + 1).fill(0));
+
                 for (let i = 0; i <= a.length; i++) matrix[i][0] = i;
                 for (let j = 0; j <= b.length; j++) matrix[0][j] = j;
+
                 for (let i = 1; i <= a.length; i++) {
                     for (let j = 1; j <= b.length; j++) {
                         if (a[i - 1] === b[j - 1]) {
@@ -580,22 +577,26 @@
                         }
                     }
                 }
+
                 return matrix[a.length][b.length];
             };
 
             const handleCalculate = () => {
                 setError(null);
 
+                // Validate country selections
                 if (!collection.country || !delivery.country) {
                     setError('Please select both collection and delivery countries.');
                     return;
                 }
 
+                // Validate postcode entries
                 if (!collection.postcode || !delivery.postcode) {
                     setError('Please enter both collection and delivery postcodes.');
                     return;
                 }
 
+                // Validate country codes
                 if (!COUNTRY_CODES.includes(collection.country)) {
                     setError('Invalid collection country code.');
                     return;
@@ -627,23 +628,31 @@
                     }
 
                     const emailPromises = relevantHauliers.map(haulier => {
+                        // Get country names from codes
+                        const collectionCountryName = COUNTRY_NAMES.find(name => COUNTRY_MAPPING[name] === collection.country) || collection.country;
+                        const deliveryCountryName = COUNTRY_NAMES.find(name => COUNTRY_MAPPING[name] === delivery.country) || delivery.country;
+
+                        const price = isFullTruckLoad 
+                            ? (exactMatchRate?.fullTruckLoadPrice || 'N/A') 
+                            : (exactMatchRate?.prices?.[pallets] || 'N/A');
+
                         const templateParams = {
                             to_email: haulier.email,
                             from_name: "Azelis Shipping Calculator",
                             company_name: haulier.name,
-                            subject: `Quote Request: ${COUNTRY_NAMES.find(name => COUNTRY_MAPPING[name] === collection.country)} to ${COUNTRY_NAMES.find(name => COUNTRY_MAPPING[name] === delivery.country)}`,
+                            subject: `Quote Request: ${collectionCountryName} to ${deliveryCountryName}`,
                             message: `
 Dear Valued Transport Partner,
 
 We are seeking quotes for the following shipping route:
 
 Collection:
-Country: ${COUNTRY_NAMES.find(name => COUNTRY_MAPPING[name] === collection.country)} (${collection.country})
+Country: ${collectionCountryName} (${collection.country})
 Postcode: ${collection.postcode}
 ${collection.location ? `Location: ${collection.location}` : ''}
 
 Delivery:
-Country: ${COUNTRY_NAMES.find(name => COUNTRY_MAPPING[name] === delivery.country)} (${delivery.country})
+Country: ${deliveryCountryName} (${delivery.country})
 Postcode: ${delivery.postcode}
 ${delivery.location ? `Location: ${delivery.location}` : ''}
 
@@ -651,6 +660,9 @@ Shipping Details:
 Type: ${isFullTruckLoad ? 'Full Truck Load' : `${pallets} Pallets`}
 Delivery Type: ${deliveryType}
 Hide Documents: ${hideDocuments ? 'Yes' : 'No'}
+
+Pricing Details:
+${isFullTruckLoad ? `Full Truck Load Price: £${price}` : `Price per Pallet: £${price}`}
 
 Important Notes:
 • Please reply with your best commercial rate
@@ -894,7 +906,7 @@ Important Notes:
                                     <div>
                                         <h3 className="text-lg font-semibold mb-3">Similar Routes</h3>
                                         <div className="space-y-3">
-                                            {similarRoutes.map((route) => (
+                                            {similarRoutes.map(route => (
                                                 <div key={route.id} className="p-4 bg-gray-50 rounded-lg similar-route">
                                                     <div className="grid grid-cols-2 gap-4">
                                                         <div>
@@ -917,19 +929,24 @@ Important Notes:
                                                 </div>
                                             ))}
                                         </div>
+                                        <button
+                                            onClick={() => setShowTenderForm(true)}
+                                            className="mt-4 w-full bg-gray-100 text-gray-700 p-3 rounded-lg font-medium hover:bg-gray-200 transition-colors"
+                                        >
+                                            Request New Quote
+                                        </button>
                                     </div>
                                 ) : (
                                     <div>
                                         <p className="text-gray-700">No similar routes found.</p>
+                                        <button
+                                            onClick={() => setShowTenderForm(true)}
+                                            className="mt-4 w-full bg-gray-100 text-gray-700 p-3 rounded-lg font-medium hover:bg-gray-200 transition-colors"
+                                        >
+                                            Request New Quote
+                                        </button>
                                     </div>
                                 )}
-
-                                <button
-                                    onClick={() => setShowTenderForm(true)}
-                                    className="mt-4 w-full bg-gray-100 text-gray-700 p-3 rounded-lg font-medium hover:bg-gray-200 transition-colors"
-                                >
-                                    Request New Quote
-                                </button>
                             </div>
                         )}
                     </div>
@@ -938,7 +955,7 @@ Important Notes:
                     <PostcodeSelector
                         isOpen={showCollectionPostcode}
                         onClose={() => setShowCollectionPostcode(false)}
-                        onSelect={(postcode) => setCollection({ ...collection, postcode })}
+                        onSelect={(postcode) => setCollection({...collection, postcode})}
                         savedPostcodes={savedPostcodes.collection[collection.country] || []}
                         country={collection.country}
                         type="collection"
@@ -946,7 +963,7 @@ Important Notes:
                     <PostcodeSelector
                         isOpen={showDeliveryPostcode}
                         onClose={() => setShowDeliveryPostcode(false)}
-                        onSelect={(postcode) => setDelivery({ ...delivery, postcode })}
+                        onSelect={(postcode) => setDelivery({...delivery, postcode})}
                         savedPostcodes={savedPostcodes.delivery[delivery.country] || []}
                         country={delivery.country}
                         type="delivery"
