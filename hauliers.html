@@ -651,7 +651,7 @@ const handleHaulierSubmit = async (e) => {
                             </option>
                         ))}
                     </select>
-                    <small className="text-gray-500">Hold down the Ctrl (windows) or Command (Mac) button to select multiple options.</small>
+                    <small className="text-gray-500">Hold down the Ctrl (Windows) or Command (Mac) button to select multiple options.</small>
                 </div>
 
                 <div className="flex gap-2">
@@ -676,8 +676,10 @@ const handleHaulierSubmit = async (e) => {
         </div>
     </div>
 )}
+{/* Close the return statement */}
+); // <-- Added this closing parenthesis and semicolon
 
-        ReactDOM.render(<HaulierManagement />, document.getElementById('root'));
-    </script>
-</body>
-</html>
+{/* Close the HaulierManagement component */}
+}; // <-- Added this closing brace and semicolon
+
+ReactDOM.render(<HaulierManagement />, document.getElementById('root'));
