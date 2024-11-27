@@ -601,30 +601,30 @@
                             company_name: haulier.name,
                             subject: `Quote Request: ${collection.country} to ${delivery.country}`,
                             message: `
-Dear Valued Transport Partner,
+    Dear Valued Transport Partner,
 
-We are seeking quotes for the following shipping route:
+    We are seeking quotes for the following shipping route:
 
-Collection:
-Country: ${collection.country}
-Postcode: ${collection.postcode}
-${collection.location ? `Location: ${collection.location}` : ''}
+    Collection:
+    Country: ${collection.country}
+    Postcode: ${collection.postcode}
+    ${collection.location ? `Location: ${collection.location}` : ''}
 
-Delivery:
-Country: ${delivery.country}
-Postcode: ${delivery.postcode}
-${delivery.location ? `Location: ${delivery.location}` : ''}
+    Delivery:
+    Country: ${delivery.country}
+    Postcode: ${delivery.postcode}
+    ${delivery.location ? `Location: ${delivery.location}` : ''}
 
-Shipping Details:
-Type: ${isFullTruckLoad ? 'Full Truck Load' : `${pallets} Pallets`}
-Delivery Type: ${deliveryType}
-Hide Documents: ${hideDocuments ? 'Yes' : 'No'}
+    Shipping Details:
+    Type: ${isFullTruckLoad ? 'Full Truck Load' : `${pallets} Pallets`}
+    Delivery Type: ${deliveryType}
+    Hide Documents: ${hideDocuments ? 'Yes' : 'No'}
 
-Important Notes:
-• Please reply with your best commercial rate
-• Include any additional surcharges or fees in your quote
-• Confirm your earliest available collection date
-• If you cannot service this route, please let us know`,
+    Important Notes:
+    • Please reply with your best commercial rate
+    • Include any additional surcharges or fees in your quote
+    • Confirm your earliest available collection date
+    • If you cannot service this route, please let us know`,
                             reply_to: "AzelisLogistics@outlook.com"
                         };
 
@@ -653,7 +653,7 @@ Important Notes:
             return (
                 <div className="max-w-4xl mx-auto p-4">
                     <div className="bg-white rounded-lg shadow-lg p-6">
-                        {/* Collection Details */}
+     {/* Collection Details */}
                         <div className="mb-6">
                             <h2 className="text-lg font-semibold mb-4 text-gray-700">Collection Details</h2>
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -838,12 +838,8 @@ Important Notes:
                                         <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
                                             <div className="grid grid-cols-2 gap-4">
                                                 <div>
-                                                    <p className="text-sm text-gray-600">
-                                                        Collection: {exactMatchRate.collectionPostcode}, {exactMatchRate.collectionCountry}
-                                                    </p>
-                                                    <p className="text-sm text-gray-600">
-                                                        Delivery: {exactMatchRate.deliveryPostcode}, {exactMatchRate.deliveryCountry}
-                                                    </p>
+                                                    <p className="text-sm text-gray-600">Collection: {exactMatchRate.collectionPostcode}, {exactMatchRate.collectionCountry}</p>
+                                                    <p className="text-sm text-gray-600">Delivery: {exactMatchRate.deliveryPostcode}, {exactMatchRate.deliveryCountry}</p>
                                                 </div>
                                                 <div className="text-right">
                                                     <p className="text-lg font-semibold text-green-700">
@@ -858,7 +854,7 @@ Important Notes:
                                     </div>
                                 )}
 
-                                {similarRoutes.length > 0 ? (
+                                {similarRoutes.length > 0 && (
                                     <div>
                                         <h3 className="text-lg font-semibold mb-3">Similar Routes</h3>
                                         <div className="space-y-3">
@@ -866,12 +862,8 @@ Important Notes:
                                                 <div key={index} className="p-4 bg-gray-50 rounded-lg similar-route">
                                                     <div className="grid grid-cols-2 gap-4">
                                                         <div>
-                                                            <p className="text-sm text-gray-600">
-                                                                Collection: {route.collectionPostcode}, {route.collectionCountry}
-                                                            </p>
-                                                            <p className="text-sm text-gray-600">
-                                                                Delivery: {route.deliveryPostcode}, {route.deliveryCountry}
-                                                            </p>
+                                                            <p className="text-sm text-gray-600">Collection: {route.collectionPostcode}, {route.collectionCountry}</p>
+                                                            <p className="text-sm text-gray-600">Delivery: {route.deliveryPostcode}, {route.deliveryCountry}</p>
                                                         </div>
                                                         <div className="text-right">
                                                             <p className="font-semibold">
@@ -885,28 +877,23 @@ Important Notes:
                                                 </div>
                                             ))}
                                         </div>
-                                    </div>
-                                ) : (
-                                    <div>
-                                        <p className="text-gray-700">No similar routes found.</p>
+                                        <button
+                                            onClick={() => setShowTenderForm(true)}
+                                            className="mt-4 w-full bg-gray-100 text-gray-700 p-3 rounded-lg font-medium hover:bg-gray-200 transition-colors"
+                                        >
+                                            Request New Quote
+                                        </button>
                                     </div>
                                 )}
-
-                                <button
-                                    onClick={() => setShowTenderForm(true)}
-                                    className="mt-4 w-full bg-gray-100 text-gray-700 p-3 rounded-lg font-medium hover:bg-gray-200 transition-colors"
-                                >
-                                    Request New Quote
-                                </button>
                             </div>
                         )}
-                    </div> {/* Closing div for bg-white rounded-lg shadow-lg p-6 */}
+                    </div>
 
                     {/* Postcode Selection Modals */}
                     <PostcodeSelector
                         isOpen={showCollectionPostcode}
                         onClose={() => setShowCollectionPostcode(false)}
-                        onSelect={(postcode) => setCollection({ ...collection, postcode })}
+                        onSelect={(postcode) => setCollection({...collection, postcode})}
                         savedPostcodes={savedPostcodes.collection[collection.country] || []}
                         country={collection.country}
                         type="collection"
@@ -914,58 +901,53 @@ Important Notes:
                     <PostcodeSelector
                         isOpen={showDeliveryPostcode}
                         onClose={() => setShowDeliveryPostcode(false)}
-                        onSelect={(postcode) => setDelivery({ ...delivery, postcode })}
+                        onSelect={(postcode) => setDelivery({...delivery, postcode})}
                         savedPostcodes={savedPostcodes.delivery[delivery.country] || []}
                         country={delivery.country}
                         type="delivery"
                     />
 
-                       {/* Quote Request Modal */}
-    {showTenderForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-lg p-6 max-w-md w-full">
-                <h3 className="text-lg font-semibold mb-4">Request Quote for Route</h3>
-                <p className="text-sm text-gray-600 mb-4">
-                    An email will be sent to request quotes from our approved carriers.
-                </p>
-                <div className="space-y-2 text-sm mb-4">
-                    <p><strong>Collection:</strong> {collection.postcode}, {collection.country}</p>
-                    <p><strong>Delivery:</strong> {delivery.postcode}, {delivery.country}</p>
-                    <p><strong>Type:</strong> {isFullTruckLoad ? 'Full Truck Load' : `${pallets} Pallets`}</p>
-                    <p><strong>Delivery Type:</strong> {deliveryType}</p>
-                    <p><strong>Hide Documents:</strong> {hideDocuments ? 'Yes' : 'No'}</p>
+
+
+                    {/* Quote Request Modal */}
+                    {showTenderForm && (
+                        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+                            <div className="bg-white rounded-lg p-6 max-w-md w-full">
+                                <h3 className="text-lg font-semibold mb-4">Request Quote for Route</h3>
+                                <p className="text-sm text-gray-600 mb-4">
+                                    An email will be sent to request quotes from our approved carriers.
+                                </p>
+                                <div className="space-y-2 text-sm mb-4">
+                                    <p><strong>Collection:</strong> {collection.postcode}, {collection.country}</p>
+                                    <p><strong>Delivery:</strong> {delivery.postcode}, {delivery.country}</p>
+                                    <p><strong>Type:</strong> {isFullTruckLoad ? 'Full Truck Load' : `${pallets} Pallets`}</p>
+                                    <p><strong>Delivery Type:</strong> {deliveryType}</p>
+                                    <p><strong>Hide Documents:</strong> {hideDocuments ? 'Yes' : 'No'}</p>
+                                </div>
+                                <div className="flex gap-2">
+                                    <button 
+                                        onClick={sendQuoteRequest}
+                                        disabled={sending}
+                                        className="flex-1 azelis-blue text-white p-2 rounded hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                                    >
+                                        {sending ? "Sending..." : "Send Request"}
+                                    </button>
+                                    <button 
+                                        onClick={() => setShowTenderForm(false)}
+                                        disabled={sending}
+                                        className="flex-1 bg-gray-200 text-gray-700 p-2 rounded hover:bg-gray-300 transition-colors"
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
-                <div className="flex gap-2">
-                    <button 
-                        onClick={sendQuoteRequest}
-                        disabled={sending}
-                        className="flex-1 azelis-blue text-white p-2 rounded hover:bg-blue-700 disabled:opacity-50 transition-colors"
-                    >
-                        {sending ? "Sending..." : "Send Request"}
-                    </button>
-                    <button 
-                        onClick={() => setShowTenderForm(false)}
-                        disabled={sending}
-                        className="flex-1 bg-gray-200 text-gray-700 p-2 rounded hover:bg-gray-300 transition-colors"
-                    >
-                        Cancel
-                    </button>
-                </div>
-                {error && (
-                    <div className="mt-4 p-2 bg-red-100 text-red-700 rounded">
-                        {error}
-                    </div>
-                )}
-            </div>
-        </div>
-    )}
-</div> {/* Closing tag for the main container (bg-white rounded-lg shadow-lg p-6) */}
+            );
+        };
 
-</div> {/* Closing tag for the outermost div (max-w-4xl mx-auto p-4) */}
-
-); // Closing parenthesis for the return statement
-
-}; // Closing brace for the Calculator component function
-
-// Render the Calculator component into the DOM
-ReactDOM.render(<Calculator />, document.getElementById('root'));
+        ReactDOM.render(<Calculator />, document.getElementById('root'));
+    </script>
+</body>
+</html>
