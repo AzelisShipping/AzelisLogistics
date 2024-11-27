@@ -4,18 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Azelis Shipping Calculator</title>
+    <!-- Tailwind CSS -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <!-- EmailJS -->
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script>
         (function() {
             emailjs.init("ZU_ZvcimnTfLR22wF");
         })();
     </script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
-    <script src="https://unpkg.com/react@17/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script>
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <!-- React and Babel -->
+    <script src="https://unpkg.com/react@17/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js" crossorigin></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Custom Styles -->
     <style>
         .azelis-blue { background-color: #003087; }
         .azelis-blue-hover:hover { background-color: #002670; }
@@ -83,524 +88,533 @@
 
     <div id="root"></div>
 
+    <!-- Firebase Configuration and Initialization -->
     <script>
+        // Your web app's Firebase configuration
         const firebaseConfig = {
-            apiKey: "AIzaSyDiIRLwLeMAf1VZbZ7ygvGDu-gZH6sA424",
+            apiKey: "YOUR_FIREBASE_API_KEY",
             authDomain: "azelislogistics.firebaseapp.com",
             projectId: "azelislogistics",
-            storageBucket: "azelislogistics.firebasestorage.app",
+            storageBucket: "azelislogistics.appspot.com",
             messagingSenderId: "13102382958",
             appId: "1:13102382958:web:82a3324843432519cb8b7f",
             measurementId: "G-Q6JNN8DHJQ"
         };
+
+        // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
+
+        // Initialize Firestore
         const db = firebase.firestore();
+    </script>
 
-        // Country mapping (first 20 as requested)
+    <!-- Country Mapping -->
+    <script>
+        // Country mapping
         const COUNTRY_MAPPING = {
-const countryCodes = {
-    "Afghanistan": "AFG",
-    "Albania": "ALB",
-    "Algeria": "DZA",
-    "Andorra": "AND",
-    "Angola": "AGO",
-    "Antigua and Barbuda": "ATG",
-    "Argentina": "ARG",
-    "Armenia": "ARM",
-    "Australia": "AUS",
-    "Austria": "AUT",
-    "Azerbaijan": "AZE",
-    "Bahamas": "BHS",
-    "Bahrain": "BHR",
-    "Bangladesh": "BGD",
-    "Barbados": "BRB",
-    "Belarus": "BLR",
-    "Belgium": "BEL",
-    "Belize": "BLZ",
-    "Benin": "BEN",
-    "Bhutan": "BTN",
-    "Bolivia": "BOL",
-    "Bosnia and Herzegovina": "BIH",
-    "Botswana": "BWA",
-    "Brazil": "BRA",
-    "Brunei": "BRN",
-    "Bulgaria": "BGR",
-    "Burkina Faso": "BFA",
-    "Burundi": "BDI",
-    "Cabo Verde": "CPV",
-    "Cambodia": "KHM",
-    "Cameroon": "CMR",
-    "Canada": "CAN",
-    "Central African Republic": "CAF",
-    "Chad": "TCD",
-    "Chile": "CHL",
-    "China": "CHN",
-    "Colombia": "COL",
-    "Comoros": "COM",
-    "Republic of the Congo": "COG",
-    "Democratic Republic of the Congo": "COD",
-    "Costa Rica": "CRI",
-    "Côte d'Ivoire": "CIV",
-    "Croatia": "HRV",
-    "Cuba": "CUB",
-    "Cyprus": "CYP",
-    "Czech Republic": "CZE",
-    "Denmark": "DNK",
-    "Djibouti": "DJI",
-    "Dominica": "DMA",
-    "Dominican Republic": "DOM",
-    "Ecuador": "ECU",
-    "Egypt": "EGY",
-    "El Salvador": "SLV",
-    "Equatorial Guinea": "GNQ",
-    "Eritrea": "ERI",
-    "Estonia": "EST",
-    "Eswatini": "SWZ",
-    "Ethiopia": "ETH",
-    "Fiji": "FJI",
-    "Finland": "FIN",
-    "France": "FRA",
-    "Gabon": "GAB",
-    "Gambia": "GMB",
-    "Georgia": "GEO",
-    "Ghana": "GHA",
-    "Greece": "GRC",
-    "Grenada": "GRD",
-    "Guatemala": "GTM",
-    "Guinea": "GIN",
-    "Guinea-Bissau": "GNB",
-    "Guyana": "GUY",
-    "Haiti": "HTI",
-    "Honduras": "HND",
-    "Hungary": "HUN",
-    "Iceland": "ISL",
-    "India": "IND",
-    "Indonesia": "IDN",
-    "Iran": "IRN",
-    "Iraq": "IRQ",
-    "Ireland": "IRL",
-    "Israel": "ISR",
-    "Jamaica": "JAM",
-    "Japan": "JPN",
-    "Jordan": "JOR",
-    "Kazakhstan": "KAZ",
-    "Kenya": "KEN",
-    "Kiribati": "KIR",
-    "North Korea": "PRK",
-    "South Korea": "KOR",
-    "Kuwait": "KWT",
-    "Kyrgyzstan": "KGZ",
-    "Laos": "LAO",
-    "Latvia": "LVA",
-    "Lebanon": "LBN",
-    "Lesotho": "LSO",
-    "Liberia": "LBR",
-    "Libya": "LBY",
-    "Liechtenstein": "LIE",
-    "Lithuania": "LTU",
-    "Luxembourg": "LUX",
-    "Madagascar": "MDG",
-    "Malawi": "MWI",
-    "Malaysia": "MYS",
-    "Maldives": "MDV",
-    "Mali": "MLI",
-    "Malta": "MLT",
-    "Marshall Islands": "MHL",
-    "Mauritania": "MRT",
-    "Mauritius": "MUS",
-    "Mexico": "MEX",
-    "Micronesia": "FSM",
-    "Moldova": "MDA",
-    "Monaco": "MCO",
-    "Mongolia": "MNG",
-    "Montenegro": "MNE",
-    "Morocco": "MAR",
-    "Mozambique": "MOZ",
-    "Myanmar": "MMR",
-    "Namibia": "NAM",
-    "Nauru": "NRU",
-    "Nepal": "NPL",
-    "Netherlands": "NLD",
-    "New Zealand": "NZL",
-    "Nicaragua": "NIC",
-    "Niger": "NER",
-    "Nigeria": "NGA",
-    "Norway": "NOR",
-    "Oman": "OMN",
-    "Pakistan": "PAK",
-    "Palau": "PLW",
-    "Panama": "PAN",
-    "Papua New Guinea": "PNG",
-    "Paraguay": "PRY",
-    "Peru": "PER",
-    "Philippines": "PHL",
-    "Poland": "POL",
-    "Portugal": "PRT",
-    "Qatar": "QAT",
-    "Romania": "ROU",
-    "Russia": "RUS",
-    "Rwanda": "RWA",
-    "Saint Kitts and Nevis": "KNA",
-    "Saint Lucia": "LCA",
-    "Saint Vincent and the Grenadines": "VCT",
-    "Samoa": "WSM",
-    "San Marino": "SMR",
-    "São Tomé and Príncipe": "STP",
-    "Saudi Arabia": "SAU",
-    "Senegal": "SEN",
-    "Serbia": "SRB",
-    "Seychelles": "SYC",
-    "Sierra Leone": "SLE",
-    "Singapore": "SGP",
-    "Slovakia": "SVK",
-    "Slovenia": "SVN",
-    "Solomon Islands": "SLB",
-    "Somalia": "SOM",
-    "South Africa": "ZAF",
-    "South Sudan": "SSD",
-    "Sri Lanka": "LKA",
-    "Sudan": "SDN",
-    "Suriname": "SUR",
-    "Sweden": "SWE",
-    "Switzerland": "CHE",
-    "Syria": "SYR",
-    "Taiwan": "TWN",
-    "Tajikistan": "TJK",
-    "Tanzania": "TZA",
-    "Thailand": "THA",
-    "Timor-Leste": "TLS",
-    "Togo": "TGO",
-    "Tonga": "TON",
-    "Trinidad and Tobago": "TTO",
-    "Tunisia": "TUN",
-    "Turkey": "TUR",
-    "Turkmenistan": "TKM",
-    "Tuvalu": "TUV",
-    "Uganda": "UGA",
-    "Ukraine": "UKR",
-    "United Arab Emirates": "ARE",
-    "United States": "USA",
-    "Uruguay": "URY",
-    "Uzbekistan": "UZB",
-    "Vanuatu": "VUT",
-    "Vatican City": "VAT",
-    "Venezuela": "VEN",
-    "Vietnam": "VNM",
-    "Yemen": "YEM",
-    "Zambia": "ZMB",
-    "Zimbabwe": "ZWE"
-
+            "Afghanistan": "AFG",
+            "Albania": "ALB",
+            "Algeria": "DZA",
+            "Andorra": "AND",
+            "Angola": "AGO",
+            "Antigua and Barbuda": "ATG",
+            "Argentina": "ARG",
+            "Armenia": "ARM",
+            "Australia": "AUS",
+            "Austria": "AUT",
+            "Azerbaijan": "AZE",
+            "Bahamas": "BHS",
+            "Bahrain": "BHR",
+            "Bangladesh": "BGD",
+            "Barbados": "BRB",
+            "Belarus": "BLR",
+            "Belgium": "BEL",
+            "Belize": "BLZ",
+            "Benin": "BEN",
+            "Bhutan": "BTN",
+            "Bolivia": "BOL",
+            "Bosnia and Herzegovina": "BIH",
+            "Botswana": "BWA",
+            "Brazil": "BRA",
+            "Brunei": "BRN",
+            "Bulgaria": "BGR",
+            "Burkina Faso": "BFA",
+            "Burundi": "BDI",
+            "Cabo Verde": "CPV",
+            "Cambodia": "KHM",
+            "Cameroon": "CMR",
+            "Canada": "CAN",
+            "Central African Republic": "CAF",
+            "Chad": "TCD",
+            "Chile": "CHL",
+            "China": "CHN",
+            "Colombia": "COL",
+            "Comoros": "COM",
+            "Republic of the Congo": "COG",
+            "Democratic Republic of the Congo": "COD",
+            "Costa Rica": "CRI",
+            "Côte d'Ivoire": "CIV",
+            "Croatia": "HRV",
+            "Cuba": "CUB",
+            "Cyprus": "CYP",
+            "Czech Republic": "CZE",
+            "Denmark": "DNK",
+            "Djibouti": "DJI",
+            "Dominica": "DMA",
+            "Dominican Republic": "DOM",
+            "Ecuador": "ECU",
+            "Egypt": "EGY",
+            "El Salvador": "SLV",
+            "Equatorial Guinea": "GNQ",
+            "Eritrea": "ERI",
+            "Estonia": "EST",
+            "Eswatini": "SWZ",
+            "Ethiopia": "ETH",
+            "Fiji": "FJI",
+            "Finland": "FIN",
+            "France": "FRA",
+            "Gabon": "GAB",
+            "Gambia": "GMB",
+            "Georgia": "GEO",
+            "Ghana": "GHA",
+            "Greece": "GRC",
+            "Grenada": "GRD",
+            "Guatemala": "GTM",
+            "Guinea": "GIN",
+            "Guinea-Bissau": "GNB",
+            "Guyana": "GUY",
+            "Haiti": "HTI",
+            "Honduras": "HND",
+            "Hungary": "HUN",
+            "Iceland": "ISL",
+            "India": "IND",
+            "Indonesia": "IDN",
+            "Iran": "IRN",
+            "Iraq": "IRQ",
+            "Ireland": "IRL",
+            "Israel": "ISR",
+            "Jamaica": "JAM",
+            "Japan": "JPN",
+            "Jordan": "JOR",
+            "Kazakhstan": "KAZ",
+            "Kenya": "KEN",
+            "Kiribati": "KIR",
+            "North Korea": "PRK",
+            "South Korea": "KOR",
+            "Kuwait": "KWT",
+            "Kyrgyzstan": "KGZ",
+            "Laos": "LAO",
+            "Latvia": "LVA",
+            "Lebanon": "LBN",
+            "Lesotho": "LSO",
+            "Liberia": "LBR",
+            "Libya": "LBY",
+            "Liechtenstein": "LIE",
+            "Lithuania": "LTU",
+            "Luxembourg": "LUX",
+            "Madagascar": "MDG",
+            "Malawi": "MWI",
+            "Malaysia": "MYS",
+            "Maldives": "MDV",
+            "Mali": "MLI",
+            "Malta": "MLT",
+            "Marshall Islands": "MHL",
+            "Mauritania": "MRT",
+            "Mauritius": "MUS",
+            "Mexico": "MEX",
+            "Micronesia": "FSM",
+            "Moldova": "MDA",
+            "Monaco": "MCO",
+            "Mongolia": "MNG",
+            "Montenegro": "MNE",
+            "Morocco": "MAR",
+            "Mozambique": "MOZ",
+            "Myanmar": "MMR",
+            "Namibia": "NAM",
+            "Nauru": "NRU",
+            "Nepal": "NPL",
+            "Netherlands": "NLD",
+            "New Zealand": "NZL",
+            "Nicaragua": "NIC",
+            "Niger": "NER",
+            "Nigeria": "NGA",
+            "Norway": "NOR",
+            "Oman": "OMN",
+            "Pakistan": "PAK",
+            "Palau": "PLW",
+            "Panama": "PAN",
+            "Papua New Guinea": "PNG",
+            "Paraguay": "PRY",
+            "Peru": "PER",
+            "Philippines": "PHL",
+            "Poland": "POL",
+            "Portugal": "PRT",
+            "Qatar": "QAT",
+            "Romania": "ROU",
+            "Russia": "RUS",
+            "Rwanda": "RWA",
+            "Saint Kitts and Nevis": "KNA",
+            "Saint Lucia": "LCA",
+            "Saint Vincent and the Grenadines": "VCT",
+            "Samoa": "WSM",
+            "San Marino": "SMR",
+            "São Tomé and Príncipe": "STP",
+            "Saudi Arabia": "SAU",
+            "Senegal": "SEN",
+            "Serbia": "SRB",
+            "Seychelles": "SYC",
+            "Sierra Leone": "SLE",
+            "Singapore": "SGP",
+            "Slovakia": "SVK",
+            "Slovenia": "SVN",
+            "Solomon Islands": "SLB",
+            "Somalia": "SOM",
+            "South Africa": "ZAF",
+            "South Sudan": "SSD",
+            "Sri Lanka": "LKA",
+            "Sudan": "SDN",
+            "Suriname": "SUR",
+            "Sweden": "SWE",
+            "Switzerland": "CHE",
+            "Syria": "SYR",
+            "Taiwan": "TWN",
+            "Tajikistan": "TJK",
+            "Tanzania": "TZA",
+            "Thailand": "THA",
+            "Timor-Leste": "TLS",
+            "Togo": "TGO",
+            "Tonga": "TON",
+            "Trinidad and Tobago": "TTO",
+            "Tunisia": "TUN",
+            "Turkey": "TUR",
+            "Turkmenistan": "TKM",
+            "Tuvalu": "TUV",
+            "Uganda": "UGA",
+            "Ukraine": "UKR",
+            "United Arab Emirates": "ARE",
+            "United States": "USA",
+            "Uruguay": "URY",
+            "Uzbekistan": "UZB",
+            "Vanuatu": "VUT",
+            "Vatican City": "VAT",
+            "Venezuela": "VEN",
+            "Vietnam": "VNM",
+            "Yemen": "YEM",
+            "Zambia": "ZMB",
+            "Zimbabwe": "ZWE"
         };
 
         const COUNTRY_CODES = Object.values(COUNTRY_MAPPING);
         const COUNTRY_NAMES = Object.keys(COUNTRY_MAPPING);
     </script>
 
+    <!-- React Components and Main Script -->
     <script type="text/babel">
-    // CountrySelector component
-    const CountrySelector = ({ value, onChange, label, isOpen, onToggle, searchTerm, onSearchChange }) => {
-        return (
-            <div className="relative">
-                <label className="block text-sm font-medium mb-1 text-gray-600">
-                    {label} *
-                </label>
+        const { useState, useEffect } = React;
+
+        // CountrySelector component
+        const CountrySelector = ({ value, onChange, label, isOpen, onToggle, searchTerm, onSearchChange }) => {
+            return (
                 <div className="relative">
-                    <input
-                        type="text"
-                        className="combobox-input pr-10"
-                        value={searchTerm}
-                        onChange={(e) => onSearchChange(e.target.value)}
-                        onClick={() => onToggle(true)}
-                        placeholder="Search or select country"
-                    />
-                    <button
-                        type="button"
-                        className="absolute inset-y-0 right-0 px-3 flex items-center"
-                        onClick={() => onToggle(!isOpen)}
-                    >
-                        ▼
-                    </button>
-                </div>
-                {isOpen && (
-                    <div className="country-dropdown">
-                        {COUNTRY_NAMES.filter(name => 
-                            name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            COUNTRY_MAPPING[name].toLowerCase().includes(searchTerm.toLowerCase())
-                        ).map(name => (
-                            <div
-                                key={name}
-                                className="country-option"
-                                onClick={() => {
-                                    onChange(COUNTRY_MAPPING[name]);
-                                    onToggle(false);
-                                    onSearchChange(name);
-                                }}
-                            >
-                                <span>{name}</span>
-                                <span className="text-gray-500">{COUNTRY_MAPPING[name]}</span>
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </div>
-        );
-    };
-
-    // PostcodeSelector component
-    const PostcodeSelector = ({ isOpen, onClose, onSelect, savedPostcodes, country, type }) => {
-        const [searchTerm, setSearchTerm] = useState('');
-        const [newPostcode, setNewPostcode] = useState('');
-
-        if (!isOpen) return null;
-
-        const filteredPostcodes = savedPostcodes.filter(postcode => 
-            postcode.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-
-        return (
-            <div className="postcode-modal">
-                <div className="bg-white rounded-lg p-6 w-full max-w-md">
-                    <h3 className="text-lg font-semibold mb-4">Select or Add Postcode</h3>
-                    <input
-                        type="text"
-                        className="combobox-input mb-4"
-                        placeholder="Search existing postcodes"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                    <div className="max-h-60 overflow-y-auto mb-4">
-                        {filteredPostcodes.map(postcode => (
-                            <div
-                                key={postcode}
-                                className="p-2 hover:bg-gray-100 cursor-pointer rounded"
-                                onClick={() => {
-                                    onSelect(postcode);
-                                    onClose();
-                                }}
-                            >
-                                {postcode}
-                            </div>
-                        ))}
-                    </div>
-                    <div className="border-t pt-4">
-                        <p className="text-sm text-gray-600 mb-2">Add new postcode:</p>
+                    <label className="block text-sm font-medium mb-1 text-gray-600">
+                        {label} *
+                    </label>
+                    <div className="relative">
                         <input
                             type="text"
-                            className="combobox-input mb-2"
-                            placeholder="Enter new postcode"
-                            value={newPostcode}
-                            onChange={(e) => setNewPostcode(e.target.value)}
+                            className="combobox-input pr-10"
+                            value={searchTerm}
+                            onChange={(e) => onSearchChange(e.target.value)}
+                            onClick={() => onToggle(true)}
+                            placeholder="Search or select country"
                         />
-                        <div className="flex justify-end space-x-2">
-                            <button
-                                onClick={onClose}
-                                className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={() => {
-                                    if (newPostcode) {
-                                        onSelect(newPostcode);
+                        <button
+                            type="button"
+                            className="absolute inset-y-0 right-0 px-3 flex items-center"
+                            onClick={() => onToggle(!isOpen)}
+                        >
+                            ▼
+                        </button>
+                    </div>
+                    {isOpen && (
+                        <div className="country-dropdown">
+                            {COUNTRY_NAMES.filter(name => 
+                                name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                COUNTRY_MAPPING[name].toLowerCase().includes(searchTerm.toLowerCase())
+                            ).map(name => (
+                                <div
+                                    key={name}
+                                    className="country-option"
+                                    onClick={() => {
+                                        onChange(COUNTRY_MAPPING[name]);
+                                        onToggle(false);
+                                        onSearchChange(name);
+                                    }}
+                                >
+                                    <span>{name}</span>
+                                    <span className="text-gray-500">{COUNTRY_MAPPING[name]}</span>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        // PostcodeSelector component
+        const PostcodeSelector = ({ isOpen, onClose, onSelect, savedPostcodes, country, type }) => {
+            const [searchTerm, setSearchTerm] = useState('');
+            const [newPostcode, setNewPostcode] = useState('');
+
+            if (!isOpen) return null;
+
+            const filteredPostcodes = savedPostcodes.filter(postcode => 
+                postcode.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+
+            return (
+                <div className="postcode-modal">
+                    <div className="bg-white rounded-lg p-6 w-full max-w-md">
+                        <h3 className="text-lg font-semibold mb-4">Select or Add Postcode</h3>
+                        <input
+                            type="text"
+                            className="combobox-input mb-4"
+                            placeholder="Search existing postcodes"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                        <div className="max-h-60 overflow-y-auto mb-4">
+                            {filteredPostcodes.map(postcode => (
+                                <div
+                                    key={postcode}
+                                    className="p-2 hover:bg-gray-100 cursor-pointer rounded"
+                                    onClick={() => {
+                                        onSelect(postcode);
                                         onClose();
-                                    }
-                                }}
-                                className="px-4 py-2 azelis-blue text-white rounded hover:bg-blue-700"
-                            >
-                                Add & Select
-                            </button>
+                                    }}
+                                >
+                                    {postcode}
+                                </div>
+                            ))}
+                        </div>
+                        <div className="border-t pt-4">
+                            <p className="text-sm text-gray-600 mb-2">Add new postcode:</p>
+                            <input
+                                type="text"
+                                className="combobox-input mb-2"
+                                placeholder="Enter new postcode"
+                                value={newPostcode}
+                                onChange={(e) => setNewPostcode(e.target.value)}
+                            />
+                            <div className="flex justify-end space-x-2">
+                                <button
+                                    onClick={onClose}
+                                    className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        if (newPostcode) {
+                                            onSelect(newPostcode);
+                                            onClose();
+                                        }
+                                    }}
+                                    className="px-4 py-2 azelis-blue text-white rounded hover:bg-blue-700"
+                                >
+                                    Add & Select
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        );
-    };
+            );
+        };
 
-    const { useState, useEffect, useRef } = React;
-const Calculator = () => {
-        const [collection, setCollection] = useState({ country: '', location: '', postcode: '' });
-        const [delivery, setDelivery] = useState({ country: '', location: '', postcode: '' });
-        const [pallets, setPallets] = useState(1);
-        const [deliveryType, setDeliveryType] = useState('STD');
-        const [hideDocuments, setHideDocuments] = useState(false);
-        const [showTenderForm, setShowTenderForm] = useState(false);
-        const [isFullTruckLoad, setIsFullTruckLoad] = useState(false);
-        const [sending, setSending] = useState(false);
-        const [error, setError] = useState(null);
-        const [loading, setLoading] = useState(true);
-        const [savedRoutes, setSavedRoutes] = useState([]);
-        const [similarRoutes, setSimilarRoutes] = useState([]);
-        const [showSimilarRoutes, setShowSimilarRoutes] = useState(false);
-        const [exactMatchRate, setExactMatchRate] = useState(null);
+        const Calculator = () => {
+            const [collection, setCollection] = useState({ country: '', location: '', postcode: '' });
+            const [delivery, setDelivery] = useState({ country: '', location: '', postcode: '' });
+            const [pallets, setPallets] = useState(1);
+            const [deliveryType, setDeliveryType] = useState('STD');
+            const [hideDocuments, setHideDocuments] = useState(false);
+            const [showTenderForm, setShowTenderForm] = useState(false);
+            const [isFullTruckLoad, setIsFullTruckLoad] = useState(false);
+            const [sending, setSending] = useState(false);
+            const [error, setError] = useState(null);
+            const [loading, setLoading] = useState(true);
+            const [savedRoutes, setSavedRoutes] = useState([]);
+            const [similarRoutes, setSimilarRoutes] = useState([]);
+            const [showSimilarRoutes, setShowSimilarRoutes] = useState(false);
+            const [exactMatchRate, setExactMatchRate] = useState(null);
 
-        // New state for improved dropdowns
-        const [showCollectionCountry, setShowCollectionCountry] = useState(false);
-        const [showDeliveryCountry, setShowDeliveryCountry] = useState(false);
-        const [showCollectionPostcode, setShowCollectionPostcode] = useState(false);
-        const [showDeliveryPostcode, setShowDeliveryPostcode] = useState(false);
-        const [collectionCountrySearch, setCollectionCountrySearch] = useState('');
-        const [deliveryCountrySearch, setDeliveryCountrySearch] = useState('');
-        const [savedPostcodes, setSavedPostcodes] = useState({ collection: [], delivery: [] });
+            // New state for improved dropdowns
+            const [showCollectionCountry, setShowCollectionCountry] = useState(false);
+            const [showDeliveryCountry, setShowDeliveryCountry] = useState(false);
+            const [showCollectionPostcode, setShowCollectionPostcode] = useState(false);
+            const [showDeliveryPostcode, setShowDeliveryPostcode] = useState(false);
+            const [collectionCountrySearch, setCollectionCountrySearch] = useState('');
+            const [deliveryCountrySearch, setDeliveryCountrySearch] = useState('');
+            const [savedPostcodes, setSavedPostcodes] = useState({ collection: [], delivery: [] });
 
-        useEffect(() => {
-            const fetchRoutes = async () => {
-                try {
-                    const snapshot = await db.collection('rates').get();
-                    const routes = snapshot.docs.map(doc => ({
-                        id: doc.id,
-                        ...doc.data()
-                    }));
-                    setSavedRoutes(routes);
+            useEffect(() => {
+                const fetchRoutes = async () => {
+                    try {
+                        const snapshot = await db.collection('rates').get();
+                        const routes = snapshot.docs.map(doc => ({
+                            id: doc.id,
+                            ...doc.data()
+                        }));
+                        setSavedRoutes(routes);
 
-                    // Extract unique postcodes
-                    const collectionPostcodes = new Set(routes.map(r => r.collectionPostcode));
-                    const deliveryPostcodes = new Set(routes.map(r => r.deliveryPostcode));
-                    setSavedPostcodes({
-                        collection: Array.from(collectionPostcodes),
-                        delivery: Array.from(deliveryPostcodes)
-                    });
-                    
-                    setLoading(false);
-                } catch (error) {
-                    console.error("Error fetching routes:", error);
-                    setError("Failed to load saved routes.");
-                    setLoading(false);
+                        // Extract unique postcodes
+                        const collectionPostcodes = new Set(routes.map(r => r.collectionPostcode));
+                        const deliveryPostcodes = new Set(routes.map(r => r.deliveryPostcode));
+                        setSavedPostcodes({
+                            collection: Array.from(collectionPostcodes),
+                            delivery: Array.from(deliveryPostcodes)
+                        });
+                        
+                        setLoading(false);
+                    } catch (error) {
+                        console.error("Error fetching routes:", error);
+                        setError("Failed to load saved routes.");
+                        setLoading(false);
+                    }
+                };
+
+                fetchRoutes();
+            }, []);
+
+            const findSimilarRoutes = () => {
+                if (!collection.country || !delivery.country) return;
+
+                let matches = savedRoutes.filter(route => 
+                    route.collectionCountry === collection.country &&
+                    route.deliveryCountry === delivery.country &&
+                    route.deliveryType === deliveryType &&
+                    route.isFullTruckLoad === isFullTruckLoad
+                );
+
+                const exactMatch = matches.find(route =>
+                    route.collectionPostcode === collection.postcode &&
+                    route.deliveryPostcode === delivery.postcode
+                );
+
+                if (exactMatch) {
+                    setExactMatchRate(exactMatch);
+                    matches = matches.filter(r => r !== exactMatch);
+                } else {
+                    setExactMatchRate(null);
                 }
+
+                matches.sort((a, b) => {
+                    const aCollectionSimilarity = stringSimilarity(a.collectionPostcode, collection.postcode);
+                    const aDeliverySimilarity = stringSimilarity(a.deliveryPostcode, delivery.postcode);
+                    const bCollectionSimilarity = stringSimilarity(b.collectionPostcode, collection.postcode);
+                    const bDeliverySimilarity = stringSimilarity(b.deliveryPostcode, delivery.postcode);
+                    
+                    return (bCollectionSimilarity + bDeliverySimilarity) - (aCollectionSimilarity + aDeliverySimilarity);
+                });
+
+                setSimilarRoutes(matches.slice(0, 5));
+                setShowSimilarRoutes(true);
             };
 
-            fetchRoutes();
-        }, []);
+            const stringSimilarity = (str1, str2) => {
+                if (!str1 || !str2) return 0;
+                const len = Math.min(str1.length, str2.length);
+                let matches = 0;
+                for (let i = 0; i < len; i++) {
+                    if (str1[i] === str2[i]) matches++;
+                }
+                return matches / Math.max(str1.length, str2.length);
+            };
 
-        const findSimilarRoutes = () => {
-            if (!collection.country || !delivery.country) return;
+            const handleCalculate = () => {
+                setError(null);
 
-            let matches = savedRoutes.filter(route => 
-                route.collectionCountry === collection.country &&
-                route.deliveryCountry === delivery.country &&
-                route.deliveryType === deliveryType &&
-                route.isFullTruckLoad === isFullTruckLoad
-            );
-
-            const exactMatch = matches.find(route =>
-                route.collectionPostcode === collection.postcode &&
-                route.deliveryPostcode === delivery.postcode
-            );
-
-            if (exactMatch) {
-                setExactMatchRate(exactMatch);
-                matches = matches.filter(r => r !== exactMatch);
-            } else {
-                setExactMatchRate(null);
-            }
-
-            matches.sort((a, b) => {
-                const aCollectionSimilarity = stringSimilarity(a.collectionPostcode, collection.postcode);
-                const aDeliverySimilarity = stringSimilarity(a.deliveryPostcode, delivery.postcode);
-                const bCollectionSimilarity = stringSimilarity(b.collectionPostcode, collection.postcode);
-                const bDeliverySimilarity = stringSimilarity(b.deliveryPostcode, delivery.postcode);
-                
-                return (bCollectionSimilarity + bDeliverySimilarity) - (aCollectionSimilarity + aDeliverySimilarity);
-            });
-
-            setSimilarRoutes(matches.slice(0, 5));
-            setShowSimilarRoutes(true);
-        };
-
-        const stringSimilarity = (str1, str2) => {
-            if (!str1 || !str2) return 0;
-            const len = Math.min(str1.length, str2.length);
-            let matches = 0;
-            for (let i = 0; i < len; i++) {
-                if (str1[i] === str2[i]) matches++;
-            }
-            return matches / Math.max(str1.length, str2.length);
-        };
-
-        const handleCalculate = () => {
-            setError(null);
-
-            if (!collection.country || !delivery.country) {
-                setError('Please select both collection and delivery countries.');
-                return;
-            }
-
-            if (!collection.postcode || !delivery.postcode) {
-                setError('Please enter both collection and delivery postcodes.');
-                return;
-            }
-
-            if (!COUNTRY_CODES.includes(collection.country)) {
-                setError('Invalid collection country code.');
-                return;
-            }
-
-            if (!COUNTRY_CODES.includes(delivery.country)) {
-                setError('Invalid delivery country code.');
-                return;
-            }
-
-            findSimilarRoutes();
-        };
-
-        const handleAddRoute = async () => {
-            try {
-                const duplicate = await db.collection('rates')
-                    .where('collectionCountry', '==', collection.country)
-                    .where('collectionPostcode', '==', collection.postcode)
-                    .where('deliveryCountry', '==', delivery.country)
-                    .where('deliveryPostcode', '==', delivery.postcode)
-                    .where('deliveryType', '==', deliveryType)
-                    .where('isFullTruckLoad', '==', isFullTruckLoad)
-                    .get();
-
-                if (!duplicate.empty) {
-                    setError('This route already exists in the database.');
+                if (!collection.country || !delivery.country) {
+                    setError('Please select both collection and delivery countries.');
                     return;
                 }
 
-                await db.collection('rates').add({
-                    collectionCountry: collection.country,
-                    collectionPostcode: collection.postcode,
-                    collectionLocation: collection.location,
-                    deliveryCountry: delivery.country,
-                    deliveryPostcode: delivery.postcode,
-                    deliveryLocation: delivery.location,
-                    deliveryType,
-                    isFullTruckLoad,
-                    dateAdded: new Date().toISOString(),
-                });
-
-                alert('Route added successfully!');
-            } catch (error) {
-                console.error('Error adding route:', error);
-                setError('Failed to add route to database.');
-            }
-        };
-
-        const sendQuoteRequest = async () => {
-            setSending(true);
-            setError(null);
-
-            try {
-                const hauliersSnapshot = await db.collection('hauliers')
-                    .where('active', '==', true)
-                    .get();
-
-                const relevantHauliers = hauliersSnapshot.docs
-                    .map(doc => ({ id: doc.id, ...doc.data() }))
-                    .filter(h => h.countries.includes(collection.country) || h.countries.includes(delivery.country));
-
-                if (relevantHauliers.length === 0) {
-                    throw new Error('No active hauliers found for these countries.');
+                if (!collection.postcode || !delivery.postcode) {
+                    setError('Please enter both collection and delivery postcodes.');
+                    return;
                 }
 
-                const emailPromises = relevantHauliers.map(haulier => {
-                    const templateParams = {
-                        to_email: haulier.email,
-                        from_name: "Azelis Shipping Calculator",
-                        company_name: haulier.name,
-                        subject: `Quote Request: ${collection.country} to ${delivery.country}`,
-                        message: `
+                if (!COUNTRY_CODES.includes(collection.country)) {
+                    setError('Invalid collection country code.');
+                    return;
+                }
+
+                if (!COUNTRY_CODES.includes(delivery.country)) {
+                    setError('Invalid delivery country code.');
+                    return;
+                }
+
+                findSimilarRoutes();
+            };
+
+            const handleAddRoute = async () => {
+                try {
+                    const duplicate = await db.collection('rates')
+                        .where('collectionCountry', '==', collection.country)
+                        .where('collectionPostcode', '==', collection.postcode)
+                        .where('deliveryCountry', '==', delivery.country)
+                        .where('deliveryPostcode', '==', delivery.postcode)
+                        .where('deliveryType', '==', deliveryType)
+                        .where('isFullTruckLoad', '==', isFullTruckLoad)
+                        .get();
+
+                    if (!duplicate.empty) {
+                        setError('This route already exists in the database.');
+                        return;
+                    }
+
+                    await db.collection('rates').add({
+                        collectionCountry: collection.country,
+                        collectionPostcode: collection.postcode,
+                        collectionLocation: collection.location,
+                        deliveryCountry: delivery.country,
+                        deliveryPostcode: delivery.postcode,
+                        deliveryLocation: delivery.location,
+                        deliveryType,
+                        isFullTruckLoad,
+                        dateAdded: new Date().toISOString(),
+                    });
+
+                    alert('Route added successfully!');
+                } catch (error) {
+                    console.error('Error adding route:', error);
+                    setError('Failed to add route to database.');
+                }
+            };
+
+            const sendQuoteRequest = async () => {
+                setSending(true);
+                setError(null);
+
+                try {
+                    const hauliersSnapshot = await db.collection('hauliers')
+                        .where('active', '==', true)
+                        .get();
+
+                    const relevantHauliers = hauliersSnapshot.docs
+                        .map(doc => ({ id: doc.id, ...doc.data() }))
+                        .filter(h => h.countries.includes(collection.country) || h.countries.includes(delivery.country));
+
+                    if (relevantHauliers.length === 0) {
+                        throw new Error('No active hauliers found for these countries.');
+                    }
+
+                    const emailPromises = relevantHauliers.map(haulier => {
+                        const templateParams = {
+                            to_email: haulier.email,
+                            from_name: "Azelis Shipping Calculator",
+                            company_name: haulier.name,
+                            subject: `Quote Request: ${collection.country} to ${delivery.country}`,
+                            message: `
 Dear Valued Transport Partner,
 
 We are seeking quotes for the following shipping route:
@@ -625,327 +639,327 @@ Important Notes:
 • Include any additional surcharges or fees in your quote
 • Confirm your earliest available collection date
 • If you cannot service this route, please let us know`,
-                        reply_to: "AzelisLogistics@outlook.com"
-                    };
+                            reply_to: "AzelisLogistics@outlook.com"
+                        };
 
-                    return emailjs.send('Azelis_Logistics', 'template_hho0c06', templateParams);
-                });
+                        return emailjs.send('Azelis_Logistics', 'template_hho0c06', templateParams);
+                    });
 
-                await Promise.all(emailPromises);
-                alert(`Quote requests sent successfully to ${relevantHauliers.length} haulier(s)!`);
-                setShowTenderForm(false);
-            } catch (err) {
-                console.error('Failed to send quote request:', err);
-                setError(err.message || 'Failed to send quote request. Please try again.');
-            } finally {
-                setSending(false);
+                    await Promise.all(emailPromises);
+                    alert(`Quote requests sent successfully to ${relevantHauliers.length} haulier(s)!`);
+                    setShowTenderForm(false);
+                } catch (err) {
+                    console.error('Failed to send quote request:', err);
+                    setError(err.message || 'Failed to send quote request. Please try again.');
+                } finally {
+                    setSending(false);
+                }
+            };
+
+            if (loading) {
+                return (
+                    <div className="flex items-center justify-center h-64">
+                        <div className="text-lg">Loading...</div>
+                    </div>
+                );
             }
-        };
 
-        if (loading) {
             return (
-                <div className="flex items-center justify-center h-64">
-                    <div className="text-lg">Loading...</div>
-                </div>
-            );
-        }
-
-        return (
-            <div className="max-w-4xl mx-auto p-4">
-                <div className="bg-white rounded-lg shadow-lg p-6">
-                    {/* Collection Details */}
-                    <div className="mb-6">
-                        <h2 className="text-lg font-semibold mb-4 text-gray-700">Collection Details</h2>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            <CountrySelector
-                                value={collection.country}
-                                onChange={(code) => setCollection({...collection, country: code})}
-                                label="Collection Country"
-                                isOpen={showCollectionCountry}
-                                onToggle={setShowCollectionCountry}
-                                searchTerm={collectionCountrySearch}
-                                onSearchChange={setCollectionCountrySearch}
-                            />
-                            
-                            <div>
-                                <label className="block text-sm font-medium mb-1 text-gray-600">
-                                    Postcode *
-                                </label>
-                                <button
-                                    onClick={() => setShowCollectionPostcode(true)}
-                                    className="combobox-input text-left"
-                                >
-                                    {collection.postcode || "Select or add postcode"}
-                                </button>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium mb-1 text-gray-400">
-                                    Location (Optional)
-                                </label>
-                                <input
-                                    type="text"
-                                    className="combobox-input"
-                                    value={collection.location}
-                                    onChange={(e) => setCollection({...collection, location: e.target.value})}
-                                    placeholder="City/Town"
+                <div className="max-w-4xl mx-auto p-4">
+                    <div className="bg-white rounded-lg shadow-lg p-6">
+                        {/* Collection Details */}
+                        <div className="mb-6">
+                            <h2 className="text-lg font-semibold mb-4 text-gray-700">Collection Details</h2>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                <CountrySelector
+                                    value={collection.country}
+                                    onChange={(code) => setCollection({...collection, country: code})}
+                                    label="Collection Country"
+                                    isOpen={showCollectionCountry}
+                                    onToggle={setShowCollectionCountry}
+                                    searchTerm={collectionCountrySearch}
+                                    onSearchChange={setCollectionCountrySearch}
                                 />
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Delivery Details */}
-                    <div className="mb-6">
-                        <h2 className="text-lg font-semibold mb-4 text-gray-700">Delivery Details</h2>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            <CountrySelector
-                                value={delivery.country}
-                                onChange={(code) => setDelivery({...delivery, country: code})}
-                                label="Delivery Country"
-                                isOpen={showDeliveryCountry}
-                                onToggle={setShowDeliveryCountry}
-                                searchTerm={deliveryCountrySearch}
-                                onSearchChange={setDeliveryCountrySearch}
-                            />
-                            
-                            <div>
-                                <label className="block text-sm font-medium mb-1 text-gray-600">
-                                    Postcode *
-                                </label>
-                                <button
-                                    onClick={() => setShowDeliveryPostcode(true)}
-                                    className="combobox-input text-left"
-                                >
-                                    {delivery.postcode || "Select or add postcode"}
-                                </button>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium mb-1 text-gray-400">
-                                    Location (Optional)
-                                </label>
-                                <input
-                                    type="text"
-                                    className="combobox-input"
-                                    value={delivery.location}
-                                    onChange={(e) => setDelivery({...delivery, location: e.target.value})}
-                                    placeholder="City/Town"
-                                />
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Shipping Details */}
-                    <div className="mb-6">
-                        <h2 className="text-lg font-semibold mb-4 text-gray-700">Shipping Details</h2>
-                        <div className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium mb-2 text-gray-600">Load Type</label>
-                                <div className="flex gap-4">
+                                
+                                <div>
+                                    <label className="block text-sm font-medium mb-1 text-gray-600">
+                                        Postcode *
+                                    </label>
                                     <button
-                                        type="button"
-                                        className={`flex-1 py-2 px-4 rounded-lg transition-colors ${
-                                            !isFullTruckLoad 
-                                                ? 'azelis-blue text-white' 
-                                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                        }`}
-                                        onClick={() => setIsFullTruckLoad(false)}
+                                        onClick={() => setShowCollectionPostcode(true)}
+                                        className="combobox-input text-left"
                                     >
-                                        Partial Load
-                                    </button>
-                                    <button
-                                        type="button"
-                                        className={`flex-1 py-2 px-4 rounded-lg transition-colors ${
-                                            isFullTruckLoad 
-                                                ? 'azelis-blue text-white' 
-                                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                        }`}
-                                        onClick={() => setIsFullTruckLoad(true)}
-                                    >
-                                        Full Truck Load
+                                        {collection.postcode || "Select or add postcode"}
                                     </button>
                                 </div>
-                            </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {!isFullTruckLoad && (
+                                <div>
+                                    <label className="block text-sm font-medium mb-1 text-gray-400">
+                                        Location (Optional)
+                                    </label>
+                                    <input
+                                        type="text"
+                                        className="combobox-input"
+                                        value={collection.location}
+                                        onChange={(e) => setCollection({...collection, location: e.target.value})}
+                                        placeholder="City/Town"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Delivery Details */}
+                        <div className="mb-6">
+                            <h2 className="text-lg font-semibold mb-4 text-gray-700">Delivery Details</h2>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                <CountrySelector
+                                    value={delivery.country}
+                                    onChange={(code) => setDelivery({...delivery, country: code})}
+                                    label="Delivery Country"
+                                    isOpen={showDeliveryCountry}
+                                    onToggle={setShowDeliveryCountry}
+                                    searchTerm={deliveryCountrySearch}
+                                    onSearchChange={setDeliveryCountrySearch}
+                                />
+                                
+                                <div>
+                                    <label className="block text-sm font-medium mb-1 text-gray-600">
+                                        Postcode *
+                                    </label>
+                                    <button
+                                        onClick={() => setShowDeliveryPostcode(true)}
+                                        className="combobox-input text-left"
+                                    >
+                                        {delivery.postcode || "Select or add postcode"}
+                                    </button>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium mb-1 text-gray-400">
+                                        Location (Optional)
+                                    </label>
+                                    <input
+                                        type="text"
+                                        className="combobox-input"
+                                        value={delivery.location}
+                                        onChange={(e) => setDelivery({...delivery, location: e.target.value})}
+                                        placeholder="City/Town"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Shipping Details */}
+                        <div className="mb-6">
+                            <h2 className="text-lg font-semibold mb-4 text-gray-700">Shipping Details</h2>
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium mb-2 text-gray-600">Load Type</label>
+                                    <div className="flex gap-4">
+                                        <button
+                                            type="button"
+                                            className={`flex-1 py-2 px-4 rounded-lg transition-colors ${
+                                                !isFullTruckLoad 
+                                                    ? 'azelis-blue text-white' 
+                                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                            }`}
+                                            onClick={() => setIsFullTruckLoad(false)}
+                                        >
+                                            Partial Load
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className={`flex-1 py-2 px-4 rounded-lg transition-colors ${
+                                                isFullTruckLoad 
+                                                    ? 'azelis-blue text-white' 
+                                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                            }`}
+                                            onClick={() => setIsFullTruckLoad(true)}
+                                        >
+                                            Full Truck Load
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {!isFullTruckLoad && (
+                                        <div>
+                                            <label className="block text-sm font-medium mb-2 text-gray-600">
+                                                Number of Pallets
+                                            </label>
+                                            <input
+                                                type="number"
+                                                className="combobox-input"
+                                                min="1"
+                                                max="24"
+                                                value={pallets}
+                                                onChange={(e) => setPallets(parseInt(e.target.value) || 1)}
+                                            />
+                                        </div>
+                                    )}
                                     <div>
                                         <label className="block text-sm font-medium mb-2 text-gray-600">
-                                            Number of Pallets
+                                            Delivery Type
                                         </label>
-                                        <input
-                                            type="number"
+                                        <select
                                             className="combobox-input"
-                                            min="1"
-                                            max="24"
-                                            value={pallets}
-                                            onChange={(e) => setPallets(parseInt(e.target.value) || 1)}
-                                        />
+                                            value={deliveryType}
+                                            onChange={(e) => setDeliveryType(e.target.value)}
+                                        >
+                                            <option value="STD">Standard</option>
+                                            <option value="ADR">ADR</option>
+                                            <option value="TEMP">Temperature Controlled</option>
+                                        </select>
                                     </div>
-                                )}
-                                <div>
-                                    <label className="block text-sm font-medium mb-2 text-gray-600">
-                                        Delivery Type
+                                </div>
+
+                                <div className="flex items-center space-x-2">
+                                    <input
+                                        type="checkbox"
+                                        id="hideDocuments"
+                                        checked={hideDocuments}
+                                        onChange={(e) => setHideDocuments(e.target.checked)}
+                                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                    />
+                                    <label htmlFor="hideDocuments" className="text-sm text-gray-700">
+                                        Hide Documents from Customer
                                     </label>
-                                    <select
-                                        className="combobox-input"
-                                        value={deliveryType}
-                                        onChange={(e) => setDeliveryType(e.target.value)}
-                                    >
-<option value="STD">Standard</option>
-                                        <option value="ADR">ADR</option>
-                                        <option value="TEMP">Temperature Controlled</option>
-                                    </select>
                                 </div>
                             </div>
+                        </div>
 
-                            <div className="flex items-center space-x-2">
-                                <input
-                                    type="checkbox"
-                                    id="hideDocuments"
-                                    checked={hideDocuments}
-                                    onChange={(e) => setHideDocuments(e.target.checked)}
-                                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                />
-                                <label htmlFor="hideDocuments" className="text-sm text-gray-700">
-                                    Hide Documents from Customer
-                                </label>
+                        {/* Calculate Button */}
+                        <button
+                            onClick={handleCalculate}
+                            className="w-full azelis-blue text-white p-3 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                        >
+                            Calculate Price
+                        </button>
+
+                        {/* Error Display */}
+                        {error && (
+                            <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                                <div className="text-red-700">{error}</div>
                             </div>
-                        </div>
-                    </div>
+                        )}
 
-                    {/* Calculate Button */}
-                    <button
-                        onClick={handleCalculate}
-                        className="w-full azelis-blue text-white p-3 rounded-lg font-medium hover:bg-blue-700 transition-colors"
-                    >
-                        Calculate Price
-                    </button>
-
-                    {/* Error Display */}
-                    {error && (
-                        <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-                            <div className="text-red-700">{error}</div>
-                        </div>
-                    )}
-
-                    {/* Similar Routes Display */}
-                    {showSimilarRoutes && (
-                        <div className="mt-6">
-                            {exactMatchRate && (
-                                <div className="mb-4">
-                                    <h3 className="text-lg font-semibold mb-2">Exact Match Found</h3>
-                                    <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div>
-                                                <p className="text-sm text-gray-600">Collection: {exactMatchRate.collectionPostcode}, {exactMatchRate.collectionCountry}</p>
-                                                <p className="text-sm text-gray-600">Delivery: {exactMatchRate.deliveryPostcode}, {exactMatchRate.deliveryCountry}</p>
-                                            </div>
-                                            <div className="text-right">
-                                                <p className="text-lg font-semibold text-green-700">
-                                                    {isFullTruckLoad 
-                                                        ? `£${exactMatchRate.fullTruckLoadPrice}`
-                                                        : `£${exactMatchRate.prices?.[pallets]}`
-                                                    }
-                                                </p>
+                        {/* Similar Routes Display */}
+                        {showSimilarRoutes && (
+                            <div className="mt-6">
+                                {exactMatchRate && (
+                                    <div className="mb-4">
+                                        <h3 className="text-lg font-semibold mb-2">Exact Match Found</h3>
+                                        <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div>
+                                                    <p className="text-sm text-gray-600">Collection: {exactMatchRate.collectionPostcode}, {exactMatchRate.collectionCountry}</p>
+                                                    <p className="text-sm text-gray-600">Delivery: {exactMatchRate.deliveryPostcode}, {exactMatchRate.deliveryCountry}</p>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="text-lg font-semibold text-green-700">
+                                                        {isFullTruckLoad 
+                                                            ? `£${exactMatchRate.fullTruckLoadPrice}`
+                                                            : `£${exactMatchRate.prices?.[pallets]}`
+                                                        }
+                                                    </p>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
-                            )}
+                                )}
 
-                            {similarRoutes.length > 0 && (
-                                <div>
-                                    <h3 className="text-lg font-semibold mb-3">Similar Routes</h3>
-                                    <div className="space-y-3">
-                                        {similarRoutes.map((route, index) => (
-                                            <div key={index} className="p-4 bg-gray-50 rounded-lg similar-route">
-                                                <div className="grid grid-cols-2 gap-4">
-                                                    <div>
-                                                        <p className="text-sm text-gray-600">Collection: {route.collectionPostcode}, {route.collectionCountry}</p>
-                                                        <p className="text-sm text-gray-600">Delivery: {route.deliveryPostcode}, {route.deliveryCountry}</p>
-                                                    </div>
-                                                    <div className="text-right">
-                                                        <p className="font-semibold">
-                                                            {isFullTruckLoad 
-                                                                ? `£${route.fullTruckLoadPrice}`
-                                                                : `£${route.prices?.[pallets]}`
-                                                            }
-                                                        </p>
+                                {similarRoutes.length > 0 && (
+                                    <div>
+                                        <h3 className="text-lg font-semibold mb-3">Similar Routes</h3>
+                                        <div className="space-y-3">
+                                            {similarRoutes.map((route, index) => (
+                                                <div key={index} className="p-4 bg-gray-50 rounded-lg similar-route">
+                                                    <div className="grid grid-cols-2 gap-4">
+                                                        <div>
+                                                            <p className="text-sm text-gray-600">Collection: {route.collectionPostcode}, {route.collectionCountry}</p>
+                                                            <p className="text-sm text-gray-600">Delivery: {route.deliveryPostcode}, {route.deliveryCountry}</p>
+                                                        </div>
+                                                        <div className="text-right">
+                                                            <p className="font-semibold">
+                                                                {isFullTruckLoad 
+                                                                    ? `£${route.fullTruckLoadPrice}`
+                                                                    : `£${route.prices?.[pallets]}`
+                                                                }
+                                                            </p>
+                                                        </div>
                                                     </div>
                                                 </div>
-                                            </div>
-                                        ))}
+                                            ))}
+                                        </div>
+                                        <button
+                                            onClick={() => setShowTenderForm(true)}
+                                            className="mt-4 w-full bg-gray-100 text-gray-700 p-3 rounded-lg font-medium hover:bg-gray-200 transition-colors"
+                                        >
+                                            Request New Quote
+                                        </button>
                                     </div>
-                                    <button
-                                        onClick={() => setShowTenderForm(true)}
-                                        className="mt-4 w-full bg-gray-100 text-gray-700 p-3 rounded-lg font-medium hover:bg-gray-200 transition-colors"
+                                )}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Postcode Selection Modals */}
+                    <PostcodeSelector
+                        isOpen={showCollectionPostcode}
+                        onClose={() => setShowCollectionPostcode(false)}
+                        onSelect={(postcode) => setCollection({...collection, postcode})}
+                        savedPostcodes={savedPostcodes.collection}
+                        country={collection.country}
+                        type="collection"
+                    />
+                    <PostcodeSelector
+                        isOpen={showDeliveryPostcode}
+                        onClose={() => setShowDeliveryPostcode(false)}
+                        onSelect={(postcode) => setDelivery({...delivery, postcode})}
+                        savedPostcodes={savedPostcodes.delivery}
+                        country={delivery.country}
+                        type="delivery"
+                    />
+
+                    {/* Quote Request Modal */}
+                    {showTenderForm && (
+                        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+                            <div className="bg-white rounded-lg p-6 max-w-md w-full">
+                                <h3 className="text-lg font-semibold mb-4">Request Quote for Route</h3>
+                                <p className="text-sm text-gray-600 mb-4">
+                                    An email will be sent to request quotes from our approved carriers.
+                                </p>
+                                <div className="space-y-2 text-sm mb-4">
+                                    <p><strong>Collection:</strong> {collection.postcode}, {collection.country}</p>
+                                    <p><strong>Delivery:</strong> {delivery.postcode}, {delivery.country}</p>
+                                    <p><strong>Type:</strong> {isFullTruckLoad ? 'Full Truck Load' : `${pallets} Pallets`}</p>
+                                    <p><strong>Delivery Type:</strong> {deliveryType}</p>
+                                    <p><strong>Hide Documents:</strong> {hideDocuments ? 'Yes' : 'No'}</p>
+                                </div>
+                                <div className="flex gap-2">
+                                    <button 
+                                        onClick={sendQuoteRequest}
+                                        disabled={sending}
+                                        className="flex-1 azelis-blue text-white p-2 rounded hover:bg-blue-700 disabled:opacity-50 transition-colors"
                                     >
-                                        Request New Quote
+                                        {sending ? "Sending..." : "Send Request"}
+                                    </button>
+                                    <button 
+                                        onClick={() => setShowTenderForm(false)}
+                                        disabled={sending}
+                                        className="flex-1 bg-gray-200 text-gray-700 p-2 rounded hover:bg-gray-300 transition-colors"
+                                    >
+                                        Cancel
                                     </button>
                                 </div>
-                            )}
+                            </div>
                         </div>
                     )}
                 </div>
+            );
+        };
 
-                {/* Postcode Selection Modals */}
-                <PostcodeSelector
-                    isOpen={showCollectionPostcode}
-                    onClose={() => setShowCollectionPostcode(false)}
-                    onSelect={(postcode) => setCollection({...collection, postcode})}
-                    savedPostcodes={savedPostcodes.collection}
-                    country={collection.country}
-                    type="collection"
-                />
-                <PostcodeSelector
-                    isOpen={showDeliveryPostcode}
-                    onClose={() => setShowDeliveryPostcode(false)}
-                    onSelect={(postcode) => setDelivery({...delivery, postcode})}
-                    savedPostcodes={savedPostcodes.delivery}
-                    country={delivery.country}
-                    type="delivery"
-                />
-
-                {/* Quote Request Modal */}
-                {showTenderForm && (
-                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-                        <div className="bg-white rounded-lg p-6 max-w-md w-full">
-                            <h3 className="text-lg font-semibold mb-4">Request Quote for Route</h3>
-                            <p className="text-sm text-gray-600 mb-4">
-                                An email will be sent to request quotes from our approved carriers.
-                            </p>
-                            <div className="space-y-2 text-sm mb-4">
-                                <p><strong>Collection:</strong> {collection.postcode}, {collection.country}</p>
-                                <p><strong>Delivery:</strong> {delivery.postcode}, {delivery.country}</p>
-                                <p><strong>Type:</strong> {isFullTruckLoad ? 'Full Truck Load' : `${pallets} Pallets`}</p>
-                                <p><strong>Delivery Type:</strong> {deliveryType}</p>
-                                <p><strong>Hide Documents:</strong> {hideDocuments ? 'Yes' : 'No'}</p>
-                            </div>
-                            <div className="flex gap-2">
-                                <button 
-                                    onClick={sendQuoteRequest}
-                                    disabled={sending}
-                                    className="flex-1 azelis-blue text-white p-2 rounded hover:bg-blue-700 disabled:opacity-50 transition-colors"
-                                >
-                                    {sending ? "Sending..." : "Send Request"}
-                                </button>
-                                <button 
-                                    onClick={() => setShowTenderForm(false)}
-                                    disabled={sending}
-                                    className="flex-1 bg-gray-200 text-gray-700 p-2 rounded hover:bg-gray-300 transition-colors"
-                                >
-                                    Cancel
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )}
-            </div>
-        );
-    };
-
-    ReactDOM.render(<Calculator />, document.getElementById('root'));
+        ReactDOM.render(<Calculator />, document.getElementById('root'));
     </script>
 </body>
 </html>
