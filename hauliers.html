@@ -86,6 +86,13 @@
             const [showRateForm, setShowRateForm] = React.useState(false);
             const [editingRate, setEditingRate] = React.useState(null);
 
+            // Function to format dates
+            const formatDate = (dateStr) => {
+                const date = new Date(dateStr);
+                if (isNaN(date)) return 'Invalid Date';
+                return date.toLocaleDateString();
+            };
+
             React.useEffect(() => {
                 // Fetch hauliers from Firebase
                 const unsubscribeHauliers = db.collection('hauliers').onSnapshot(snapshot => {
@@ -95,6 +102,8 @@
                     }));
                     setHauliers(hauliersData);
                     setLoading(false);
+                }, error => {
+                    console.error('Error fetching hauliers:', error);
                 });
 
                 // Fetch rates from Firebase
@@ -104,9 +113,11 @@
                         ...doc.data()
                     }));
                     setRates(ratesData);
+                }, error => {
+                    console.error('Error fetching rates:', error);
                 });
 
-                // Cleanup subscriptions
+                // Cleanup subscriptions on unmount
                 return () => {
                     unsubscribeHauliers();
                     unsubscribeRates();
@@ -205,6 +216,12 @@
                             const batch = db.batch();
                             validData.forEach((row) => {
                                 const rateRef = db.collection('rates').doc();
+                                const prices = {};
+                                for (let i = 1; i <= 24; i++) {
+                                    const palletKey = `${i} Pallet`;
+                                    const price = row[palletKey];
+                                    prices[i] = price ? parseFloat(price) : null;
+                                }
                                 batch.set(rateRef, {
                                     collectionCountry: row['Collection Country'] || '',
                                     collectionPostcode: row['Collection Postcode'] || '',
@@ -214,32 +231,7 @@
                                     priceValidity: row['Price Validity'] || '2024-12-31',
                                     isFullTruckLoad: row['Is Full Truck Load']?.toLowerCase() === 'yes',
                                     fullTruckLoadPrice: row['Full Truck Load Price'] ? parseFloat(row['Full Truck Load Price']) : null,
-                                    prices: {
-                                        1: row['1 Pallet'] ? parseFloat(row['1 Pallet']) : null,
-                                        2: row['2 Pallets'] ? parseFloat(row['2 Pallets']) : null,
-                                        3: row['3 Pallets'] ? parseFloat(row['3 Pallets']) : null,
-                                        4: row['4 Pallets'] ? parseFloat(row['4 Pallets']) : null,
-                                        5: row['5 Pallets'] ? parseFloat(row['5 Pallets']) : null,
-                                        6: row['6 Pallets'] ? parseFloat(row['6 Pallets']) : null,
-                                        7: row['7 Pallets'] ? parseFloat(row['7 Pallets']) : null,
-                                        8: row['8 Pallets'] ? parseFloat(row['8 Pallets']) : null,
-                                        9: row['9 Pallets'] ? parseFloat(row['9 Pallets']) : null,
-                                        10: row['10 Pallets'] ? parseFloat(row['10 Pallets']) : null,
-                                        11: row['11 Pallets'] ? parseFloat(row['11 Pallets']) : null,
-                                        12: row['12 Pallets'] ? parseFloat(row['12 Pallets']) : null,
-                                        13: row['13 Pallets'] ? parseFloat(row['13 Pallets']) : null,
-                                        14: row['14 Pallets'] ? parseFloat(row['14 Pallets']) : null,
-                                        15: row['15 Pallets'] ? parseFloat(row['15 Pallets']) : null,
-                                        16: row['16 Pallets'] ? parseFloat(row['16 Pallets']) : null,
-                                        17: row['17 Pallets'] ? parseFloat(row['17 Pallets']) : null,
-                                        18: row['18 Pallets'] ? parseFloat(row['18 Pallets']) : null,
-                                        19: row['19 Pallets'] ? parseFloat(row['19 Pallets']) : null,
-                                        20: row['20 Pallets'] ? parseFloat(row['20 Pallets']) : null,
-                                        21: row['21 Pallets'] ? parseFloat(row['21 Pallets']) : null,
-                                        22: row['22 Pallets'] ? parseFloat(row['22 Pallets']) : null,
-                                        23: row['23 Pallets'] ? parseFloat(row['23 Pallets']) : null,
-                                        24: row['24 Pallets'] ? parseFloat(row['24 Pallets']) : null
-                                    }
+                                    prices: prices
                                 });
                             });
 
@@ -569,7 +561,7 @@
                                                         {rate.deliveryType}
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap">
-                                                        {new Date(rate.priceValidity).toLocaleDateString()}
+                                                        {formatDate(rate.priceValidity)}
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap">
                                                         {rate.isFullTruckLoad ? 'Yes' : 'No'}
@@ -598,6 +590,13 @@
                                                     </td>
                                                 </tr>
                                             ))}
+                                            {rates.length === 0 && (
+                                                <tr>
+                                                    <td colSpan="9" className="px-6 py-4 text-center text-gray-500">
+                                                        No rates found.
+                                                    </td>
+                                                </tr>
+                                            )}
                                         </tbody>
                                     </table>
                                 </div>
@@ -690,8 +689,8 @@
 
                         {/* Rate Form Modal */}
                         {showRateForm && (
-                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-                                <div className="bg-white rounded-lg p-6 max-w-4xl w-full overflow-y-auto max-h-full">
+                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 overflow-y-auto">
+                                <div className="bg-white rounded-lg p-6 max-w-4xl w-full">
                                     <div className="flex justify-between items-start mb-4">
                                         <h3 className="text-lg font-semibold">
                                             {editingRate ? 'Edit Rate' : 'Add New Rate'}
