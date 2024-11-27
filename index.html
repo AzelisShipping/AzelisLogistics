@@ -369,8 +369,9 @@
             if (!isOpen) return null;
 
             const filteredPostcodes = savedPostcodes.filter(postcode => 
-                postcode.toLowerCase().includes(searchTerm.toLowerCase())
+            typeof postcode === 'string' && postcode.toLowerCase().includes(searchTerm.toLowerCase())
             );
+
 
             return (
                 <div className="postcode-modal">
@@ -466,13 +467,22 @@
                         }));
                         setSavedRoutes(routes);
 
-                        // Extract unique postcodes
-                        const collectionPostcodes = new Set(routes.map(r => r.collectionPostcode));
-                        const deliveryPostcodes = new Set(routes.map(r => r.deliveryPostcode));
+                        // Extract unique postcodes, filtering out invalid entries
+                        const collectionPostcodes = new Set(
+                            routes
+                                .map(r => r.collectionPostcode)
+                                .filter(pc => typeof pc === 'string' && pc.trim() !== '')
+                        );
+                        const deliveryPostcodes = new Set(
+                            routes
+                                .map(r => r.deliveryPostcode)
+                                .filter(pc => typeof pc === 'string' && pc.trim() !== '')
+                        );
                         setSavedPostcodes({
                             collection: Array.from(collectionPostcodes),
                             delivery: Array.from(deliveryPostcodes)
                         });
+
                         
                         setLoading(false);
                     } catch (error) {
