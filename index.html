@@ -2,22 +2,23 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Azelis Shipping Calculator</title>
-    <!-- Tailwind CSS -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <!-- Tailwind CSS (Updated to latest version) -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.3.2/dist/tailwind.min.css" rel="stylesheet">
     <!-- EmailJS -->
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script>
         (function() {
-            emailjs.init("ZU_ZvcimnTfLR22wF");
+            emailjs.init("ZU_ZvcimnTfLR22wF"); // Ensure this is your actual EmailJS user ID
         })();
     </script>
     <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-    <!-- React and Babel -->
-    <script src="https://unpkg.com/react@17/umd/react.production.min.js" crossorigin></script>
-    <script src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js" crossorigin></script>
+    <!-- React and Babel (Updated to latest versions) -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <!-- Custom Styles -->
     <style>
@@ -91,10 +92,10 @@
     <script>
         // Your web app's Firebase configuration
         const firebaseConfig = {
-            apiKey: "YOUR_API_KEY", // Replace with your actual API key
+            apiKey: "AIzaSyDiIRLwLeMAf1VZbZ7ygvGDu-gZH6sA424", // Replace with your actual API key
             authDomain: "azelislogistics.firebaseapp.com",
             projectId: "azelislogistics",
-            storageBucket: "azelislogistics.firebasestorage.app",
+            storageBucket: "azelislogistics.firebasestorage.app", // Corrected storageBucket
             messagingSenderId: "13102382958",
             appId: "1:13102382958:web:82a3324843432519cb8b7f",
             measurementId: "G-Q6JNN8DHJQ"
@@ -327,6 +328,7 @@
                             onChange={(e) => onSearchChange(e.target.value)}
                             onClick={() => onToggle(true)}
                             placeholder="Search or select country"
+                            readOnly
                         />
                         <button
                             type="button"
@@ -366,13 +368,20 @@
             const [searchTerm, setSearchTerm] = useState('');
             const [newPostcode, setNewPostcode] = useState('');
 
+            useEffect(() => {
+                if (isOpen) {
+                    setSearchTerm('');
+                    setNewPostcode('');
+                }
+            }, [isOpen]);
+
             if (!isOpen) return null;
 
-            const filteredPostcodes = savedPostcodes
-                .map(postcode => postcode.toString())
-                .filter(postcode =>
-                    postcode.toLowerCase().includes(searchTerm.toLowerCase())
-                );
+            const filteredPostcodes = (savedPostcodes || [])
+              .map(postcode => postcode.toString())
+              .filter(postcode =>
+                postcode.toLowerCase().includes(searchTerm.toLowerCase())
+              );
 
             return (
                 <div className="postcode-modal">
@@ -386,18 +395,22 @@
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                         <div className="max-h-60 overflow-y-auto mb-4">
-                            {filteredPostcodes.map(postcode => (
-                                <div
-                                    key={postcode}
-                                    className="p-2 hover:bg-gray-100 cursor-pointer rounded"
-                                    onClick={() => {
-                                        onSelect(postcode);
-                                        onClose();
-                                    }}
-                                >
-                                    {postcode}
-                                </div>
-                            ))}
+                            {filteredPostcodes.length > 0 ? (
+                                filteredPostcodes.map(postcode => (
+                                    <div
+                                        key={postcode}
+                                        className="p-2 hover:bg-gray-100 cursor-pointer rounded"
+                                        onClick={() => {
+                                            onSelect(postcode);
+                                            onClose();
+                                        }}
+                                    >
+                                        {postcode}
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="p-2 text-gray-500">No postcodes found.</div>
+                            )}
                         </div>
                         <div className="border-t pt-4">
                             <p className="text-sm text-gray-600 mb-2">Add new postcode:</p>
@@ -417,8 +430,8 @@
                                 </button>
                                 <button
                                     onClick={() => {
-                                        if (newPostcode) {
-                                            onSelect(newPostcode);
+                                        if (newPostcode.trim()) {
+                                            onSelect(newPostcode.trim());
                                             onClose();
                                         }
                                     }}
@@ -459,51 +472,51 @@
             const [savedPostcodes, setSavedPostcodes] = useState({ collection: [], delivery: [] });
 
             useEffect(() => {
-                // Set up real-time listener for the 'rates' collection
-                const unsubscribe = db.collection('rates').onSnapshot(snapshot => {
-                    const routes = snapshot.docs.map(doc => ({
-                        id: doc.id,
-                        ...doc.data()
-                    }));
-                    setSavedRoutes(routes);
-
-                    // Extract unique postcodes grouped by country
-                    const collectionPostcodes = {};
-                    const deliveryPostcodes = {};
-
-                    routes.forEach(route => {
-                        const cc = route.collectionCountry;
-                        const pc = route.collectionPostcode ? route.collectionPostcode.toString() : '';
-                        if (pc.trim() !== '') {
-                            if (!collectionPostcodes[cc]) collectionPostcodes[cc] = new Set();
-                            collectionPostcodes[cc].add(pc);
-                        }
-                        const dc = route.deliveryCountry;
-                        const dp = route.deliveryPostcode ? route.deliveryPostcode.toString() : '';
-                        if (dp.trim() !== '') {
-                            if (!deliveryPostcodes[dc]) deliveryPostcodes[dc] = new Set();
-                            deliveryPostcodes[dc].add(dp);
-                        }
-                    });
-
-                    setSavedPostcodes({
-                        collection: Object.fromEntries(
-                            Object.entries(collectionPostcodes).map(([country, set]) => [country, Array.from(set)])
-                        ),
-                        delivery: Object.fromEntries(
-                            Object.entries(deliveryPostcodes).map(([country, set]) => [country, Array.from(set)])
-                        ),
-                    });
-
-                    setLoading(false);
-                }, error => {
-                    console.error("Error fetching routes:", error);
-                    setError("Failed to load saved routes.");
-                    setLoading(false);
+              // Set up real-time listener for the 'rates' collection
+              const unsubscribe = db.collection('rates').onSnapshot(snapshot => {
+                const routes = snapshot.docs.map(doc => ({
+                  id: doc.id,
+                  ...doc.data()
+                }));
+                setSavedRoutes(routes);
+            
+                // Extract unique postcodes grouped by country
+                const collectionPostcodes = {};
+                const deliveryPostcodes = {};
+            
+                routes.forEach(route => {
+                  const cc = route.collectionCountry;
+                  const pc = route.collectionPostcode ? route.collectionPostcode.toString() : '';
+                  if (pc.trim() !== '') {
+                    if (!collectionPostcodes[cc]) collectionPostcodes[cc] = new Set();
+                    collectionPostcodes[cc].add(pc);
+                  }
+                  const dc = route.deliveryCountry;
+                  const dp = route.deliveryPostcode ? route.deliveryPostcode.toString() : '';
+                  if (dp.trim() !== '') {
+                    if (!deliveryPostcodes[dc]) deliveryPostcodes[dc] = new Set();
+                    deliveryPostcodes[dc].add(dp);
+                  }
                 });
-
-                // Cleanup subscription on unmount
-                return () => unsubscribe();
+            
+                setSavedPostcodes({
+                  collection: Object.fromEntries(
+                    Object.entries(collectionPostcodes).map(([country, set]) => [country, Array.from(set)])
+                  ),
+                  delivery: Object.fromEntries(
+                    Object.entries(deliveryPostcodes).map(([country, set]) => [country, Array.from(set)])
+                  ),
+                });
+            
+                setLoading(false);
+              }, error => {
+                console.error("Error fetching routes:", error);
+                setError("Failed to load saved routes.");
+                setLoading(false);
+              });
+            
+              // Cleanup subscription on unmount
+              return () => unsubscribe();
             }, []);
 
             const findSimilarRoutes = () => {
@@ -523,7 +536,7 @@
 
                 if (exactMatch) {
                     setExactMatchRate(exactMatch);
-                    matches = matches.filter(r => r !== exactMatch);
+                    matches = matches.filter(r => r.id !== exactMatch.id);
                 } else {
                     setExactMatchRate(null);
                 }
@@ -543,12 +556,31 @@
 
             const stringSimilarity = (str1, str2) => {
                 if (!str1 || !str2) return 0;
-                const len = Math.min(str1.length, str2.length);
-                let matches = 0;
-                for (let i = 0; i < len; i++) {
-                    if (str1[i] === str2[i]) matches++;
+                let longer = str1;
+                let shorter = str2;
+                if (str1.length < str2.length) {
+                    longer = str2;
+                    shorter = str1;
                 }
-                return matches / Math.max(str1.length, str2.length);
+                const longerLength = longer.length;
+                if (longerLength === 0) return 1.0;
+                return (longerLength - editDistance(longer, shorter)) / parseFloat(longerLength);
+            };
+
+            const editDistance = (a, b) => {
+                const matrix = Array.from({ length: a.length + 1 }, () => Array(b.length + 1).fill(0));
+                for (let i = 0; i <= a.length; i++) matrix[i][0] = i;
+                for (let j = 0; j <= b.length; j++) matrix[0][j] = j;
+                for (let i = 1; i <= a.length; i++) {
+                    for (let j = 1; j <= b.length; j++) {
+                        if (a[i - 1] === b[j - 1]) {
+                            matrix[i][j] = matrix[i - 1][j - 1];
+                        } else {
+                            matrix[i][j] = 1 + Math.min(matrix[i - 1][j], matrix[i][j - 1], matrix[i - 1][j - 1]);
+                        }
+                    }
+                }
+                return matrix[a.length][b.length];
             };
 
             const handleCalculate = () => {
@@ -599,32 +631,32 @@
                             to_email: haulier.email,
                             from_name: "Azelis Shipping Calculator",
                             company_name: haulier.name,
-                            subject: `Quote Request: ${collection.country} to ${delivery.country}`,
+                            subject: `Quote Request: ${COUNTRY_NAMES.find(name => COUNTRY_MAPPING[name] === collection.country)} to ${COUNTRY_NAMES.find(name => COUNTRY_MAPPING[name] === delivery.country)}`,
                             message: `
-    Dear Valued Transport Partner,
+Dear Valued Transport Partner,
 
-    We are seeking quotes for the following shipping route:
+We are seeking quotes for the following shipping route:
 
-    Collection:
-    Country: ${collection.country}
-    Postcode: ${collection.postcode}
-    ${collection.location ? `Location: ${collection.location}` : ''}
+Collection:
+Country: ${COUNTRY_NAMES.find(name => COUNTRY_MAPPING[name] === collection.country)} (${collection.country})
+Postcode: ${collection.postcode}
+${collection.location ? `Location: ${collection.location}` : ''}
 
-    Delivery:
-    Country: ${delivery.country}
-    Postcode: ${delivery.postcode}
-    ${delivery.location ? `Location: ${delivery.location}` : ''}
+Delivery:
+Country: ${COUNTRY_NAMES.find(name => COUNTRY_MAPPING[name] === delivery.country)} (${delivery.country})
+Postcode: ${delivery.postcode}
+${delivery.location ? `Location: ${delivery.location}` : ''}
 
-    Shipping Details:
-    Type: ${isFullTruckLoad ? 'Full Truck Load' : `${pallets} Pallets`}
-    Delivery Type: ${deliveryType}
-    Hide Documents: ${hideDocuments ? 'Yes' : 'No'}
+Shipping Details:
+Type: ${isFullTruckLoad ? 'Full Truck Load' : `${pallets} Pallets`}
+Delivery Type: ${deliveryType}
+Hide Documents: ${hideDocuments ? 'Yes' : 'No'}
 
-    Important Notes:
-    • Please reply with your best commercial rate
-    • Include any additional surcharges or fees in your quote
-    • Confirm your earliest available collection date
-    • If you cannot service this route, please let us know`,
+Important Notes:
+• Please reply with your best commercial rate
+• Include any additional surcharges or fees in your quote
+• Confirm your earliest available collection date
+• If you cannot service this route, please let us know`,
                             reply_to: "AzelisLogistics@outlook.com"
                         };
 
@@ -653,13 +685,13 @@
             return (
                 <div className="max-w-4xl mx-auto p-4">
                     <div className="bg-white rounded-lg shadow-lg p-6">
-     {/* Collection Details */}
+                        {/* Collection Details */}
                         <div className="mb-6">
                             <h2 className="text-lg font-semibold mb-4 text-gray-700">Collection Details</h2>
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                 <CountrySelector
                                     value={collection.country}
-                                    onChange={(code) => setCollection({...collection, country: code})}
+                                    onChange={(code) => setCollection({...collection, country: code, postcode: ''})}
                                     label="Collection Country"
                                     isOpen={showCollectionCountry}
                                     onToggle={setShowCollectionCountry}
@@ -667,7 +699,7 @@
                                     onSearchChange={setCollectionCountrySearch}
                                 />
                                 
-                                <div>
+                                <div className="relative">
                                     <label className="block text-sm font-medium mb-1 text-gray-600">
                                         Postcode *
                                     </label>
@@ -700,7 +732,7 @@
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                 <CountrySelector
                                     value={delivery.country}
-                                    onChange={(code) => setDelivery({...delivery, country: code})}
+                                    onChange={(code) => setDelivery({...delivery, country: code, postcode: ''})}
                                     label="Delivery Country"
                                     isOpen={showDeliveryCountry}
                                     onToggle={setShowDeliveryCountry}
@@ -708,7 +740,7 @@
                                     onSearchChange={setDeliveryCountrySearch}
                                 />
                                 
-                                <div>
+                                <div className="relative">
                                     <label className="block text-sm font-medium mb-1 text-gray-600">
                                         Postcode *
                                     </label>
@@ -779,7 +811,7 @@
                                                 min="1"
                                                 max="24"
                                                 value={pallets}
-                                                onChange={(e) => setPallets(parseInt(e.target.value) || 1)}
+                                                onChange={(e) => setPallets(Math.min(Math.max(parseInt(e.target.value) || 1, 1), 24))}
                                             />
                                         </div>
                                     )}
@@ -838,14 +870,18 @@
                                         <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
                                             <div className="grid grid-cols-2 gap-4">
                                                 <div>
-                                                    <p className="text-sm text-gray-600">Collection: {exactMatchRate.collectionPostcode}, {exactMatchRate.collectionCountry}</p>
-                                                    <p className="text-sm text-gray-600">Delivery: {exactMatchRate.deliveryPostcode}, {exactMatchRate.deliveryCountry}</p>
+                                                    <p className="text-sm text-gray-600">
+                                                        Collection: {exactMatchRate.collectionPostcode}, {COUNTRY_NAMES.find(name => COUNTRY_MAPPING[name] === exactMatchRate.collectionCountry)}
+                                                    </p>
+                                                    <p className="text-sm text-gray-600">
+                                                        Delivery: {exactMatchRate.deliveryPostcode}, {COUNTRY_NAMES.find(name => COUNTRY_MAPPING[name] === exactMatchRate.deliveryCountry)}
+                                                    </p>
                                                 </div>
                                                 <div className="text-right">
                                                     <p className="text-lg font-semibold text-green-700">
                                                         {isFullTruckLoad 
-                                                            ? `£${exactMatchRate.fullTruckLoadPrice}`
-                                                            : `£${exactMatchRate.prices?.[pallets]}`
+                                                            ? `£${exactMatchRate.fullTruckLoadPrice || 'N/A'}`
+                                                            : `£${exactMatchRate.prices ? exactMatchRate.prices[pallets] || 'N/A' : 'N/A'}`
                                                         }
                                                     </p>
                                                 </div>
@@ -854,22 +890,26 @@
                                     </div>
                                 )}
 
-                                {similarRoutes.length > 0 && (
+                                {similarRoutes.length > 0 ? (
                                     <div>
                                         <h3 className="text-lg font-semibold mb-3">Similar Routes</h3>
                                         <div className="space-y-3">
-                                            {similarRoutes.map((route, index) => (
-                                                <div key={index} className="p-4 bg-gray-50 rounded-lg similar-route">
+                                            {similarRoutes.map((route) => (
+                                                <div key={route.id} className="p-4 bg-gray-50 rounded-lg similar-route">
                                                     <div className="grid grid-cols-2 gap-4">
                                                         <div>
-                                                            <p className="text-sm text-gray-600">Collection: {route.collectionPostcode}, {route.collectionCountry}</p>
-                                                            <p className="text-sm text-gray-600">Delivery: {route.deliveryPostcode}, {route.deliveryCountry}</p>
+                                                            <p className="text-sm text-gray-600">
+                                                                Collection: {route.collectionPostcode}, {COUNTRY_NAMES.find(name => COUNTRY_MAPPING[name] === route.collectionCountry)}
+                                                            </p>
+                                                            <p className="text-sm text-gray-600">
+                                                                Delivery: {route.deliveryPostcode}, {COUNTRY_NAMES.find(name => COUNTRY_MAPPING[name] === route.deliveryCountry)}
+                                                            </p>
                                                         </div>
                                                         <div className="text-right">
                                                             <p className="font-semibold">
                                                                 {isFullTruckLoad 
-                                                                    ? `£${route.fullTruckLoadPrice}`
-                                                                    : `£${route.prices?.[pallets]}`
+                                                                    ? `£${route.fullTruckLoadPrice || 'N/A'}`
+                                                                    : `£${route.prices ? route.prices[pallets] || 'N/A' : 'N/A'}`
                                                                 }
                                                             </p>
                                                         </div>
@@ -877,14 +917,19 @@
                                                 </div>
                                             ))}
                                         </div>
-                                        <button
-                                            onClick={() => setShowTenderForm(true)}
-                                            className="mt-4 w-full bg-gray-100 text-gray-700 p-3 rounded-lg font-medium hover:bg-gray-200 transition-colors"
-                                        >
-                                            Request New Quote
-                                        </button>
+                                    </div>
+                                ) : (
+                                    <div>
+                                        <p className="text-gray-700">No similar routes found.</p>
                                     </div>
                                 )}
+
+                                <button
+                                    onClick={() => setShowTenderForm(true)}
+                                    className="mt-4 w-full bg-gray-100 text-gray-700 p-3 rounded-lg font-medium hover:bg-gray-200 transition-colors"
+                                >
+                                    Request New Quote
+                                </button>
                             </div>
                         )}
                     </div>
@@ -893,7 +938,7 @@
                     <PostcodeSelector
                         isOpen={showCollectionPostcode}
                         onClose={() => setShowCollectionPostcode(false)}
-                        onSelect={(postcode) => setCollection({...collection, postcode})}
+                        onSelect={(postcode) => setCollection({ ...collection, postcode })}
                         savedPostcodes={savedPostcodes.collection[collection.country] || []}
                         country={collection.country}
                         type="collection"
@@ -901,13 +946,11 @@
                     <PostcodeSelector
                         isOpen={showDeliveryPostcode}
                         onClose={() => setShowDeliveryPostcode(false)}
-                        onSelect={(postcode) => setDelivery({...delivery, postcode})}
+                        onSelect={(postcode) => setDelivery({ ...delivery, postcode })}
                         savedPostcodes={savedPostcodes.delivery[delivery.country] || []}
                         country={delivery.country}
                         type="delivery"
                     />
-
-
 
                     {/* Quote Request Modal */}
                     {showTenderForm && (
@@ -918,8 +961,8 @@
                                     An email will be sent to request quotes from our approved carriers.
                                 </p>
                                 <div className="space-y-2 text-sm mb-4">
-                                    <p><strong>Collection:</strong> {collection.postcode}, {collection.country}</p>
-                                    <p><strong>Delivery:</strong> {delivery.postcode}, {delivery.country}</p>
+                                    <p><strong>Collection:</strong> {collection.postcode}, {COUNTRY_NAMES.find(name => COUNTRY_MAPPING[name] === collection.country)}</p>
+                                    <p><strong>Delivery:</strong> {delivery.postcode}, {COUNTRY_NAMES.find(name => COUNTRY_MAPPING[name] === delivery.country)}</p>
                                     <p><strong>Type:</strong> {isFullTruckLoad ? 'Full Truck Load' : `${pallets} Pallets`}</p>
                                     <p><strong>Delivery Type:</strong> {deliveryType}</p>
                                     <p><strong>Hide Documents:</strong> {hideDocuments ? 'Yes' : 'No'}</p>
@@ -928,7 +971,7 @@
                                     <button 
                                         onClick={sendQuoteRequest}
                                         disabled={sending}
-                                        className="flex-1 azelis-blue text-white p-2 rounded hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                                        className={`flex-1 azelis-blue text-white p-2 rounded hover:bg-blue-700 disabled:opacity-50 transition-colors`}
                                     >
                                         {sending ? "Sending..." : "Send Request"}
                                     </button>
