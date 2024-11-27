@@ -468,21 +468,35 @@
                         }));
                         setSavedRoutes(routes);
 
-                        // Extract unique postcodes, filtering out invalid entries
-                        const collectionPostcodes = new Set(
-                            routes
-                                .map(r => r.collectionPostcode)
-                                .filter(pc => typeof pc === 'string' && pc.trim() !== '')
-                        );
-                        const deliveryPostcodes = new Set(
-                            routes
-                                .map(r => r.deliveryPostcode)
-                                .filter(pc => typeof pc === 'string' && pc.trim() !== '')
-                        );
-                        setSavedPostcodes({
-                            collection: Array.from(collectionPostcodes),
-                            delivery: Array.from(deliveryPostcodes)
-                        });
+                // Extract unique postcodes grouped by country
+                const collectionPostcodes = {};
+                const deliveryPostcodes = {};
+                
+                routes.forEach(route => {
+                    const cc = route.collectionCountry;
+                    const pc = route.collectionPostcode;
+                    if (typeof pc === 'string' && pc.trim() !== '') {
+                        if (!collectionPostcodes[cc]) collectionPostcodes[cc] = new Set();
+                        collectionPostcodes[cc].add(pc);
+                    }
+                    const dc = route.deliveryCountry;
+                    const dp = route.deliveryPostcode;
+                    if (typeof dp === 'string' && dp.trim() !== '') {
+                        if (!deliveryPostcodes[dc]) deliveryPostcodes[dc] = new Set();
+                        deliveryPostcodes[dc].add(dp);
+                    }
+                });
+                
+                setSavedPostcodes({
+                    collection: Object.fromEntries(
+                        Object.entries(collectionPostcodes).map(([country, set]) => [country, Array.from(set)])
+                    ),
+                    delivery: Object.fromEntries(
+                        Object.entries(deliveryPostcodes).map(([country, set]) => [country, Array.from(set)])
+                    ),
+                });
+
+
 
                         
                         setLoading(false);
@@ -919,7 +933,7 @@ Important Notes:
                         isOpen={showCollectionPostcode}
                         onClose={() => setShowCollectionPostcode(false)}
                         onSelect={(postcode) => setCollection({...collection, postcode})}
-                        savedPostcodes={savedPostcodes.collection}
+                        savedPostcodes={savedPostcodes.collection[collection.country] || []}
                         country={collection.country}
                         type="collection"
                     />
@@ -927,10 +941,12 @@ Important Notes:
                         isOpen={showDeliveryPostcode}
                         onClose={() => setShowDeliveryPostcode(false)}
                         onSelect={(postcode) => setDelivery({...delivery, postcode})}
-                        savedPostcodes={savedPostcodes.delivery}
+                        savedPostcodes={savedPostcodes.delivery[delivery.country] || []}
                         country={delivery.country}
                         type="delivery"
                     />
+
+
 
                     {/* Quote Request Modal */}
                     {showTenderForm && (
