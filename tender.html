@@ -58,36 +58,36 @@
             const [success, setSuccess] = React.useState(false);
             const [submitting, setSubmitting] = React.useState(false);
 
-            React.useEffect(() => {
-                const id = getQueryParam('quoteId');
-                const haulier = getQueryParam('haulierId');
-                if (!id || !haulier) {
-                    setError('Invalid or missing quote or haulier ID.');
-                    setLoading(false);
-                    return;
+              React.useEffect(() => {
+        const quoteId = getQueryParam('quoteId');
+        const haulierId = getQueryParam('haulierId');
+        
+        if (!quoteId || !haulierId) {
+            setError('Invalid or missing quote or haulier ID.');
+            setLoading(false);
+            return;
+        }
+    
+        setQuoteId(quoteId);
+        setHaulierId(haulierId);
+    
+        // Fetch haulier details
+        const fetchHaulierName = async () => {
+            try {
+                const haulierDoc = await db.collection('hauliers').doc(haulierId).get();
+                if (!haulierDoc.exists) {
+                    throw new Error('Haulier not found');
                 }
-                setQuoteId(id);
-                setHaulierId(haulier);
-
-                // Fetch Haulier's Name by querying document ID
-                const fetchHaulierName = async () => {
-                    try {
-                        const haulierDoc = await db.collection('hauliers').doc(haulier).get();
-                        if (!haulierDoc.exists) {
-                            throw new Error('Haulier does not exist.');
-                        }
-                        const haulierData = haulierDoc.data();
-                        setHaulierName(haulierData.name);
-                    } catch (err) {
-                        console.error('Error fetching haulier:', err);
-                        setError('Failed to fetch haulier information.');
-                    } finally {
-                        setLoading(false);
-                    }
-                };
-
-                fetchHaulierName();
-            }, []);
+                setHaulierName(haulierDoc.data().name);
+            } catch (err) {
+                console.error('Error fetching haulier:', err);
+                setError('Unable to load haulier information');
+            }
+            setLoading(false);
+        };
+    
+        fetchHaulierName();
+    }, []);
 
             const handleSubmit = async (e) => {
                 e.preventDefault();
