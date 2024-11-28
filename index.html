@@ -657,34 +657,33 @@
                             from_name: "Azelis Shipping Calculator",
                             company_name: haulier.name,
                             subject: `Quote Request: ${collectionCountryName} to ${deliveryCountryName}`,
-                            message: `
-            Dear Valued Transport Partner,
-            
-            We are seeking quotes for the following shipping route:
-            
-            Collection:
-            Country: ${collectionCountryName} (${collection.country})
-            Postcode: ${collection.postcode}
-            ${collection.location ? `Location: ${collection.location}` : ''}
-            
-            Delivery:
-            Country: ${deliveryCountryName} (${delivery.country})
-            Postcode: ${delivery.postcode}
-            ${delivery.location ? `Location: ${delivery.location}` : ''}
-            
-            Shipping Details:
-            Type: ${isFullTruckLoad ? 'Full Truck Load' : `${pallets} Pallets`}
-            Delivery Type: ${deliveryType}
-            Hide Documents: ${hideDocuments ? 'Yes' : 'No'}
-            
-            Please submit your quote using the following link:
-            `${window.location.origin}/AzelisLogistics/Tender.html?id=${quoteRef.id}`
-            
-            Important Notes:
-            - Please reply with your best commercial rate
-            - Include any additional surcharges or fees in your quote
-            - Confirm your earliest available collection date
-            - If you cannot service this route, please let us know`,
+                            message: `Dear Valued Transport Partner,
+
+                            We are seeking quotes for the following shipping route:
+                            
+                            Collection:
+                            Country: ${collectionCountryName} (${collection.country})
+                            Postcode: ${collection.postcode}
+                            ${collection.location ? `Location: ${collection.location}` : ''}
+                            
+                            Delivery:
+                            Country: ${deliveryCountryName} (${delivery.country})
+                            Postcode: ${delivery.postcode}
+                            ${delivery.location ? `Location: ${delivery.location}` : ''}
+                            
+                            Shipping Details:
+                            Type: ${isFullTruckLoad ? 'Full Truck Load' : `${pallets} Pallets`}
+                            Delivery Type: ${deliveryType}
+                            Hide Documents: ${hideDocuments ? 'Yes' : 'No'}
+                            
+                            Please submit your quote using the following link:
+                            ${window.location.origin}/AzelisLogistics/Tender.html?id=${quoteRef.id}
+                            
+                            Important Notes:
+                            - Please reply with your best commercial rate
+                            - Include any additional surcharges or fees in your quote
+                            - Confirm your earliest available collection date
+                            - If you cannot service this route, please let us know`,
                             reply_to: userEmail
                         };
             
