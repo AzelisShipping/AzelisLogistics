@@ -1,53 +1,12 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Submit Your Quote - Azelis Shipping</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
-    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
-</head>
-<body class="bg-gray-50">
-    <div id="quoteForm" class="max-w-2xl mx-auto p-4 mt-8">
-        <div class="bg-white rounded-lg shadow-lg p-6">
-            <h2 class="text-xl font-bold mb-6">Submit Your Quote</h2>
-            <form id="submitQuoteForm" class="space-y-4">
-                <div>
-                    <label class="block text-sm font-medium mb-1">Price</label>
-                    <input type="number" name="price" required class="w-full p-2 border rounded" step="0.01">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium mb-1">Currency</label>
-                    <select name="currency" required class="w-full p-2 border rounded">
-                        <option value="GBP">GBP (£)</option>
-                        <option value="EUR">EUR (€)</option>
-                        <option value="USD">USD ($)</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium mb-1">Valid Until</label>
-                    <input type="date" name="validUntil" required class="w-full p-2 border rounded">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium mb-1">Notes</label>
-                    <textarea name="notes" class="w-full p-2 border rounded" rows="4"></textarea>
-                </div>
-                <button type="submit" class="w-full bg-blue-600 text-white p-3 rounded-lg font-medium hover:bg-blue-700">
-                    Submit Quote
-                </button>
-            </form>
-        </div>
-    </div>
-
-    <script>
 <script>
     const firebaseConfig = {
         apiKey: "AIzaSyDiIRLwLeMAf1VZbZ7ygvGDu-gZH6sA424",
         authDomain: "azelislogistics.firebaseapp.com",
         projectId: "azelislogistics",
-        storageBucket: "azelislogistics.firebasestorage.app",
+        storageBucket: "azelislogistics.appspot.com",
         messagingSenderId: "13102382958",
-        appId: "1:13102382958:web:82a3324843432519cb8b7f"
+        appId: "1:13102382958:web:82a3324843432519cb8b7f",
+        measurementId: "G-Q6JNN8DHJQ"
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
@@ -58,7 +17,15 @@
 
     // Get quote data to populate form
     async function getQuoteData() {
+        if (!quoteId) {
+            alert('Missing quoteId in URL parameters.');
+            return null;
+        }
         const quoteDoc = await db.collection('quotes').doc(quoteId).get();
+        if (!quoteDoc.exists) {
+            alert('Quote not found.');
+            return null;
+        }
         return quoteDoc.data();
     }
 
@@ -67,21 +34,37 @@
         const formData = new FormData(e.target);
         const quoteData = await getQuoteData();
         
+        if (!quoteData) {
+            return;
+        }
+
+        // Optional: Validate haulierId if necessary
+        if (!haulierId) {
+            alert('Missing haulierId in URL parameters.');
+            return;
+        }
+
         try {
-            await db.collection('rates').add({
+            // Add rate to 'rates' collection
+            const rateData = {
                 collectionCountry: quoteData.collection.country,
                 collectionPostcode: quoteData.collection.postcode,
                 deliveryCountry: quoteData.delivery.country,
                 deliveryPostcode: quoteData.delivery.postcode,
-                deliveryType: quoteData.delivery.type || 'STD',
+                deliveryType: quoteData.deliveryType || 'STD',
                 priceValidity: formData.get('validUntil'),
                 isFullTruckLoad: quoteData.isFullTruckLoad || false,
                 fullTruckLoadPrice: quoteData.isFullTruckLoad ? parseFloat(formData.get('price')) : null,
                 prices: quoteData.isFullTruckLoad ? {} : {
                     [quoteData.pallets]: parseFloat(formData.get('price'))
-                }
-            });
+                },
+                haulierId: haulierId, // Associate rate with haulier
+                submittedAt: new Date()
+            };
 
+            await db.collection('rates').add(rateData);
+
+            // Update quote status
             await db.collection('quotes').doc(quoteId).update({
                 status: 'responded'
             });
@@ -94,5 +77,3 @@
         }
     });
 </script>
-</body>
-</html>
