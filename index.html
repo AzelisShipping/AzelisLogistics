@@ -656,7 +656,7 @@
                     // Iterate through each relevant haulier and send a unique tender link
                     const emailPromises = relevantHauliers.map(haulier => {
                         // Generate unique tender link with both quoteId and haulierId
-                        const tenderLink = `${window.location.origin}/AzelisLogistics/tender.html?quoteId=${quoteRef.id}&haulierId=${haulier.id}`;
+                        const tenderLink = `https://azelisshipping.github.io/AzelisLogistics/tender.html?quoteId=${quoteRef.id}&haulierId=${haulierId}`;
             
                         // Prepare email parameters
                         const templateParams = {
