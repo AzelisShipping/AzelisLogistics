@@ -1,253 +1,85 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-   <meta charset="UTF-8">
-   <title>Submit Your Quote - Azelis Shipping</title>
-   <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
-   <!-- Firebase SDKs -->
-   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-   <!-- React and ReactDOM -->
-   <script src="https://unpkg.com/react@17/umd/react.production.min.js" crossorigin></script>
-   <script src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js" crossorigin></script>
-   <!-- Babel -->
-   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-   <style>
-       .azelis-blue { background-color: #003087; }
-       .azelis-blue-hover:hover { background-color: #002670; }
-   </style>
+    <meta charset="UTF-8">
+    <title>Submit Your Quote - Azelis Shipping</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
 </head>
 <body class="bg-gray-50">
-   <header class="azelis-blue text-white p-4 shadow-lg">
-       <div class="max-w-7xl mx-auto flex justify-between items-center">
-           <div class="flex items-center space-x-4">
-               <img src="https://www.azelis.com/themes/custom/azelis_theme/logo.svg" alt="Azelis Logo" class="h-8">
-               <h1 class="text-xl font-bold">Submit Your Quote</h1>
-           </div>
-       </div>
-   </header>
+    <div id="quoteForm" class="max-w-2xl mx-auto p-4 mt-8">
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            <h2 class="text-xl font-bold mb-6">Submit Your Quote</h2>
+            <form id="submitQuoteForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium mb-1">Price</label>
+                    <input type="number" name="price" required class="w-full p-2 border rounded" step="0.01">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Currency</label>
+                    <select name="currency" required class="w-full p-2 border rounded">
+                        <option value="GBP">GBP (£)</option>
+                        <option value="EUR">EUR (€)</option>
+                        <option value="USD">USD ($)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Valid Until</label>
+                    <input type="date" name="validUntil" required class="w-full p-2 border rounded">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Notes</label>
+                    <textarea name="notes" class="w-full p-2 border rounded" rows="4"></textarea>
+                </div>
+                <button type="submit" class="w-full bg-blue-600 text-white p-3 rounded-lg font-medium hover:bg-blue-700">
+                    Submit Quote
+                </button>
+            </form>
+        </div>
+    </div>
 
-   <div id="root"></div>
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyDiIRLwLeMAf1VZbZ7ygvGDu-gZH6sA424",
+            authDomain: "azelislogistics.firebaseapp.com",
+            projectId: "azelislogistics",
+            storageBucket: "azelislogistics.firebasestorage.app",
+            messagingSenderId: "13102382958",
+            appId: "1:13102382958:web:82a3324843432519cb8b7f"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
 
-   <script type="text/babel">
-       const firebaseConfig = {
-           apiKey: "AIzaSyDiIRLwLeMAf1VZbZ7ygvGDu-gZH6sA424",
-           authDomain: "azelislogistics.firebaseapp.com",
-           projectId: "azelislogistics",
-           storageBucket: "azelislogistics.appspot.com",
-           messagingSenderId: "13102382958",
-           appId: "1:13102382958:web:82a3324843432519cb8b7f",
-           measurementId: "G-Q6JNN8DHJQ"
-       };
-       firebase.initializeApp(firebaseConfig);
-       const db = firebase.firestore();
+        const urlParams = new URLSearchParams(window.location.search);
+        const quoteId = urlParams.get('quoteId');
+        const haulierId = urlParams.get('haulierId');
 
-       function getQueryParam(param) {
-           const urlParams = new URLSearchParams(window.location.search);
-           return urlParams.get(param);
-       }
+        document.getElementById('submitQuoteForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            
+            const response = {
+                price: parseFloat(formData.get('price')),
+                currency: formData.get('currency'),
+                validUntil: formData.get('validUntil'),
+                notes: formData.get('notes'),
+                haulierId: haulierId,
+                submittedAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
 
-       const TenderForm = () => {
-           const [quoteId, setQuoteId] = React.useState(null);
-           const [haulierId, setHaulierId] = React.useState(null);
-           const [haulierName, setHaulierName] = React.useState('');
-           const [loading, setLoading] = React.useState(true);
-           const [error, setError] = React.useState(null);
-           const [success, setSuccess] = React.useState(false);
-           const [submitting, setSubmitting] = React.useState(false);
-
-           React.useEffect(() => {
-               const quoteId = getQueryParam('quoteId');
-               const haulierId = getQueryParam('haulierId');
-               
-               if (!quoteId || !haulierId) {
-                   setError('Invalid or missing quote or haulier ID.');
-                   setLoading(false);
-                   return;
-               }
-           
-               setQuoteId(quoteId);
-               setHaulierId(haulierId);
-           
-               const fetchHaulierName = async () => {
-                   try {
-                       const haulierDoc = await db.collection('hauliers').doc(haulierId).get();
-                       if (!haulierDoc.exists) {
-                           throw new Error('Haulier not found');
-                       }
-                       setHaulierName(haulierDoc.data().name);
-                   } catch (err) {
-                       console.error('Error fetching haulier:', err);
-                       setError('Unable to load haulier information');
-                   }
-                   setLoading(false);
-               };
-           
-               fetchHaulierName();
-           }, []);
-
-           const handleSubmit = async (e) => {
-               e.preventDefault();
-               setSubmitting(true);
-               setError(null);
-           
-               const formData = new FormData(e.target);
-               const price = parseFloat(formData.get('price'));
-               const currency = formData.get('currency');
-               const validUntil = formData.get('validUntil');
-               const notes = formData.get('notes');
-           
-               if (isNaN(price) || price <= 0) {
-                   setError('Please enter a valid price.');
-                   setSubmitting(false);
-                   return;
-               }
-               if (!currency || !validUntil) {
-                   setError('Please fill in all required fields.');
-                   setSubmitting(false);
-                   return;
-               }
-           
-               try {
-                   const responseData = {
-                       quoteId: quoteId,
-                       haulierId: haulierId,
-                       haulierName: haulierName,
-                       price,
-                       currency,
-                       validUntil,
-                       notes: notes || '',
-                       submittedAt: firebase.firestore.FieldValue.serverTimestamp()
-                   };
-           
-                   await Promise.all([
-                       db.collection('quotes').doc(quoteId).collection('responses').add(responseData),
-                       db.collection('quotes').doc(quoteId).update({
-                           status: 'responded',
-                           lastResponse: responseData
-                       })
-                   ]);
-           
-                   setSuccess(true);
-               } catch (err) {
-                   console.error('Error submitting quote:', err);
-                   setError('Failed to submit quote. Please try again.');
-               } finally {
-                   setSubmitting(false);
-               }
-           };
-
-           if (loading) {
-               return (
-                   <div className="flex items-center justify-center h-64">
-                       <div className="text-lg">Loading...</div>
-                   </div>
-               );
-           }
-
-           if (error) {
-               return (
-                   <div className="max-w-2xl mx-auto p-4">
-                       <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                           <div className="text-red-700">{error}</div>
-                       </div>
-                   </div>
-               );
-           }
-
-           if (success) {
-               return (
-                   <div className="max-w-2xl mx-auto p-4">
-                       <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                           <div className="text-green-700">Your quote has been submitted successfully!</div>
-                       </div>
-                   </div>
-               );
-           }
-
-           return (
-               <div className="max-w-2xl mx-auto p-4">
-                   <div className="bg-white rounded-lg shadow-lg p-6">
-                       <h2 className="text-xl font-bold mb-6">Submit Your Quote</h2>
-                       <form onSubmit={handleSubmit} className="space-y-4">
-                           <div>
-                               <label className="block text-sm font-medium mb-1">Haulier Name</label>
-                               <input
-                                   type="text"
-                                   value={haulierName}
-                                   readOnly
-                                   className="w-full p-2 border rounded bg-gray-100 cursor-not-allowed"
-                               />
-                           </div>
-
-                           <div>
-                               <label className="block text-sm font-medium mb-1">Price *</label>
-                               <input
-                                   name="price"
-                                   type="number"
-                                   step="0.01"
-                                   required
-                                   className="w-full p-2 border rounded"
-                                   placeholder="Enter your price"
-                               />
-                           </div>
-
-                           <div>
-                               <label className="block text-sm font-medium mb-1">Currency *</label>
-                               <select
-                                   name="currency"
-                                   required
-                                   className="w-full p-2 border rounded"
-                               >
-                                   <option value="">Select Currency</option>
-                                   <option value="GBP">GBP (£)</option>
-                                   <option value="EUR">EUR (€)</option>
-                                   <option value="USD">USD ($)</option>
-                               </select>
-                           </div>
-
-                           <div>
-                               <label className="block text-sm font-medium mb-1">Valid Until *</label>
-                               <input
-                                   name="validUntil"
-                                   type="date"
-                                   required
-                                   className="w-full p-2 border rounded"
-                               />
-                           </div>
-
-                           <div>
-                               <label className="block text-sm font-medium mb-1">Additional Notes</label>
-                               <textarea
-                                   name="notes"
-                                   rows="4"
-                                   className="w-full p-2 border rounded"
-                                   placeholder="Enter any additional information or terms..."
-                               ></textarea>
-                           </div>
-
-                           <button
-                               type="submit"
-                               disabled={submitting}
-                               className={`w-full azelis-blue text-white p-3 rounded-lg font-medium hover:bg-blue-700 transition-colors ${
-                                   submitting ? 'opacity-50 cursor-not-allowed' : ''
-                               }`}
-                           >
-                               {submitting ? "Submitting..." : "Submit Quote"}
-                           </button>
-
-                           {error && (
-                               <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-                                   <div className="text-red-700">{error}</div>
-                               </div>
-                           )}
-                       </form>
-                   </div>
-               </div>
-           );
-       };
-
-       ReactDOM.render(<TenderForm />, document.getElementById('root'));
-   </script>
+            try {
+                await db.collection('quotes').doc(quoteId).collection('responses').add(response);
+                await db.collection('quotes').doc(quoteId).update({
+                    status: 'responded'
+                });
+                alert('Quote submitted successfully!');
+                e.target.reset();
+            } catch (error) {
+                console.error('Error submitting quote:', error);
+                alert('Error submitting quote. Please try again.');
+            }
+        });
+    </script>
 </body>
 </html>
