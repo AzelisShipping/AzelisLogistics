@@ -50,7 +50,7 @@
 
         // Main Tender Form Component
         const TenderForm = () => {
-            const [quoteId, setQuoteId] = React.useState(null);
+            const [Id, setId] = React.useState(null);
             const [haulierId, setHaulierId] = React.useState(null);
             const [haulierName, setHaulierName] = React.useState('');
             const [loading, setLoading] = React.useState(true);
@@ -59,7 +59,7 @@
             const [submitting, setSubmitting] = React.useState(false);
 
         React.useEffect(() => {
-            const quoteId = getQueryParam('quoteId');
+            const Id = getQueryParam('quoteId');
             const haulierId = getQueryParam('haulierId');
             
             if (!quoteId || !haulierId) {
@@ -92,55 +92,49 @@
                 e.preventDefault();
                 setSubmitting(true);
                 setError(null);
-
-                // Collect form data
+            
                 const formData = new FormData(e.target);
                 const price = parseFloat(formData.get('price'));
                 const currency = formData.get('currency');
                 const validUntil = formData.get('validUntil');
                 const notes = formData.get('notes');
-
-                // Basic validation
+            
                 if (isNaN(price) || price <= 0) {
                     setError('Please enter a valid price.');
                     setSubmitting(false);
                     return;
                 }
-                if (!currency) {
-                    setError('Please select a currency.');
+                if (!currency || !validUntil) {
+                    setError('Please fill in all required fields.');
                     setSubmitting(false);
                     return;
                 }
-                if (!validUntil) {
-                    setError('Please select a valid until date.');
-                    setSubmitting(false);
-                    return;
-                }
-
+            
                 try {
-                    // Prepare rate data
-                    const rateData = {
-                        quoteId: quoteId,
-                        haulierId: haulierId,
-                        haulierName: haulierName,
-                        price: price,
-                        currency: currency,
-                        validUntil: validUntil,
+                    const responseData = {
+                        quoteId,
+                        haulierId,
+                        haulierName,
+                        price,
+                        currency,
+                        validUntil,
                         notes: notes || '',
                         submittedAt: firebase.firestore.FieldValue.serverTimestamp()
                     };
-
-                    // Add the rate to 'rates' collection
-                    await db.collection('rates').add(rateData);
-
-                    // Optionally, add the response to 'quotes/{quoteId}/responses' subcollection
-                    await db.collection('quotes').doc(quoteId).collection('responses').add(rateData);
-
+            
+                    // Update both collections
+                    await Promise.all([
+                        db.collection('quotes').doc(quoteId).collection('responses').add(responseData),
+                        db.collection('quotes').doc(quoteId).update({
+                            status: 'responded',
+                            lastResponse: responseData
+                        })
+                    ]);
+            
                     setSuccess(true);
                 } catch (err) {
                     console.error('Error submitting quote:', err);
                     setError('Failed to submit quote. Please try again.');
-                } finally {
                     setSubmitting(false);
                 }
             };
