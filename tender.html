@@ -58,36 +58,35 @@
             const [success, setSuccess] = React.useState(false);
             const [submitting, setSubmitting] = React.useState(false);
 
-              React.useEffect(() => {
-        const quoteId = getQueryParam('quoteId');
-        const haulierId = getQueryParam('haulierId');
-        
-        if (!quoteId || !haulierId) {
-            setError('Invalid or missing quote or haulier ID.');
-            setLoading(false);
-            return;
-        }
-    
-        setQuoteId(quoteId);
-        setHaulierId(haulierId);
-    
-        // Fetch haulier details
-        const fetchHaulierName = async () => {
-            try {
-                const haulierDoc = await db.collection('hauliers').doc(haulierId).get();
-                if (!haulierDoc.exists) {
-                    throw new Error('Haulier not found');
-                }
-                setHaulierName(haulierDoc.data().name);
-            } catch (err) {
-                console.error('Error fetching haulier:', err);
-                setError('Unable to load haulier information');
+        React.useEffect(() => {
+            const quoteId = getQueryParam('quoteId');
+            const haulierId = getQueryParam('haulierId');
+            
+            if (!quoteId || !haulierId) {
+                setError('Invalid or missing quote or haulier ID.');
+                setLoading(false);
+                return;
             }
-            setLoading(false);
-        };
-    
-        fetchHaulierName();
-    }, []);
+        
+            setQuoteId(quoteId);
+            setHaulierId(haulierId);
+        
+            const fetchHaulierName = async () => {
+                try {
+                    const haulierDoc = await db.collection('hauliers').doc(haulierId).get();
+                    if (!haulierDoc.exists) {
+                        throw new Error('Haulier not found');
+                    }
+                    setHaulierName(haulierDoc.data().name);
+                } catch (err) {
+                    console.error('Error fetching haulier:', err);
+                    setError('Unable to load haulier information');
+                }
+                setLoading(false);
+            };
+        
+            fetchHaulierName();
+        }, []);
 
             const handleSubmit = async (e) => {
                 e.preventDefault();
