@@ -32,7 +32,7 @@
     <script type="text/babel">
         // Firebase Configuration
         const firebaseConfig = {
-            apiKey: "AIzaSyDiIRLwLeMAf1VZbZ7ygvGDu-gZH6sA424", // Replace with your actual API key
+            apiKey: "AIzaSyDiIRLwLeMAf1VZbZ7ygvGDu-gZH6sA424",
             authDomain: "azelislogistics.firebaseapp.com",
             projectId: "azelislogistics",
             storageBucket: "azelislogistics.appspot.com",
@@ -53,20 +53,42 @@
         // Main Tender Form Component
         const TenderForm = () => {
             const [quoteId, setQuoteId] = React.useState(null);
+            const [haulierId, setHaulierId] = React.useState(null);
+            const [haulierName, setHaulierName] = React.useState('');
             const [loading, setLoading] = React.useState(true);
             const [error, setError] = React.useState(null);
             const [success, setSuccess] = React.useState(false);
             const [submitting, setSubmitting] = React.useState(false);
 
             React.useEffect(() => {
-                const id = getQueryParam('id');
-                if (!id) {
-                    setError('Invalid or missing quote ID.');
+                const id = getQueryParam('quoteId');
+                const haulier = getQueryParam('haulierId');
+                if (!id || !haulier) {
+                    setError('Invalid or missing quote or haulier ID.');
                     setLoading(false);
                     return;
                 }
                 setQuoteId(id);
-                setLoading(false);
+                setHaulierId(haulier);
+
+                // Fetch Haulier's Name
+                const fetchHaulierName = async () => {
+                    try {
+                        const haulierDoc = await db.collection('hauliers').doc(haulier).get();
+                        if (!haulierDoc.exists) {
+                            throw new Error('Haulier does not exist.');
+                        }
+                        const haulierData = haulierDoc.data();
+                        setHaulierName(haulierData.name);
+                    } catch (err) {
+                        console.error('Error fetching haulier:', err);
+                        setError('Failed to fetch haulier information.');
+                    } finally {
+                        setLoading(false);
+                    }
+                };
+
+                fetchHaulierName();
             }, []);
 
             const handleSubmit = async (e) => {
@@ -98,18 +120,25 @@
                     return;
                 }
 
-                // Prepare response data
-                const responseData = {
-                    price: price,
-                    currency: currency,
-                    validUntil: validUntil,
-                    notes: notes || '',
-                    submittedAt: firebase.firestore.FieldValue.serverTimestamp()
-                };
-
                 try {
-                    // Add response to 'quotes/{quoteId}/responses' subcollection
-                    await db.collection('quotes').doc(quoteId).collection('responses').add(responseData);
+                    // Prepare rate data
+                    const rateData = {
+                        quoteId: quoteId,
+                        haulierId: haulierId,
+                        haulierName: haulierName,
+                        price: price,
+                        currency: currency,
+                        validUntil: validUntil,
+                        notes: notes || '',
+                        submittedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    };
+
+                    // Add the rate to 'rates' collection
+                    await db.collection('rates').add(rateData);
+
+                    // Optionally, add the response to 'quotes/{quoteId}/responses' subcollection
+                    await db.collection('quotes').doc(quoteId).collection('responses').add(rateData);
+
                     setSuccess(true);
                 } catch (err) {
                     console.error('Error submitting quote:', err);
@@ -152,6 +181,18 @@
                     <div className="bg-white rounded-lg shadow-lg p-6">
                         <h2 className="text-xl font-bold mb-6">Submit Your Quote</h2>
                         <form onSubmit={handleSubmit} className="space-y-4">
+                            {/* Haulier Name Display */}
+                            <div>
+                                <label className="block text-sm font-medium mb-1">Haulier Name</label>
+                                <input
+                                    type="text"
+                                    value={haulierName}
+                                    readOnly
+                                    className="w-full p-2 border rounded bg-gray-100 cursor-not-allowed"
+                                />
+                            </div>
+
+                            {/* Price Field */}
                             <div>
                                 <label className="block text-sm font-medium mb-1">Price *</label>
                                 <input
@@ -164,6 +205,7 @@
                                 />
                             </div>
 
+                            {/* Currency Field */}
                             <div>
                                 <label className="block text-sm font-medium mb-1">Currency *</label>
                                 <select
@@ -175,10 +217,11 @@
                                     <option value="GBP">GBP (£)</option>
                                     <option value="EUR">EUR (€)</option>
                                     <option value="USD">USD ($)</option>
-                                    {/* Add more currencies as needed */}
+                                    <!-- Add more currencies as needed -->
                                 </select>
                             </div>
 
+                            {/* Valid Until Field */}
                             <div>
                                 <label className="block text-sm font-medium mb-1">Valid Until *</label>
                                 <input
@@ -189,6 +232,7 @@
                                 />
                             </div>
 
+                            {/* Notes Field */}
                             <div>
                                 <label className="block text-sm font-medium mb-1">Additional Notes</label>
                                 <textarea
@@ -199,6 +243,7 @@
                                 ></textarea>
                             </div>
 
+                            {/* Submit Button */}
                             <button
                                 type="submit"
                                 disabled={submitting}
@@ -209,6 +254,7 @@
                                 {submitting ? "Submitting..." : "Submit Quote"}
                             </button>
 
+                            {/* Error Display */}
                             {error && (
                                 <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
                                     <div className="text-red-700">{error}</div>
