@@ -647,8 +647,11 @@
                         responses: []
                     });
             
+                    // Get country names
+                    const collectionCountryName = COUNTRY_NAMES.find(name => COUNTRY_MAPPING[name] === collection.country) || collection.country;
+                    const deliveryCountryName = COUNTRY_NAMES.find(name => COUNTRY_MAPPING[name] === delivery.country) || delivery.country;
+            
                     const emailPromises = relevantHauliers.map(haulier => {
-                        // ... existing email template code ...
                         const templateParams = {
                             to_email: haulier.email,
                             from_name: "Azelis Shipping Calculator",
