@@ -128,19 +128,20 @@
                 e.preventDefault();
                 const formData = new FormData(e.target);
                 const selectedCountries = formData.getAll('operatingCountries');
-
+            
                 if (selectedCountries.length === 0) {
                     alert('Please select at least one country of delivery.');
                     return;
                 }
-
+            
                 const haulierData = {
                     name: formData.get('name'),
                     email: formData.get('email'),
                     countries: selectedCountries,
-                    active: true
+                    active: true,
+                    // Remove any custom ID field if present
                 };
-
+            
                 try {
                     if (editingHaulier) {
                         await db.collection('hauliers').doc(editingHaulier.id).update(haulierData);
