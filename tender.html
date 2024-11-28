@@ -7,6 +7,11 @@
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <!-- React and ReactDOM -->
+    <script src="https://unpkg.com/react@17/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js" crossorigin></script>
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <style>
         .azelis-blue { background-color: #003087; }
         .azelis-blue-hover:hover { background-color: #002670; }
@@ -24,11 +29,7 @@
 
     <div id="root"></div>
 
-    <!-- React and ReactDOM should be loaded before the main script -->
-    <script src="https://unpkg.com/react@17/umd/react.production.min.js" crossorigin></script>
-    <script src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js" crossorigin></script>
-
-    <script>
+    <script type="text/babel">
         // Firebase Configuration
         const firebaseConfig = {
             apiKey: "AIzaSyDiIRLwLeMAf1VZbZ7ygvGDu-gZH6sA424", // Replace with your actual API key
@@ -42,9 +43,7 @@
         // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
-    </script>
 
-    <script>
         // Utility function to get URL parameters
         function getQueryParam(param) {
             const urlParams = new URLSearchParams(window.location.search);
@@ -176,7 +175,7 @@
                                     <option value="GBP">GBP (£)</option>
                                     <option value="EUR">EUR (€)</option>
                                     <option value="USD">USD ($)</option>
-                                    <!-- Add more currencies as needed -->
+                                    {/* Add more currencies as needed */}
                                 </select>
                             </div>
 
