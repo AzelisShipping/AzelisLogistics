@@ -30,7 +30,6 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        // Firebase Configuration
         const firebaseConfig = {
             apiKey: "AIzaSyDiIRLwLeMAf1VZbZ7ygvGDu-gZH6sA424",
             authDomain: "azelislogistics.firebaseapp.com",
@@ -40,7 +39,6 @@
             appId: "1:13102382958:web:82a3324843432519cb8b7f",
             measurementId: "G-Q6JNN8DHJQ"
         };
-        // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
@@ -71,7 +69,7 @@
                 setQuoteId(id);
                 setHaulierId(haulier);
 
-                // Fetch Haulier's Name
+                // Fetch Haulier's Name by querying document ID
                 const fetchHaulierName = async () => {
                     try {
                         const haulierDoc = await db.collection('hauliers').doc(haulier).get();
@@ -208,18 +206,17 @@
                             {/* Currency Field */}
                             <div>
                                 <label className="block text-sm font-medium mb-1">Currency *</label>
-                               <select
-                                name="currency"
-                                required
-                                className="w-full p-2 border rounded"
-                            >
-                                <option value="">Select Currency</option>
-                                <option value="GBP">GBP (£)</option>
-                                <option value="EUR">EUR (€)</option>
-                                <option value="USD">USD ($)</option>
-                                { /* Add more currencies as needed */ }
-                            </select>
-
+                                <select
+                                    name="currency"
+                                    required
+                                    className="w-full p-2 border rounded"
+                                >
+                                    <option value="">Select Currency</option>
+                                    <option value="GBP">GBP (£)</option>
+                                    <option value="EUR">EUR (€)</option>
+                                    <option value="USD">USD ($)</option>
+                                    {/* Add more currencies as needed */}
+                                </select>
                             </div>
 
                             {/* Valid Until Field */}
