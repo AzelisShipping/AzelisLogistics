@@ -862,15 +862,17 @@
                                         <label className="block text-sm font-medium mb-2 text-gray-600">
                                             Delivery Type
                                         </label>
-                                        <select
-                                            className="combobox-input"
-                                            value={deliveryType}
-                                            onChange={(e) => setDeliveryType(e.target.value)}
-                                        >
-                                            <option value="STD">Standard</option>
-                                            <option value="ADR">ADR</option>
-                                            <option value="TEMP">Temperature Controlled</option>
-                                        </select>
+                                    <select
+                                        className="combobox-input"
+                                        value={deliveryType}
+                                        onChange={(e) => setDeliveryType(e.target.value)}
+                                    >
+                                        <option value="STD">Standard</option>
+                                        <option value="ADR">ADR</option>
+                                        <option value="TEMP">Temperature Controlled</option>
+                                        { /* Add more currencies as needed */ }
+                                    </select>
+
                                     </div>
                                 </div>
 
