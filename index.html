@@ -610,8 +610,6 @@
                 findSimilarRoutes();
             };
 
-           // Inside the Calculator component in index.html
-
             const sendQuoteRequest = async () => {
                 setSending(true);
                 setError(null);
@@ -657,11 +655,12 @@
             
                     // Iterate through each relevant haulier and send a unique tender link
                     const emailPromises = relevantHauliers.map(haulier => {
-                        // Generate unique tender link
-                        const tenderLink = `https://azelisshipping.github.io/AzelisLogistics/tender.html?id=${quoteRef.id}`;
+                        // Generate unique tender link with both quoteId and haulierId
+                        const tenderLink = `https://azelisshipping.github.io/AzelisLogistics/tender.html?quoteId=${quoteId}&haulierId=${haulier.id}`;
             
                         // Prepare email parameters
                         const templateParams = {
+                            to_email: haulier.email, // **Important:** Include the recipient's email
                             subject: `Quote Request: ${collectionCountryName} to ${deliveryCountryName}`,
                             message: `
                                 <strong>Collection:</strong><br/>
@@ -680,7 +679,7 @@
                                 Hide Documents: ${hideDocuments ? 'Yes' : 'No'}<br/>
                             `,
                             tenderLink: tenderLink, // Pass the tenderLink variable
-                            reply_to: userEmail
+                            reply_to: userEmail // For reply purposes
                         };
             
                         return emailjs.send('Azelis_Logistics', 'template_hho0c06', templateParams);
@@ -696,7 +695,6 @@
                     setSending(false);
                 }
             };
-
 
             if (loading) {
                 return (
