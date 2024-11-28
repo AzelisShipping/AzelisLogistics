@@ -40,46 +40,59 @@
     </div>
 
     <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyDiIRLwLeMAf1VZbZ7ygvGDu-gZH6sA424",
-            authDomain: "azelislogistics.firebaseapp.com",
-            projectId: "azelislogistics",
-            storageBucket: "azelislogistics.firebasestorage.app",
-            messagingSenderId: "13102382958",
-            appId: "1:13102382958:web:82a3324843432519cb8b7f"
-        };
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyDiIRLwLeMAf1VZbZ7ygvGDu-gZH6sA424",
+        authDomain: "azelislogistics.firebaseapp.com",
+        projectId: "azelislogistics",
+        storageBucket: "azelislogistics.firebasestorage.app",
+        messagingSenderId: "13102382958",
+        appId: "1:13102382958:web:82a3324843432519cb8b7f"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
 
-        const urlParams = new URLSearchParams(window.location.search);
-        const quoteId = urlParams.get('quoteId');
-        const haulierId = urlParams.get('haulierId');
+    const urlParams = new URLSearchParams(window.location.search);
+    const quoteId = urlParams.get('quoteId');
+    const haulierId = urlParams.get('haulierId');
 
-        document.getElementById('submitQuoteForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const formData = new FormData(e.target);
-            
-            const response = {
-                price: parseFloat(formData.get('price')),
-                currency: formData.get('currency'),
-                validUntil: formData.get('validUntil'),
-                notes: formData.get('notes'),
-                haulierId: haulierId,
-                submittedAt: firebase.firestore.FieldValue.serverTimestamp()
-            };
+    // Get quote data to populate form
+    async function getQuoteData() {
+        const quoteDoc = await db.collection('quotes').doc(quoteId).get();
+        return quoteDoc.data();
+    }
 
-            try {
-                await db.collection('quotes').doc(quoteId).collection('responses').add(response);
-                await db.collection('quotes').doc(quoteId).update({
-                    status: 'responded'
-                });
-                alert('Quote submitted successfully!');
-                e.target.reset();
-            } catch (error) {
-                console.error('Error submitting quote:', error);
-                alert('Error submitting quote. Please try again.');
-            }
-        });
-    </script>
+    document.getElementById('submitQuoteForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        const quoteData = await getQuoteData();
+        
+        try {
+            await db.collection('rates').add({
+                collectionCountry: quoteData.collection.country,
+                collectionPostcode: quoteData.collection.postcode,
+                deliveryCountry: quoteData.delivery.country,
+                deliveryPostcode: quoteData.delivery.postcode,
+                deliveryType: quoteData.delivery.type || 'STD',
+                priceValidity: formData.get('validUntil'),
+                isFullTruckLoad: quoteData.isFullTruckLoad || false,
+                fullTruckLoadPrice: quoteData.isFullTruckLoad ? parseFloat(formData.get('price')) : null,
+                prices: quoteData.isFullTruckLoad ? {} : {
+                    [quoteData.pallets]: parseFloat(formData.get('price'))
+                }
+            });
+
+            await db.collection('quotes').doc(quoteId).update({
+                status: 'responded'
+            });
+
+            alert('Rate submitted successfully!');
+            window.location.href = 'https://azelisshipping.github.io/AzelisLogistics/success.html';
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Failed to submit rate. Please try again.');
+        }
+    });
+</script>
 </body>
 </html>
