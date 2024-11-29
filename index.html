@@ -513,7 +513,7 @@
     const Waypoint = ({ waypoint, onChange, onRemove, savedPostcodesCollection }) => {
         const [isOpen, setIsOpen] = useState(false);
         const [searchTerm, setSearchTerm] = useState('');
-
+    
         const handleCountryChange = (code) => {
             onChange({ 
                 ...waypoint, 
@@ -524,7 +524,7 @@
             setSearchTerm(COUNTRY_REVERSE_MAPPING[code] || '');
             setIsOpen(false);
         };
-
+    
         return (
             <div className="border p-4 rounded-lg mb-4 relative">
                 <h4 className="text-md font-semibold mb-2">Waypoint</h4>
@@ -552,10 +552,10 @@
                     <PostcodeSelector
                         isOpen={waypoint.showPostcode}
                         onClose={() => onChange({ ...waypoint, showPostcode: false })}
-                        onSelect={(postcode) => onChange({ ...waypoint, postcode })}
+                        onSelect={(postcode) => onChange({ ...waypoint, postcode, showPostcode: false })}
                         savedPostcodes={waypoint.savedPostcodes || []}
                         country={waypoint.country}
-                        type="collection"
+                        type="waypoint" // Changed from "collection" to "waypoint"
                     />
                 )}
                 <button
@@ -568,6 +568,7 @@
             </div>
         );
     };
+
 </script>
 <script type="text/babel">
     const Calculator = () => {
