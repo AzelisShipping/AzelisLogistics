@@ -511,7 +511,7 @@
         );
     };
 
-    // Waypoint Component
+    // Updated Waypoint Component
     const Waypoint = ({ waypoint, onChange, onRemove, savedPostcodesCollection }) => {
         const [isOpen, setIsOpen] = useState(false);
         const [searchTerm, setSearchTerm] = useState('');
@@ -525,6 +525,20 @@
             });
             setSearchTerm(COUNTRY_REVERSE_MAPPING[code] || '');
             setIsOpen(false);
+        };
+    
+        const handlePostcodeSelect = (postcode) => {
+            // Avoid duplicate postcodes
+            const updatedSavedPostcodes = waypoint.savedPostcodes.includes(postcode)
+                ? waypoint.savedPostcodes
+                : [...waypoint.savedPostcodes, postcode];
+    
+            onChange({ 
+                ...waypoint, 
+                postcode, 
+                showPostcode: false,
+                savedPostcodes: updatedSavedPostcodes
+            });
         };
     
         return (
@@ -554,10 +568,10 @@
                     <PostcodeSelector
                         isOpen={waypoint.showPostcode}
                         onClose={() => onChange({ ...waypoint, showPostcode: false })}
-                        onSelect={(postcode) => onChange({ ...waypoint, postcode, showPostcode: false })}
+                        onSelect={handlePostcodeSelect} // Updated handler
                         savedPostcodes={waypoint.savedPostcodes || []}
                         country={waypoint.country}
-                        type="waypoint" // Changed from "collection" to "waypoint"
+                        type="waypoint"
                     />
                 )}
                 <button
@@ -570,6 +584,7 @@
             </div>
         );
     };
+
 
 </script>
 <script type="text/babel">
