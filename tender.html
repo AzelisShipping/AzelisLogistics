@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <title>Submit Your Quote - Azelis Shipping</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
-    <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
 </head>
@@ -12,27 +11,60 @@
     <div id="quoteForm" class="max-w-2xl mx-auto p-4 mt-8">
         <div class="bg-white rounded-lg shadow-lg p-6">
             <h2 class="text-xl font-bold mb-6">Submit Your Quote</h2>
+            
+            <!-- Quote Details Display -->
+            <div id="quoteDetails" class="mb-6 p-4 bg-gray-50 rounded-lg">
+                <h3 class="font-semibold mb-2">Quote Details</h3>
+                <!-- Will be populated by JavaScript -->
+            </div>
+
             <form id="submitQuoteForm" class="space-y-4">
                 <div>
-                    <label class="block text-sm font-medium mb-1">Price</label>
-                    <input type="number" name="price" required class="w-full p-2 border rounded" step="0.01">
+                    <label class="block text-sm font-medium mb-1">Price *</label>
+                    <div class="flex gap-4">
+                        <input type="number" name="price" required class="flex-1 p-2 border rounded" step="0.01">
+                        <select name="currency" required class="w-32 p-2 border rounded">
+                            <option value="GBP">GBP (£)</option>
+                            <option value="EUR">EUR (€)</option>
+                            <option value="USD">USD ($)</option>
+                        </select>
+                    </div>
                 </div>
+
                 <div>
-                    <label class="block text-sm font-medium mb-1">Currency</label>
-                    <select name="currency" required class="w-full p-2 border rounded">
-                        <option value="GBP">GBP (£)</option>
-                        <option value="EUR">EUR (€)</option>
-                        <option value="USD">USD ($)</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium mb-1">Valid Until</label>
+                    <label class="block text-sm font-medium mb-1">Valid Until *</label>
                     <input type="date" name="validUntil" required class="w-full p-2 border rounded">
                 </div>
+
                 <div>
-                    <label class="block text-sm font-medium mb-1">Notes</label>
-                    <textarea name="notes" class="w-full p-2 border rounded" rows="4"></textarea>
+                    <label class="block text-sm font-medium mb-1">Estimated Transit Time (Days)</label>
+                    <input type="number" name="transitTime" class="w-full p-2 border rounded" min="1">
                 </div>
+
+                <div>
+                    <label class="block text-sm font-medium mb-1">Additional Services Available</label>
+                    <div class="space-y-2">
+                        <label class="flex items-center">
+                            <input type="checkbox" name="services" value="tracking" class="mr-2">
+                            Real-time Tracking
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" name="services" value="insurance" class="mr-2">
+                            Insurance Available
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" name="services" value="customs" class="mr-2">
+                            Customs Clearance
+                        </label>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium mb-1">Notes & Terms</label>
+                    <textarea name="notes" class="w-full p-2 border rounded" rows="4" 
+                              placeholder="Add any additional information, terms, or conditions..."></textarea>
+                </div>
+
                 <button type="submit" class="w-full bg-blue-600 text-white p-3 rounded-lg font-medium hover:bg-blue-700">
                     Submit Quote
                 </button>
@@ -40,13 +72,12 @@
         </div>
     </div>
 
-    <!-- Firebase Configuration and Initialization -->
     <script>
         const firebaseConfig = {
             apiKey: "AIzaSyDiIRLwLeMAf1VZbZ7ygvGDu-gZH6sA424",
             authDomain: "azelislogistics.firebaseapp.com",
             projectId: "azelislogistics",
-            storageBucket: "azelislogistics.appspot.com", // Corrected storageBucket
+            storageBucket: "azelislogistics.appspot.com",
             messagingSenderId: "13102382958",
             appId: "1:13102382958:web:82a3324843432519cb8b7f",
             measurementId: "G-Q6JNN8DHJQ"
@@ -58,7 +89,32 @@
         const quoteId = urlParams.get('quoteId');
         const haulierId = urlParams.get('haulierId');
 
-        // Function to fetch quote data
+        // Function to display quote details
+        function displayQuoteDetails(quoteData) {
+            const detailsDiv = document.getElementById('quoteDetails');
+            detailsDiv.innerHTML = `
+                <div class="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                        <p><strong>Transport Mode:</strong> ${quoteData.transportMode}</p>
+                        <p><strong>Weight Bucket:</strong> ${quoteData.weightBucket}</p>
+                        <p><strong>Incoterms:</strong> ${quoteData.incoterms}</p>
+                        <p><strong>Collection:</strong> ${quoteData.collection.postcode}, ${quoteData.collection.country}</p>
+                        <p><strong>Delivery:</strong> ${quoteData.delivery.postcode}, ${quoteData.delivery.country}</p>
+                    </div>
+                    <div>
+                        <p><strong>Delivery Type:</strong> ${quoteData.deliveryType}</p>
+                        ${quoteData.isFullTruckLoad 
+                            ? '<p><strong>Load Type:</strong> Full Truck Load</p>'
+                            : `<p><strong>Pallets:</strong> ${quoteData.pallets}</p>`}
+                        ${quoteData.containerType ? `<p><strong>Container Type:</strong> ${quoteData.containerType}</p>` : ''}
+                        ${quoteData.airWeight ? `<p><strong>Air Weight:</strong> ${quoteData.airWeight}kg</p>` : ''}
+                        ${quoteData.volume ? `<p><strong>Volume:</strong> ${quoteData.volume}CBM</p>` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        // Function to fetch and display quote data
         async function getQuoteData() {
             if (!quoteId) {
                 alert('Missing quoteId in URL parameters.');
@@ -69,7 +125,9 @@
                 alert('Quote not found.');
                 return null;
             }
-            return quoteDoc.data();
+            const quoteData = quoteDoc.data();
+            displayQuoteDetails(quoteData);
+            return quoteData;
         }
 
         document.getElementById('submitQuoteForm').addEventListener('submit', async (e) => {
@@ -77,31 +135,36 @@
             const formData = new FormData(e.target);
             const quoteData = await getQuoteData();
 
-            if (!quoteData) {
-                return;
-            }
-
-            // Optional: Validate haulierId if necessary
-            if (!haulierId) {
-                alert('Missing haulierId in URL parameters.');
-                return;
-            }
+            if (!quoteData || !haulierId) return;
 
             try {
+                // Get selected services
+                const services = Array.from(formData.getAll('services'));
+
                 // Prepare rate data
                 const rateData = {
                     collectionCountry: quoteData.collection.country,
                     collectionPostcode: quoteData.collection.postcode,
                     deliveryCountry: quoteData.delivery.country,
                     deliveryPostcode: quoteData.delivery.postcode,
-                    deliveryType: quoteData.deliveryType || 'STD',
+                    deliveryType: quoteData.deliveryType,
+                    transportMode: quoteData.transportMode,
+                    weightBucket: quoteData.weightBucket,
+                    incoterms: quoteData.incoterms,
+                    containerType: quoteData.containerType,
+                    airWeight: quoteData.airWeight,
+                    volume: quoteData.volume,
                     priceValidity: formData.get('validUntil'),
-                    isFullTruckLoad: quoteData.isFullTruckLoad || false,
+                    currency: formData.get('currency'),
+                    transitTime: formData.get('transitTime'),
+                    services: services,
+                    notes: formData.get('notes'),
+                    isFullTruckLoad: quoteData.isFullTruckLoad,
                     fullTruckLoadPrice: quoteData.isFullTruckLoad ? parseFloat(formData.get('price')) : null,
                     prices: quoteData.isFullTruckLoad ? {} : {
                         [quoteData.pallets]: parseFloat(formData.get('price'))
                     },
-                    haulierId: haulierId, // Associate rate with haulier
+                    haulierId: haulierId,
                     submittedAt: new Date()
                 };
 
@@ -110,7 +173,9 @@
 
                 // Update quote status
                 await db.collection('quotes').doc(quoteId).update({
-                    status: 'responded'
+                    status: 'responded',
+                    respondedAt: new Date(),
+                    responseBy: haulierId
                 });
 
                 alert('Rate submitted successfully!');
@@ -120,6 +185,9 @@
                 alert('Failed to submit rate. Please try again.');
             }
         });
+
+        // Initialize page
+        getQuoteData();
     </script>
 </body>
 </html>
