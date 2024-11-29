@@ -325,8 +325,11 @@
     <script type="text/babel">
         const { useState, useEffect } = React;
 
-        // CountrySelector component
+            // CountrySelector component
         const CountrySelector = ({ value, onChange, label, isOpen, onToggle, searchTerm, onSearchChange }) => {
+            // Get the country name for the current value
+            const currentCountryName = value ? COUNTRY_REVERSE_MAPPING[value] : '';
+        
             return (
                 <div className="relative" style={{ zIndex: isOpen ? 1000 : 1 }}>
                     <label className="block text-sm font-medium mb-1 text-gray-600">
@@ -336,21 +339,31 @@
                         <input
                             type="text"
                             className="combobox-input pr-10"
-                            value={searchTerm}
-                            onChange={(e) => onSearchChange(e.target.value)}
+                            value={searchTerm || currentCountryName}
+                            onChange={(e) => {
+                                onSearchChange(e.target.value);
+                                if (!isOpen) onToggle(true);
+                            }}
                             onClick={() => onToggle(true)}
                             placeholder="Search or select country"
                         />
                         <button
                             type="button"
                             className="absolute inset-y-0 right-0 px-3 flex items-center"
-                            onClick={() => onToggle(!isOpen)}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onToggle(!isOpen);
+                            }}
                         >
                             ▼
                         </button>
                     </div>
                     {isOpen && (
-                        <div className="country-dropdown" style={{ zIndex: 1000 }}>
+                        <div 
+                            className="country-dropdown" 
+                            style={{ zIndex: 1000 }}
+                            onClick={(e) => e.stopPropagation()}
+                        >
                             {COUNTRY_NAMES.filter(name => 
                                 name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                                 COUNTRY_MAPPING[name].toLowerCase().includes(searchTerm.toLowerCase())
@@ -359,9 +372,10 @@
                                     key={name}
                                     className="country-option"
                                     onClick={() => {
-                                        onChange(COUNTRY_MAPPING[name]);
-                                        onToggle(false);
+                                        const code = COUNTRY_MAPPING[name];
+                                        onChange(code);
                                         onSearchChange(name);
+                                        onToggle(false);
                                     }}
                                 >
                                     <span>{name}</span>
