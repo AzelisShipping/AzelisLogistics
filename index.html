@@ -914,10 +914,11 @@
         };
 
         // Handle Updating Waypoints by ID
-        const updateWaypoint = (id, updatedWaypoint) => {
-            const updatedWaypoints = waypoints.map(wp => wp.id === id ? updatedWaypoint : wp);
-            setWaypoints(updatedWaypoints);
+         const updateWaypoint = (id, updatedWaypoint) => {
+            console.log(`Updating Waypoint ID: ${id}`, updatedWaypoint); // Debugging
+            setWaypoints(prevWaypoints => prevWaypoints.map(wp => wp.id === id ? updatedWaypoint : wp));
         };
+
         
         // Handle Removing Waypoints by ID
         const removeWaypoint = (id) => {
