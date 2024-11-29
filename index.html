@@ -458,7 +458,7 @@
         };
 
         // Waypoint Component
-        const Waypoint = ({ index, waypoint, onChange, onRemove }) => {
+        const Waypoint = ({ index, waypoint, onChange, onRemove, savedPostcodesCollection }) => {
             return (
                 <div className="border p-4 rounded-lg mb-4 relative">
                     <h4 className="text-md font-semibold mb-2">Waypoint {index + 1}</h4>
@@ -471,7 +471,8 @@
                                     country: code, 
                                     postcode: '', 
                                     isOpen: false, 
-                                    searchTerm: COUNTRY_REVERSE_MAPPING[code] || '' 
+                                    searchTerm: COUNTRY_REVERSE_MAPPING[code] || '',
+                                    savedPostcodes: savedPostcodesCollection[code] || []
                                 })}
                                 label="Country"
                                 isOpen={waypoint.isOpen}
@@ -512,7 +513,10 @@
                 </div>
             );
         };
-
+    </script>
+</body>
+</html>
+    <script type="text/babel">
         const Calculator = () => {
             // Basic State
             const [userEmail, setUserEmail] = useState('');
@@ -527,8 +531,9 @@
             const [incoterms, setIncoterms] = useState('EXW');
             
             // Advanced Options State
+            const [loadType, setLoadType] = useState('Partial Load'); // Changed from isFullTruckLoad
+            const [weightType, setWeightType] = useState('perPallet'); // 'perPallet' or 'total'
             const [pallets, setPallets] = useState(1);
-            const [isFullTruckLoad, setIsFullTruckLoad] = useState(false);
             const [containerType, setContainerType] = useState('');
             const [airWeight, setAirWeight] = useState('');
             const [volume, setVolume] = useState('');
@@ -604,6 +609,21 @@
                 return () => unsubscribe();
             }, []);
 
+            // Update loadType based on transportMode
+            useEffect(() => {
+                if (transportMode === 'Sea') {
+                    setLoadType('Container');
+                } else if (transportMode === 'Air') {
+                    setLoadType('Pallets');
+                } else { // Road
+                    setLoadType('Partial Load');
+                }
+                // Reset related fields
+                setContainerType('');
+                setAirWeight('');
+                setVolume('');
+            }, [transportMode]);
+
             const findSimilarRoutes = () => {
                 if (!collection.country || !delivery.country) return;
 
@@ -614,12 +634,14 @@
                     route.transportMode === transportMode &&
                     route.weightBucket === weightBucket &&
                     route.incoterms === incoterms &&
-                    route.isFullTruckLoad === isFullTruckLoad
+                    route.loadType === loadType &&
+                    route.weightType === weightType
                 );
 
                 const exactMatch = matches.find(route =>
                     route.collectionPostcode === collection.postcode &&
-                    route.deliveryPostcode === delivery.postcode
+                    route.delivery.postcode === delivery.postcode &&
+                    route.weightType === weightType
                 );
 
                 if (exactMatch) {
@@ -687,7 +709,7 @@
                     return;
                 }
 
-                if (!transportMode || !weightBucket || !incoterms) {
+                if (!transportMode || !weightBucket || !incoterms || !loadType) {
                     setError('Please fill in all required fields.');
                     return;
                 }
@@ -733,13 +755,14 @@
                         userEmail,
                         collection,
                         delivery,
-                        isFullTruckLoad,
-                        pallets: isFullTruckLoad ? null : pallets,
                         deliveryType,
                         hideDocuments,
                         transportMode,
                         weightBucket,
                         incoterms,
+                        loadType,
+                        weightType,
+                        pallets: loadType !== 'Full Truck Load' ? pallets : null,
                         containerType: transportMode === 'Sea' ? containerType : null,
                         airWeight: transportMode === 'Air' ? airWeight : null,
                         volume: volume || null,
@@ -773,7 +796,8 @@
                             deliveryPostcode: delivery.postcode,
                             deliveryLocation: delivery.location || '',
                             deliveryType: deliveryType,
-                            isFullTruckLoad: isFullTruckLoad ? 'Yes' : 'No',
+                            loadType: loadType,
+                            weightType: weightType,
                             pallets: pallets || '',
                             containerType: containerType || '',
                             airWeight: airWeight || '',
@@ -868,7 +892,7 @@
 
                                 <div>
                                     <label className="block text-sm font-medium mb-1 text-gray-600">
-                                        Weight Bucket (per pallet) *
+                                        Weight Bucket {weightType === 'perPallet' ? '(per pallet)' : '(total load)'} *
                                     </label>
                                     <select
                                         className="combobox-input"
@@ -888,7 +912,7 @@
                                         <option value="4501-5000kg">4501 - 5000 Kg</option>
                                     </select>
                                     <p className="text-sm text-gray-500 mt-1">
-                                        Select weight per pallet in 500kg increments up to 5000 Kg
+                                        Select weight {weightType === 'perPallet' ? 'per pallet' : 'in total'} in 500kg increments up to 5000 Kg
                                     </p>
                                 </div>
 
@@ -969,6 +993,7 @@
                                     waypoint={waypoint}
                                     onChange={updateWaypoint}
                                     onRemove={removeWaypoint}
+                                    savedPostcodesCollection={savedPostcodes.collection}
                                 />
                             ))}
                             <button
@@ -1028,33 +1053,105 @@
                                 <div>
                                     <label className="block text-sm font-medium mb-2 text-gray-600">Load Type</label>
                                     <div className="flex gap-4">
-                                        <button
-                                            type="button"
-                                            className={`flex-1 py-2 px-4 rounded-lg transition-colors ${
-                                                !isFullTruckLoad 
-                                                    ? 'azelis-blue text-white' 
-                                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                            }`}
-                                            onClick={() => setIsFullTruckLoad(false)}
-                                        >
-                                            Partial Load
-                                        </button>
-                                        <button
-                                            type="button"
-                                            className={`flex-1 py-2 px-4 rounded-lg transition-colors ${
-                                                isFullTruckLoad 
-                                                    ? 'azelis-blue text-white' 
-                                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                            }`}
-                                            onClick={() => setIsFullTruckLoad(true)}
-                                        >
-                                            Full Truck Load
-                                        </button>
+                                        {transportMode === 'Road' && (
+                                            <>
+                                                <button
+                                                    type="button"
+                                                    className={`flex-1 py-2 px-4 rounded-lg transition-colors ${
+                                                        loadType === 'Partial Load' 
+                                                            ? 'azelis-blue text-white' 
+                                                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                                    }`}
+                                                    onClick={() => setLoadType('Partial Load')}
+                                                >
+                                                    Partial Load
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    className={`flex-1 py-2 px-4 rounded-lg transition-colors ${
+                                                        loadType === 'Full Truck Load' 
+                                                            ? 'azelis-blue text-white' 
+                                                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                                    }`}
+                                                    onClick={() => setLoadType('Full Truck Load')}
+                                                >
+                                                    Full Truck Load
+                                                </button>
+                                            </>
+                                        )}
+                                        {transportMode === 'Sea' && (
+                                            <>
+                                                <button
+                                                    type="button"
+                                                    className={`flex-1 py-2 px-4 rounded-lg transition-colors ${
+                                                        loadType === 'Container' 
+                                                            ? 'azelis-blue text-white' 
+                                                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                                    }`}
+                                                    onClick={() => setLoadType('Container')}
+                                                >
+                                                    Container
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    className={`flex-1 py-2 px-4 rounded-lg transition-colors ${
+                                                        loadType === 'LCL' 
+                                                            ? 'azelis-blue text-white' 
+                                                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                                    }`}
+                                                    onClick={() => setLoadType('LCL')}
+                                                >
+                                                    LCL
+                                                </button>
+                                            </>
+                                        )}
+                                        {transportMode === 'Air' && (
+                                            <button
+                                                type="button"
+                                                className={`flex-1 py-2 px-4 rounded-lg transition-colors ${
+                                                    loadType === 'Pallets' 
+                                                        ? 'azelis-blue text-white' 
+                                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                                }`}
+                                                onClick={() => setLoadType('Pallets')}
+                                            >
+                                                Pallets
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
                                 
+                                {/* Weight Type Selection */}
+                                <div className="flex items-center">
+                                    <label className="block text-sm font-medium mb-2 text-gray-600 mr-4">
+                                        Weight Type:
+                                    </label>
+                                    <label className="flex items-center mr-4">
+                                        <input
+                                            type="radio"
+                                            name="weightType"
+                                            value="perPallet"
+                                            checked={weightType === 'perPallet'}
+                                            onChange={() => setWeightType('perPallet')}
+                                            className="form-radio"
+                                        />
+                                        <span className="ml-2">Per Pallet</span>
+                                    </label>
+                                    <label className="flex items-center">
+                                        <input
+                                            type="radio"
+                                            name="weightType"
+                                            value="total"
+                                            checked={weightType === 'total'}
+                                            onChange={() => setWeightType('total')}
+                                            className="form-radio"
+                                        />
+                                        <span className="ml-2">Total Load</span>
+                                    </label>
+                                </div>
+
                                 {/* Number of Pallets */}
-                                {!isFullTruckLoad && (
+                                {(transportMode === 'Road' && loadType !== 'Full Truck Load') && (
                                     <div className="flex items-center">
                                         <label className="block text-sm font-medium mb-2 text-gray-600 mr-4">
                                             Pallets:
@@ -1066,7 +1163,6 @@
                                             max="24"
                                             value={pallets}
                                             onChange={(e) => setPallets(Math.min(Math.max(parseInt(e.target.value) || 1, 1), 24))}
-                                            disabled={transportMode === 'Sea' && containerType === 'lcl'}
                                         />
                                         {transportMode === 'Sea' && containerType === 'lcl' && (
                                             <span className="text-sm text-red-500 ml-2">Pallets not applicable for LCL</span>
@@ -1085,13 +1181,13 @@
                                                 className="combobox-input"
                                                 value={containerType}
                                                 onChange={(e) => setContainerType(e.target.value)}
-                                                required
+                                                required={loadType === 'Container'}
                                             >
                                                 <option value="">Select Container Type</option>
                                                 <option value="20ft">20ft</option>
                                                 <option value="40ft">40ft</option>
                                                 <option value="40ft-hc">40ft HC</option>
-                                                <option value="lcl">LCL</option>
+                                                <option value="LCL">LCL</option>
                                             </select>
                                         </div>
                                         <div>
@@ -1106,28 +1202,9 @@
                                                     onChange={(e) => setVolume(e.target.value)}
                                                     placeholder="Enter volume"
                                                 />
-                                                <label className="ml-4 flex items-center">
-                                                    <input
-                                                        type="radio"
-                                                        name={`volumeTypeSea`}
-                                                        value="perPallet"
-                                                        checked={false} // Adjust as needed
-                                                        onChange={() => {}}
-                                                        disabled
-                                                    />
-                                                    <span className="ml-2">Per Pallet</span>
-                                                </label>
-                                                <label className="ml-4 flex items-center">
-                                                    <input
-                                                        type="radio"
-                                                        name={`volumeTypeSea`}
-                                                        value="total"
-                                                        checked={true}
-                                                        onChange={() => {}}
-                                                        disabled
-                                                    />
-                                                    <span className="ml-2">Total</span>
-                                                </label>
+                                                <span className="ml-4 text-sm text-gray-600">
+                                                    CBM
+                                                </span>
                                             </div>
                                         </div>
                                     </>
@@ -1147,26 +1224,9 @@
                                                     onChange={(e) => setAirWeight(e.target.value)}
                                                     placeholder="Enter weight"
                                                 />
-                                                <label className="ml-4 flex items-center">
-                                                    <input
-                                                        type="radio"
-                                                        name="weightTypeAir"
-                                                        value="perPallet"
-                                                        checked={false} // Implement toggle functionality as needed
-                                                        onChange={() => {}}
-                                                    />
-                                                    <span className="ml-2">Per Pallet</span>
-                                                </label>
-                                                <label className="ml-4 flex items-center">
-                                                    <input
-                                                        type="radio"
-                                                        name="weightTypeAir"
-                                                        value="total"
-                                                        checked={true}
-                                                        onChange={() => {}}
-                                                    />
-                                                    <span className="ml-2">Total</span>
-                                                </label>
+                                                <span className="ml-4 text-sm text-gray-600">
+                                                    Kg
+                                                </span>
                                             </div>
                                         </div>
                                         <div>
@@ -1181,26 +1241,9 @@
                                                     onChange={(e) => setVolume(e.target.value)}
                                                     placeholder="Enter volume"
                                                 />
-                                                <label className="ml-4 flex items-center">
-                                                    <input
-                                                        type="radio"
-                                                        name="volumeTypeAir"
-                                                        value="perPallet"
-                                                        checked={false} // Implement toggle functionality as needed
-                                                        onChange={() => {}}
-                                                    />
-                                                    <span className="ml-2">Per Pallet</span>
-                                                </label>
-                                                <label className="ml-4 flex items-center">
-                                                    <input
-                                                        type="radio"
-                                                        name="volumeTypeAir"
-                                                        value="total"
-                                                        checked={true}
-                                                        onChange={() => {}}
-                                                    />
-                                                    <span className="ml-2">Total</span>
-                                                </label>
+                                                <span className="ml-4 text-sm text-gray-600">
+                                                    CBM
+                                                </span>
                                             </div>
                                         </div>
                                     </div>
@@ -1304,10 +1347,16 @@
                                                     <p className="text-sm text-gray-600">
                                                         Currency: {exactMatchRate.currency}
                                                     </p>
+                                                    <p className="text-sm text-gray-600">
+                                                        Load Type: {exactMatchRate.loadType}
+                                                    </p>
+                                                    <p className="text-sm text-gray-600">
+                                                        Weight Type: {exactMatchRate.weightType === 'perPallet' ? 'Per Pallet' : 'Total Load'}
+                                                    </p>
                                                 </div>
                                                 <div className="text-right">
                                                     <p className="text-lg font-semibold text-green-700">
-                                                        {exactMatchRate.currency} {isFullTruckLoad 
+                                                        {exactMatchRate.currency} {loadType === 'Full Truck Load' 
                                                             ? exactMatchRate.fullTruckLoadPrice?.toFixed(2) || 'N/A'
                                                             : exactMatchRate.prices ? exactMatchRate.prices[pallets]?.toFixed(2) || 'N/A' : 'N/A'
                                                         }
@@ -1351,10 +1400,16 @@
                                                             <p className="text-sm text-gray-600">
                                                                 Currency: {route.currency}
                                                             </p>
+                                                            <p className="text-sm text-gray-600">
+                                                                Load Type: {route.loadType}
+                                                            </p>
+                                                            <p className="text-sm text-gray-600">
+                                                                Weight Type: {route.weightType === 'perPallet' ? 'Per Pallet' : 'Total Load'}
+                                                            </p>
                                                         </div>
                                                         <div className="text-right">
                                                             <p className="font-semibold">
-                                                                {route.currency} {isFullTruckLoad 
+                                                                {route.currency} {loadType === 'Full Truck Load' 
                                                                     ? route.fullTruckLoadPrice?.toFixed(2) || 'N/A'
                                                                     : route.prices ? route.prices[pallets]?.toFixed(2) || 'N/A' : 'N/A'
                                                                 }
@@ -1411,7 +1466,7 @@
                                     <div className="space-y-2 text-sm mb-4">
                                         {/* Basic Details */}
                                         <p><strong>Transport Mode:</strong> {transportMode}</p>
-                                        <p><strong>Weight Bucket:</strong> {weightBucket}</p>
+                                        <p><strong>Weight Bucket:</strong> {weightBucket} ({weightType === 'perPallet' ? 'Per Pallet' : 'Total Load'})</p>
                                         <p><strong>Incoterms:</strong> {incoterms}</p>
 
                                         {/* Route Details */}
@@ -1431,14 +1486,9 @@
                                         {/* Transport Details */}
                                         <p><strong>Delivery Type:</strong> {deliveryType}</p>
                                         <p><strong>Transport Mode:</strong> {transportMode}</p>
-                                        <p><strong>Weight Bucket:</strong> {weightBucket}</p>
+                                        <p><strong>Weight Bucket:</strong> {weightBucket} ({weightType === 'perPallet' ? 'Per Pallet' : 'Total Load'})</p>
                                         <p><strong>Incoterms:</strong> {incoterms}</p>
-                                        {!isFullTruckLoad && (
-                                            <p><strong>Load Type:</strong> Partial Load</p>
-                                        )}
-                                        {isFullTruckLoad && (
-                                            <p><strong>Load Type:</strong> Full Truck Load</p>
-                                        )}
+                                        <p><strong>Load Type:</strong> {loadType}</p>
                                         {transportMode === 'Sea' && (
                                             <>
                                                 {containerType && <p><strong>Container Type:</strong> {containerType}</p>}
