@@ -314,6 +314,11 @@
 
         const COUNTRY_CODES = Object.values(COUNTRY_MAPPING);
         const COUNTRY_NAMES = Object.keys(COUNTRY_MAPPING);
+
+        // Reverse mapping for easy lookup
+        const COUNTRY_REVERSE_MAPPING = Object.fromEntries(
+            Object.entries(COUNTRY_MAPPING).map(([name, code]) => [code, name])
+        );
     </script>
 
     <!-- React Components and Main Script -->
@@ -461,7 +466,13 @@
                         <div>
                             <CountrySelector
                                 value={waypoint.country}
-                                onChange={(code) => onChange(index, { ...waypoint, country: code, postcode: '' })}
+                                onChange={(code) => onChange(index, { 
+                                    ...waypoint, 
+                                    country: code, 
+                                    postcode: '', 
+                                    isOpen: false, 
+                                    searchTerm: COUNTRY_REVERSE_MAPPING[code] || '' 
+                                })}
                                 label="Country"
                                 isOpen={waypoint.isOpen}
                                 onToggle={(isOpen) => onChange(index, { ...waypoint, isOpen })}
@@ -512,12 +523,10 @@
             
             // New Basic Fields
             const [transportMode, setTransportMode] = useState('Road');
-            const [weightBucket, setWeightBucket] = useState('<500kg');
+            const [weightBucket, setWeightBucket] = useState('0-500kg');
             const [incoterms, setIncoterms] = useState('EXW');
             
             // Advanced Options State
-            // Removed showAdvancedOptions state and toggle button
-            
             const [pallets, setPallets] = useState(1);
             const [isFullTruckLoad, setIsFullTruckLoad] = useState(false);
             const [containerType, setContainerType] = useState('');
@@ -744,8 +753,8 @@
                     const quoteId = quoteRef.id;
             
                     // Get country names
-                    const collectionCountryName = COUNTRY_NAMES.find(name => COUNTRY_MAPPING[name] === collection.country) || collection.country;
-                    const deliveryCountryName = COUNTRY_NAMES.find(name => COUNTRY_MAPPING[name] === delivery.country) || delivery.country;
+                    const collectionCountryName = COUNTRY_REVERSE_MAPPING[collection.country] || collection.country;
+                    const deliveryCountryName = COUNTRY_REVERSE_MAPPING[delivery.country] || delivery.country;
             
                     // Send emails to each relevant haulier
                     const emailPromises = relevantHauliers.map(haulier => {
@@ -867,20 +876,19 @@
                                         onChange={(e) => setWeightBucket(e.target.value)}
                                         required
                                     >
-                                        <option value="<500kg">&lt;500 Kg</option>
-                                        <option value="500kg">500 Kg</option>
-                                        <option value="1tn">1 Ton</option>
-                                        <option value="1.5tn">1.5 Tons</option>
-                                        <option value="2tn">2 Tons</option>
-                                        <option value="2.5tn">2.5 Tons</option>
-                                        <option value="3tn">3 Tons</option>
-                                        <option value="3.5tn">3.5 Tons</option>
-                                        <option value="4tn">4 Tons</option>
-                                        <option value="4.5tn">4.5 Tons</option>
-                                        <option value="5tn">5 Tons</option>
+                                        <option value="0-500kg">0 - 500 Kg</option>
+                                        <option value="501-1000kg">501 - 1000 Kg</option>
+                                        <option value="1001-1500kg">1001 - 1500 Kg</option>
+                                        <option value="1501-2000kg">1501 - 2000 Kg</option>
+                                        <option value="2001-2500kg">2001 - 2500 Kg</option>
+                                        <option value="2501-3000kg">2501 - 3000 Kg</option>
+                                        <option value="3001-3500kg">3001 - 3500 Kg</option>
+                                        <option value="3501-4000kg">3501 - 4000 Kg</option>
+                                        <option value="4001-4500kg">4001 - 4500 Kg</option>
+                                        <option value="4501-5000kg">4501 - 5000 Kg</option>
                                     </select>
                                     <p className="text-sm text-gray-500 mt-1">
-                                        Select weight per pallet in 500kg increments up to 5 Tons
+                                        Select weight per pallet in 500kg increments up to 5000 Kg
                                     </p>
                                 </div>
 
@@ -1042,25 +1050,11 @@
                                         >
                                             Full Truck Load
                                         </button>
-                                        <button
-                                            type="button"
-                                            className={`flex-1 py-2 px-4 rounded-lg transition-colors ${
-                                                transportMode === 'Sea' ? 'bg-gray-200 text-gray-700 cursor-not-allowed' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                            }`}
-                                            disabled={transportMode === 'Sea'}
-                                            onClick={() => { 
-                                                if (transportMode !== 'Sea') {
-                                                    // Implement Bulk selection if needed
-                                                }
-                                            }}
-                                        >
-                                            Bulk
-                                        </button>
                                     </div>
                                 </div>
                                 
                                 {/* Number of Pallets */}
-                                {!isFullTruckLoad && transportMode !== 'Sea' && (
+                                {!isFullTruckLoad && (
                                     <div className="flex items-center">
                                         <label className="block text-sm font-medium mb-2 text-gray-600 mr-4">
                                             Pallets:
@@ -1226,7 +1220,6 @@
                                             <option value="STD">Standard</option>
                                             <option value="ADR">ADR (Hazardous)</option>
                                             <option value="TEMP">Climate-Controlled</option>
-                                            <option value="BULK">Bulk</option>
                                         </select>
                                     </div>
 
@@ -1287,10 +1280,10 @@
                                             <div className="grid grid-cols-2 gap-4">
                                                 <div>
                                                     <p className="text-sm text-gray-600">
-                                                        Collection: {exactMatchRate.collectionPostcode}, {COUNTRY_NAMES.find(name => COUNTRY_MAPPING[name] === exactMatchRate.collectionCountry)}
+                                                        Collection: {exactMatchRate.collectionPostcode}, {COUNTRY_REVERSE_MAPPING[exactMatchRate.collectionCountry] || exactMatchRate.collectionCountry}
                                                     </p>
                                                     <p className="text-sm text-gray-600">
-                                                        Delivery: {exactMatchRate.deliveryPostcode}, {COUNTRY_NAMES.find(name => COUNTRY_MAPPING[name] === exactMatchRate.deliveryCountry)}
+                                                        Delivery: {exactMatchRate.deliveryPostcode}, {COUNTRY_REVERSE_MAPPING[exactMatchRate.deliveryCountry] || exactMatchRate.deliveryCountry}
                                                     </p>
                                                     <p className="text-sm text-gray-600">
                                                         Transport: {exactMatchRate.transportMode} ({exactMatchRate.weightBucket})
@@ -1334,10 +1327,10 @@
                                                     <div className="grid grid-cols-2 gap-4">
                                                         <div>
                                                             <p className="text-sm text-gray-600">
-                                                                Collection: {route.collectionPostcode}, {COUNTRY_NAMES.find(name => COUNTRY_MAPPING[name] === route.collectionCountry)}
+                                                                Collection: {route.collectionPostcode}, {COUNTRY_REVERSE_MAPPING[route.collectionCountry] || route.collectionCountry}
                                                             </p>
                                                             <p className="text-sm text-gray-600">
-                                                                Delivery: {route.deliveryPostcode}, {COUNTRY_NAMES.find(name => COUNTRY_MAPPING[name] === route.deliveryCountry)}
+                                                                Delivery: {route.deliveryPostcode}, {COUNTRY_REVERSE_MAPPING[route.deliveryCountry] || route.deliveryCountry}
                                                             </p>
                                                             <p className="text-sm text-gray-600">
                                                                 Transport: {route.transportMode} ({route.weightBucket})
@@ -1422,17 +1415,17 @@
                                         <p><strong>Incoterms:</strong> {incoterms}</p>
 
                                         {/* Route Details */}
-                                        <p><strong>Collection:</strong> {collection.postcode}, {COUNTRY_NAMES.find(name => COUNTRY_MAPPING[name] === collection.country)}</p>
+                                        <p><strong>Collection:</strong> {collection.postcode}, {COUNTRY_REVERSE_MAPPING[collection.country] || collection.country}</p>
                                         {collection.location && <p><strong>Collection Location:</strong> {collection.location}</p>}
                                         
                                         {/* Waypoints Details */}
                                         {waypoints.length > 0 && waypoints.map((wp, idx) => (
                                             <div key={idx}>
-                                                <p><strong>Waypoint {idx + 1}:</strong> {wp.postcode}, {COUNTRY_NAMES.find(name => COUNTRY_MAPPING[name] === wp.country)}</p>
+                                                <p><strong>Waypoint {idx + 1}:</strong> {wp.postcode}, {COUNTRY_REVERSE_MAPPING[wp.country] || wp.country}</p>
                                             </div>
                                         ))}
 
-                                        <p><strong>Delivery:</strong> {delivery.postcode}, {COUNTRY_NAMES.find(name => COUNTRY_MAPPING[name] === delivery.country)}</p>
+                                        <p><strong>Delivery:</strong> {delivery.postcode}, {COUNTRY_REVERSE_MAPPING[delivery.country] || delivery.country}</p>
                                         {delivery.location && <p><strong>Delivery Location:</strong> {delivery.location}</p>}
                                         
                                         {/* Transport Details */}
@@ -1440,8 +1433,11 @@
                                         <p><strong>Transport Mode:</strong> {transportMode}</p>
                                         <p><strong>Weight Bucket:</strong> {weightBucket}</p>
                                         <p><strong>Incoterms:</strong> {incoterms}</p>
-                                        {transportMode === 'Road' && (
-                                            <p><strong>Load Type:</strong> {isFullTruckLoad ? 'Full Truck Load' : `${pallets} Pallets`}</p>
+                                        {!isFullTruckLoad && (
+                                            <p><strong>Load Type:</strong> Partial Load</p>
+                                        )}
+                                        {isFullTruckLoad && (
+                                            <p><strong>Load Type:</strong> Full Truck Load</p>
                                         )}
                                         {transportMode === 'Sea' && (
                                             <>
