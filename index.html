@@ -567,7 +567,7 @@
                 {waypoint.showPostcode && (
                     <PostcodeSelector
                         isOpen={waypoint.showPostcode}
-                        onClose={() => onChange({ ...waypoint, showPostcode: false })}
+                        onClose={() => onChange({ ...waypoint, showPostcode: true })}
                         onSelect={handlePostcodeSelect} // Updated handler
                         savedPostcodes={waypoint.savedPostcodes || []}
                         country={waypoint.country}
