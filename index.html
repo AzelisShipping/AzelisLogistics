@@ -500,62 +500,66 @@
             );
         };
 
-        // Waypoint Component
-        const Waypoint = ({ index, waypoint, onChange, onRemove, savedPostcodesCollection }) => {
-            return (
-                <div className="border p-4 rounded-lg mb-4 relative">
-                    <h4 className="text-md font-semibold mb-2">Waypoint {index + 1}</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <CountrySelector
-                                value={waypoint.country}
-                                onChange={(code) => onChange(index, { 
-                                    ...waypoint, 
-                                    country: code, 
-                                    postcode: '', 
-                                    isOpen: false, 
-                                    searchTerm: COUNTRY_REVERSE_MAPPING[code] || '',
-                                    savedPostcodes: savedPostcodesCollection[code] || []
-                                })}
-                                label="Country"
-                                isOpen={waypoint.isOpen}
-                                onToggle={(isOpen) => onChange(index, { ...waypoint, isOpen })}
-                                searchTerm={waypoint.searchTerm}
-                                onSearchChange={(term) => onChange(index, { ...waypoint, searchTerm: term })}
-                            />
-                        </div>
-                        <div className="relative">
-                            <label className="block text-sm font-medium mb-1 text-gray-600">
-                                Postcode *
-                            </label>
-                            <button
-                                onClick={() => onChange(index, { ...waypoint, showPostcode: true })}
-                                className="combobox-input text-left"
-                            >
-                                {waypoint.postcode || "Select or add postcode"}
-                            </button>
-                        </div>
-                    </div>
-                    {waypoint.showPostcode && (
-                        <PostcodeSelector
-                            isOpen={waypoint.showPostcode}
-                            onClose={() => onChange(index, { ...waypoint, showPostcode: false })}
-                            onSelect={(postcode) => onChange(index, { ...waypoint, postcode })}
-                            savedPostcodes={waypoint.savedPostcodes || []}
-                            country={waypoint.country}
-                            type="collection"
-                        />
-                    )}
+       const Waypoint = ({ waypoint, onChange, onRemove, savedPostcodesCollection }) => {
+    // Determine the waypoint number based on its position in the array
+    // This requires passing the index or alternatively, manage numbering differently
+    // For simplicity, you can omit the numbering or manage it externally
+
+    return (
+        <div className="border p-4 rounded-lg mb-4 relative">
+            <h4 className="text-md font-semibold mb-2">Waypoint</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <CountrySelector
+                        value={waypoint.country}
+                        onChange={(code) => onChange({ 
+                            ...waypoint, 
+                            country: code, 
+                            postcode: '', 
+                            isOpen: false, 
+                            searchTerm: COUNTRY_REVERSE_MAPPING[code] || '',
+                            savedPostcodes: savedPostcodesCollection[code] || []
+                        })}
+                        label="Country"
+                        isOpen={waypoint.isOpen}
+                        onToggle={(isOpen) => onChange({ ...waypoint, isOpen })}
+                        searchTerm={waypoint.searchTerm}
+                        onSearchChange={(term) => onChange({ ...waypoint, searchTerm: term })}
+                    />
+                </div>
+                <div className="relative">
+                    <label className="block text-sm font-medium mb-1 text-gray-600">
+                        Postcode *
+                    </label>
                     <button
-                        onClick={() => onRemove(index)}
-                        className="absolute top-2 right-2 text-red-500 hover:text-red-700"
-                        title="Remove Waypoint"
+                        onClick={() => onChange({ ...waypoint, showPostcode: true })}
+                        className="combobox-input text-left"
                     >
-                        ✕
+                        {waypoint.postcode || "Select or add postcode"}
                     </button>
                 </div>
-            );
-        };
+            </div>
+            {waypoint.showPostcode && (
+                <PostcodeSelector
+                    isOpen={waypoint.showPostcode}
+                    onClose={() => onChange({ ...waypoint, showPostcode: false })}
+                    onSelect={(postcode) => onChange({ ...waypoint, postcode })}
+                    savedPostcodes={waypoint.savedPostcodes || []}
+                    country={waypoint.country}
+                    type="collection"
+                />
+            )}
+            <button
+                onClick={onRemove}
+                className="absolute top-2 right-2 text-red-500 hover:text-red-700"
+                title="Remove Waypoint"
+            >
+                ✕
+            </button>
+        </div>
+    );
+};
+
     </script>
 
     <script type="text/babel">
@@ -885,22 +889,35 @@
                 }
             };
 
-            // Handle Adding Waypoints
+            // Handle Adding Waypoints with Unique IDs
             const addWaypoint = () => {
-                setWaypoints([...waypoints, { country: '', postcode: '', showPostcode: false, isOpen: false, searchTerm: '', savedPostcodes: [] }]);
+                setWaypoints([
+                    ...waypoints, 
+                    { 
+                        id: Date.now(), // Unique ID based on timestamp
+                        country: '', 
+                        postcode: '', 
+                        showPostcode: false, 
+                        isOpen: false, 
+                        searchTerm: '', 
+                        savedPostcodes: [] 
+                    }
+                ]);
             };
 
-            // Handle Updating Waypoints
-            const updateWaypoint = (index, updatedWaypoint) => {
-                const updatedWaypoints = waypoints.map((wp, idx) => idx === index ? updatedWaypoint : wp);
+
+            // Handle Updating Waypoints by ID
+            const updateWaypoint = (id, updatedWaypoint) => {
+                const updatedWaypoints = waypoints.map(wp => wp.id === id ? updatedWaypoint : wp);
+                setWaypoints(updatedWaypoints);
+            };
+            
+            // Handle Removing Waypoints by ID
+            const removeWaypoint = (id) => {
+                const updatedWaypoints = waypoints.filter(wp => wp.id !== id);
                 setWaypoints(updatedWaypoints);
             };
 
-            // Handle Removing Waypoints
-            const removeWaypoint = (index) => {
-                const updatedWaypoints = waypoints.filter((_, idx) => idx !== index);
-                setWaypoints(updatedWaypoints);
-            };
 
             if (loading) {
                 return (
@@ -1046,26 +1063,26 @@
                             </div>
                         </div>
 
-                        {/* Waypoints Section */}
-                        <div className="mb-6">
-                            <h2 className="text-lg font-semibold mb-4 text-gray-700">Collection Waypoints (Optional)</h2>
-                            {waypoints.map((waypoint, index) => (
-                                <Waypoint
-                                    key={index}
-                                    index={index}
-                                    waypoint={waypoint}
-                                    onChange={updateWaypoint}
-                                    onRemove={removeWaypoint}
-                                    savedPostcodesCollection={savedPostcodes.collection}
-                                />
-                            ))}
-                            <button
-                                onClick={addWaypoint}
-                                className="add-waypoint-button"
-                            >
-                                + Add Waypoint
-                            </button>
-                        </div>
+                    {/* Waypoints Section */}
+                    <div className="mb-6">
+                        <h2 className="text-lg font-semibold mb-4 text-gray-700">Collection Waypoints (Optional)</h2>
+                        {waypoints.map((waypoint) => (
+                            <Waypoint
+                                key={waypoint.id} // Use unique ID as key
+                                waypoint={waypoint}
+                                onChange={(updatedWaypoint) => updateWaypoint(waypoint.id, updatedWaypoint)}
+                                onRemove={() => removeWaypoint(waypoint.id)}
+                                savedPostcodesCollection={savedPostcodes.collection}
+                            />
+                        ))}
+                        <button
+                            onClick={addWaypoint}
+                            className="add-waypoint-button"
+                        >
+                            + Add Waypoint
+                        </button>
+                    </div>
+
 
                         {/* Delivery Details */}
                         <div className="mb-6">
