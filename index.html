@@ -69,6 +69,18 @@
             transform: translateY(-2px);
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
+        .add-waypoint-button {
+            background-color: #003087;
+            color: white;
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 0.375rem;
+            cursor: pointer;
+            margin-top: 0.5rem;
+        }
+        .add-waypoint-button:hover {
+            background-color: #002670;
+        }
     </style>
 </head>
 <body class="bg-gray-50">
@@ -99,11 +111,7 @@
             appId: "1:13102382958:web:82a3324843432519cb8b7f",
             measurementId: "G-Q6JNN8DHJQ"
         };
-
-        // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
-
-        // Initialize Firestore
         const db = firebase.firestore();
     </script>
 
@@ -444,6 +452,59 @@
             );
         };
 
+        // Waypoint Component
+        const Waypoint = ({ index, waypoint, onChange, onRemove }) => {
+            return (
+                <div className="border p-4 rounded-lg mb-4 relative">
+                    <h4 className="text-md font-semibold mb-2">Waypoint {index + 1}</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium mb-1 text-gray-600">
+                                Country *
+                            </label>
+                            <CountrySelector
+                                value={waypoint.country}
+                                onChange={(code) => onChange(index, { ...waypoint, country: code, postcode: '' })}
+                                label="Country"
+                                isOpen={waypoint.isOpen}
+                                onToggle={(isOpen) => onChange(index, { ...waypoint, isOpen })}
+                                searchTerm={waypoint.searchTerm}
+                                onSearchChange={(term) => onChange(index, { ...waypoint, searchTerm: term })}
+                            />
+                        </div>
+                        <div className="relative">
+                            <label className="block text-sm font-medium mb-1 text-gray-600">
+                                Postcode *
+                            </label>
+                            <button
+                                onClick={() => onChange(index, { ...waypoint, showPostcode: true })}
+                                className="combobox-input text-left"
+                            >
+                                {waypoint.postcode || "Select or add postcode"}
+                            </button>
+                        </div>
+                    </div>
+                    {waypoint.showPostcode && (
+                        <PostcodeSelector
+                            isOpen={waypoint.showPostcode}
+                            onClose={() => onChange(index, { ...waypoint, showPostcode: false })}
+                            onSelect={(postcode) => onChange(index, { ...waypoint, postcode })}
+                            savedPostcodes={waypoint.savedPostcodes || []}
+                            country={waypoint.country}
+                            type="collection"
+                        />
+                    )}
+                    <button
+                        onClick={() => onRemove(index)}
+                        className="absolute top-2 right-2 text-red-500 hover:text-red-700"
+                        title="Remove Waypoint"
+                    >
+                        ✕
+                    </button>
+                </div>
+            );
+        };
+
         const Calculator = () => {
             // Basic State
             const [userEmail, setUserEmail] = useState('');
@@ -465,7 +526,10 @@
             const [airWeight, setAirWeight] = useState('');
             const [volume, setVolume] = useState('');
             const [currency, setCurrency] = useState('GBP');
-            
+
+            // Waypoints State
+            const [waypoints, setWaypoints] = useState([]);
+
             // UI State
             const [showTenderForm, setShowTenderForm] = useState(false);
             const [sending, setSending] = useState(false);
@@ -691,35 +755,22 @@
                         const templateParams = {
                             to_email: haulier.email,
                             subject: `Quote Request: ${collectionCountryName} to ${deliveryCountryName}`,
-                            message: `
-                                <strong>Basic Details:</strong><br/>
-                                Transport Mode: ${transportMode}<br/>
-                                Weight Bucket: ${weightBucket}<br/>
-                                Incoterms: ${incoterms}<br/><br/>
-
-                                <strong>Collection:</strong><br/>
-                                Country: ${collectionCountryName} (${collection.country})<br/>
-                                Postcode: ${collection.postcode}<br/>
-                                ${collection.location ? `Location: ${collection.location}<br/>` : ''}<br/>
-
-                                <strong>Delivery:</strong><br/>
-                                Country: ${deliveryCountryName} (${delivery.country})<br/>
-                                Postcode: ${delivery.postcode}<br/>
-                                ${delivery.location ? `Location: ${delivery.location}<br/>` : ''}<br/>
-
-                                <strong>Shipping Details:</strong><br/>
-                                Transport Mode: ${transportMode}<br/>
-                                Type: ${isFullTruckLoad ? 'Full Truck Load' : `${pallets} Pallets`}<br/>
-                                Delivery Type: ${deliveryType}<br/>
-                                Hide Documents: ${hideDocuments ? 'Yes' : 'No'}<br/>
-                                ${showAdvancedOptions ? `<strong>Advanced Options:</strong><br/>` : ''}
-                                ${showAdvancedOptions && containerType ? `Container Type: ${containerType}<br/>` : ''}
-                                ${showAdvancedOptions && airWeight ? `Air Weight: ${airWeight}kg<br/>` : ''}
-                                ${showAdvancedOptions && volume ? `Volume: ${volume}CBM<br/>` : ''}
-                                ${showAdvancedOptions ? `Currency: ${currency}<br/>` : ''}
-                                <br/>
-                                <a href="${tenderLink}" target="_blank">Respond to Quote</a>
-                            `,
+                            transportMode: transportMode,
+                            weightBucket: weightBucket,
+                            incoterms: incoterms,
+                            collectionCountry: collectionCountryName,
+                            collectionPostcode: collection.postcode,
+                            collectionLocation: collection.location || '',
+                            deliveryCountry: deliveryCountryName,
+                            deliveryPostcode: delivery.postcode,
+                            deliveryLocation: delivery.location || '',
+                            deliveryType: deliveryType,
+                            isFullTruckLoad: isFullTruckLoad ? 'Yes' : 'No',
+                            pallets: pallets || '',
+                            containerType: containerType || '',
+                            airWeight: airWeight || '',
+                            volume: volume || '',
+                            currency: currency,
                             tenderLink: tenderLink,
                             quoteId: quoteId,
                             reply_to: userEmail
@@ -737,6 +788,23 @@
                 } finally {
                     setSending(false);
                 }
+            };
+
+            // Handle Adding Waypoints
+            const addWaypoint = () => {
+                setWaypoints([...waypoints, { country: '', postcode: '', showPostcode: false, isOpen: false, searchTerm: '', savedPostcodes: [] }]);
+            };
+
+            // Handle Updating Waypoints
+            const updateWaypoint = (index, updatedWaypoint) => {
+                const updatedWaypoints = waypoints.map((wp, idx) => idx === index ? updatedWaypoint : wp);
+                setWaypoints(updatedWaypoints);
+            };
+
+            // Handle Removing Waypoints
+            const removeWaypoint = (index) => {
+                const updatedWaypoints = waypoints.filter((_, idx) => idx !== index);
+                setWaypoints(updatedWaypoints);
             };
 
             if (loading) {
@@ -792,7 +860,7 @@
 
                                 <div>
                                     <label className="block text-sm font-medium mb-1 text-gray-600">
-                                        Weight Bucket *
+                                        Weight Bucket (per pallet) *
                                     </label>
                                     <select
                                         className="combobox-input"
@@ -800,11 +868,20 @@
                                         onChange={(e) => setWeightBucket(e.target.value)}
                                         required
                                     >
-                                        <option value="<500kg">&lt;500 Kg</option>
-                                        <option value="500kg-1ton">500 Kg - 1 Ton</option>
-                                        <option value="1ton-5tons">1 Ton - 5 Tons</option>
-                                        <option value=">5tons">&gt;5 Tons</option>
+                                        <option value="500kg">500 Kg</option>
+                                        <option value="1tn">1 Ton</option>
+                                        <option value="1.5tn">1.5 Tons</option>
+                                        <option value="2tn">2 Tons</option>
+                                        <option value="2.5tn">2.5 Tons</option>
+                                        <option value="3tn">3 Tons</option>
+                                        <option value="3.5tn">3.5 Tons</option>
+                                        <option value="4tn">4 Tons</option>
+                                        <option value="4.5tn">4.5 Tons</option>
+                                        <option value="5tn">5 Tons</option>
                                     </select>
+                                    <p className="text-sm text-gray-500 mt-1">
+                                        Select weight per pallet in 500kg increments up to 5 Tons
+                                    </p>
                                 </div>
 
                                 <div>
@@ -833,45 +910,24 @@
                             </div>
                         </div>
 
-                        {/* Collection Details */}
+                        {/* Waypoints Section */}
                         <div className="mb-6">
-                            <h2 className="text-lg font-semibold mb-4 text-gray-700">Collection Details</h2>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                <CountrySelector
-                                    value={collection.country}
-                                    onChange={(code) => setCollection({...collection, country: code, postcode: ''})}
-                                    label="Collection Country"
-                                    isOpen={showCollectionCountry}
-                                    onToggle={setShowCollectionCountry}
-                                    searchTerm={collectionCountrySearch}
-                                    onSearchChange={setCollectionCountrySearch}
+                            <h2 className="text-lg font-semibold mb-4 text-gray-700">Collection Waypoints (Optional)</h2>
+                            {waypoints.map((waypoint, index) => (
+                                <Waypoint
+                                    key={index}
+                                    index={index}
+                                    waypoint={waypoint}
+                                    onChange={updateWaypoint}
+                                    onRemove={removeWaypoint}
                                 />
-                                
-                                <div className="relative">
-                                    <label className="block text-sm font-medium mb-1 text-gray-600">
-                                        Postcode *
-                                    </label>
-                                    <button
-                                        onClick={() => setShowCollectionPostcode(true)}
-                                        className="combobox-input text-left"
-                                    >
-                                        {collection.postcode || "Select or add postcode"}
-                                    </button>
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium mb-1 text-gray-400">
-                                        Location (Optional)
-                                    </label>
-                                    <input
-                                        type="text"
-                                        className="combobox-input"
-                                        value={collection.location}
-                                        onChange={(e) => setCollection({...collection, location: e.target.value})}
-                                        placeholder="City/Town"
-                                    />
-                                </div>
-                            </div>
+                            ))}
+                            <button
+                                onClick={addWaypoint}
+                                className="add-waypoint-button"
+                            >
+                                + Add Waypoint
+                            </button>
                         </div>
 
                         {/* Delivery Details */}
@@ -931,58 +987,69 @@
                             <div className="mb-6">
                                 <h2 className="text-lg font-semibold mb-4 text-gray-700">Advanced Options</h2>
                                 <div className="space-y-4">
-                                    {/* Load Type Selection for Road Transport */}
-                                    {transportMode === 'Road' && (
-                                        <>
-                                            <div>
-                                                <label className="block text-sm font-medium mb-2 text-gray-600">Load Type</label>
-                                                <div className="flex gap-4">
-                                                    <button
-                                                        type="button"
-                                                        className={`flex-1 py-2 px-4 rounded-lg transition-colors ${
-                                                            !isFullTruckLoad 
-                                                                ? 'azelis-blue text-white' 
-                                                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                                        }`}
-                                                        onClick={() => setIsFullTruckLoad(false)}
-                                                    >
-                                                        Partial Load
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        className={`flex-1 py-2 px-4 rounded-lg transition-colors ${
-                                                            isFullTruckLoad 
-                                                                ? 'azelis-blue text-white' 
-                                                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                                        }`}
-                                                        onClick={() => setIsFullTruckLoad(true)}
-                                                    >
-                                                        Full Truck Load
-                                                    </button>
-                                                </div>
-                                            </div>
-                                            
-                                            {!isFullTruckLoad && (
-                                                <div>
-                                                    <label className="block text-sm font-medium mb-2 text-gray-600">
-                                                        Number of Pallets
-                                                    </label>
-                                                    <input
-                                                        type="number"
-                                                        className="combobox-input"
-                                                        min="1"
-                                                        max="24"
-                                                        value={pallets}
-                                                        onChange={(e) => setPallets(Math.min(Math.max(parseInt(e.target.value) || 1, 1), 24))}
-                                                    />
-                                                </div>
+                                    {/* Load Type Selection */}
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2 text-gray-600">Load Type</label>
+                                        <div className="flex gap-4">
+                                            <button
+                                                type="button"
+                                                className={`flex-1 py-2 px-4 rounded-lg transition-colors ${
+                                                    !isFullTruckLoad 
+                                                        ? 'azelis-blue text-white' 
+                                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                                }`}
+                                                onClick={() => setIsFullTruckLoad(false)}
+                                            >
+                                                Partial Load
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className={`flex-1 py-2 px-4 rounded-lg transition-colors ${
+                                                    isFullTruckLoad 
+                                                        ? 'azelis-blue text-white' 
+                                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                                }`}
+                                                onClick={() => setIsFullTruckLoad(true)}
+                                            >
+                                                Full Truck Load
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className={`flex-1 py-2 px-4 rounded-lg transition-colors ${
+                                                    transportMode === 'Sea' ? 'bg-gray-200 text-gray-700 cursor-not-allowed' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                                }`}
+                                                disabled={transportMode === 'Sea'}
+                                                onClick={() => { /* No action needed for Bulk as it's under Load Type */ }}
+                                            >
+                                                Bulk
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    {/* Number of Pallets */}
+                                    {!isFullTruckLoad && transportMode !== 'Sea' && (
+                                        <div className="flex items-center">
+                                            <label className="block text-sm font-medium mb-2 text-gray-600 mr-4">
+                                                Pallets:
+                                            </label>
+                                            <input
+                                                type="number"
+                                                className="combobox-input w-24"
+                                                min="1"
+                                                max="24"
+                                                value={pallets}
+                                                onChange={(e) => setPallets(Math.min(Math.max(parseInt(e.target.value) || 1, 1), 24))}
+                                                disabled={transportMode === 'Sea' && containerType === 'lcl'}
+                                            />
+                                            {transportMode === 'Sea' && containerType === 'lcl' && (
+                                                <span className="text-sm text-red-500 ml-2">Pallets not applicable for LCL</span>
                                             )}
-                                        </>
+                                        </div>
                                     )}
 
-                                    {/* Sea Transport Options */}
+                                    {/* Transport Mode Specific Options */}
                                     {transportMode === 'Sea' && (
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <>
                                             <div>
                                                 <label className="block text-sm font-medium mb-2 text-gray-600">
                                                     Container Type
@@ -991,6 +1058,7 @@
                                                     className="combobox-input"
                                                     value={containerType}
                                                     onChange={(e) => setContainerType(e.target.value)}
+                                                    required
                                                 >
                                                     <option value="">Select Container Type</option>
                                                     <option value="20ft">20ft</option>
@@ -1003,43 +1071,110 @@
                                                 <label className="block text-sm font-medium mb-2 text-gray-600">
                                                     Volume (CBM)
                                                 </label>
-                                                <input
-                                                    type="number"
-                                                    className="combobox-input"
-                                                    value={volume}
-                                                    onChange={(e) => setVolume(e.target.value)}
-                                                    placeholder="Enter volume"
-                                                />
+                                                <div className="flex items-center">
+                                                    <input
+                                                        type="number"
+                                                        className="combobox-input w-32"
+                                                        value={volume}
+                                                        onChange={(e) => setVolume(e.target.value)}
+                                                        placeholder="Enter volume"
+                                                    />
+                                                    <label className="ml-4 flex items-center">
+                                                        <input
+                                                            type="radio"
+                                                            name={`volumeTypeSea`}
+                                                            value="perPallet"
+                                                            checked={waypoints.length === 0 ? false : false} // Adjust as needed
+                                                            onChange={() => {}}
+                                                            disabled
+                                                        />
+                                                        <span className="ml-2">Per Pallet</span>
+                                                    </label>
+                                                    <label className="ml-4 flex items-center">
+                                                        <input
+                                                            type="radio"
+                                                            name={`volumeTypeSea`}
+                                                            value="total"
+                                                            checked={true}
+                                                            onChange={() => {}}
+                                                            disabled
+                                                        />
+                                                        <span className="ml-2">Total</span>
+                                                    </label>
+                                                </div>
                                             </div>
-                                        </div>
+                                        </>
                                     )}
 
-                                    {/* Air Transport Options */}
                                     {transportMode === 'Air' && (
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <div>
                                                 <label className="block text-sm font-medium mb-2 text-gray-600">
                                                     Weight (Kg)
                                                 </label>
-                                                <input
-                                                    type="number"
-                                                    className="combobox-input"
-                                                    value={airWeight}
-                                                    onChange={(e) => setAirWeight(e.target.value)}
-                                                    placeholder="Enter weight"
-                                                />
+                                                <div className="flex items-center">
+                                                    <input
+                                                        type="number"
+                                                        className="combobox-input w-32"
+                                                        value={airWeight}
+                                                        onChange={(e) => setAirWeight(e.target.value)}
+                                                        placeholder="Enter weight"
+                                                    />
+                                                    <label className="ml-4 flex items-center">
+                                                        <input
+                                                            type="radio"
+                                                            name="weightTypeAir"
+                                                            value="perPallet"
+                                                            checked={false} // Implement toggle functionality as needed
+                                                            onChange={() => {}}
+                                                        />
+                                                        <span className="ml-2">Per Pallet</span>
+                                                    </label>
+                                                    <label className="ml-4 flex items-center">
+                                                        <input
+                                                            type="radio"
+                                                            name="weightTypeAir"
+                                                            value="total"
+                                                            checked={true}
+                                                            onChange={() => {}}
+                                                        />
+                                                        <span className="ml-2">Total</span>
+                                                    </label>
+                                                </div>
                                             </div>
                                             <div>
                                                 <label className="block text-sm font-medium mb-2 text-gray-600">
                                                     Volume (CBM)
                                                 </label>
-                                                <input
-                                                    type="number"
-                                                    className="combobox-input"
-                                                    value={volume}
-                                                    onChange={(e) => setVolume(e.target.value)}
-                                                    placeholder="Enter volume"
-                                                />
+                                                <div className="flex items-center">
+                                                    <input
+                                                        type="number"
+                                                        className="combobox-input w-32"
+                                                        value={volume}
+                                                        onChange={(e) => setVolume(e.target.value)}
+                                                        placeholder="Enter volume"
+                                                    />
+                                                    <label className="ml-4 flex items-center">
+                                                        <input
+                                                            type="radio"
+                                                            name="volumeTypeAir"
+                                                            value="perPallet"
+                                                            checked={false} // Implement toggle functionality as needed
+                                                            onChange={() => {}}
+                                                        />
+                                                        <span className="ml-2">Per Pallet</span>
+                                                    </label>
+                                                    <label className="ml-4 flex items-center">
+                                                        <input
+                                                            type="radio"
+                                                            name="volumeTypeAir"
+                                                            value="total"
+                                                            checked={true}
+                                                            onChange={() => {}}
+                                                        />
+                                                        <span className="ml-2">Total</span>
+                                                    </label>
+                                                </div>
                                             </div>
                                         </div>
                                     )}
@@ -1078,6 +1213,7 @@
                                         </div>
                                     </div>
 
+                                    {/* Hide Documents */}
                                     <div className="flex items-center space-x-2">
                                         <input
                                             type="checkbox"
@@ -1137,7 +1273,7 @@
                                                     )}
                                                     {exactMatchRate.airWeight && (
                                                         <p className="text-sm text-gray-600">
-                                                            Air: {exactMatchRate.airWeight}kg / {exactMatchRate.volume}CBM
+                                                            Air Weight: {exactMatchRate.airWeight}kg / {exactMatchRate.volume}CBM
                                                         </p>
                                                     )}
                                                     <p className="text-sm text-gray-600">
@@ -1184,7 +1320,7 @@
                                                             )}
                                                             {route.airWeight && (
                                                                 <p className="text-sm text-gray-600">
-                                                                    Air: {route.airWeight}kg / {route.volume}CBM
+                                                                    Air Weight: {route.airWeight}kg / {route.volume}CBM
                                                                 </p>
                                                             )}
                                                             <p className="text-sm text-gray-600">
@@ -1257,6 +1393,13 @@
                                         <p><strong>Collection:</strong> {collection.postcode}, {COUNTRY_NAMES.find(name => COUNTRY_MAPPING[name] === collection.country)}</p>
                                         {collection.location && <p><strong>Collection Location:</strong> {collection.location}</p>}
                                         
+                                        {/* Waypoints Details */}
+                                        {waypoints.length > 0 && waypoints.map((wp, idx) => (
+                                            <div key={idx}>
+                                                <p><strong>Waypoint {idx + 1}:</strong> {wp.postcode}, {COUNTRY_NAMES.find(name => COUNTRY_MAPPING[name] === wp.country)}</p>
+                                            </div>
+                                        ))}
+
                                         <p><strong>Delivery:</strong> {delivery.postcode}, {COUNTRY_NAMES.find(name => COUNTRY_MAPPING[name] === delivery.country)}</p>
                                         {delivery.location && <p><strong>Delivery Location:</strong> {delivery.location}</p>}
                                         
@@ -1281,7 +1424,6 @@
                                             </>
                                         )}
                                         <p><strong>Currency:</strong> {currency}</p>
-                                        <p><strong>Hide Documents:</strong> {hideDocuments ? 'Yes' : 'No'}</p>
                                     </div>
                                     <div className="flex gap-2">
                                         <button 
@@ -1305,8 +1447,9 @@
                     </div>
                 </div>
             );
-        };
+        }; // Close the Calculator component
 
+        // Render the Calculator component to the DOM
         ReactDOM.render(<Calculator />, document.getElementById('root'));
     </script>
 </body>
