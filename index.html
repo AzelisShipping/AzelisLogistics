@@ -536,7 +536,7 @@
             onChange({ 
                 ...waypoint, 
                 postcode, 
-                showPostcode: false,
+                showPostcode: true,
                 savedPostcodes: updatedSavedPostcodes
             });
         };
@@ -922,7 +922,7 @@
                     id: Date.now(), // Unique ID based on timestamp
                     country: '', 
                     postcode: '', 
-                    showPostcode: false, 
+                    showPostcode: true, 
                     savedPostcodes: [] 
                 }
             ]);
