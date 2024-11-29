@@ -17,6 +17,47 @@
     <style>
         .azelis-blue { background-color: #003087; }
         .azelis-blue-hover:hover { background-color: #002670; }
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 50;
+        }
+        .modal-content {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 0.5rem;
+            max-width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+        .tooltip .tooltip-text {
+            visibility: hidden;
+            background-color: #333;
+            color: white;
+            text-align: center;
+            padding: 5px;
+            border-radius: 6px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            white-space: nowrap;
+        }
+        .tooltip:hover .tooltip-text {
+            visibility: visible;
+        }
     </style>
 </head>
 <body class="bg-gray-50">
@@ -34,8 +75,7 @@
     </header>
 
     <div id="root"></div>
-
-    <!-- Initialize Firebases -->
+<!-- Initialize Firebase -->
     <script>
         const firebaseConfig = {
             apiKey: "AIzaSyDiIRLwLeMAf1VZbZ7ygvGDu-gZH6sA424",
@@ -76,22 +116,34 @@
         ];
 
         const HaulierManagement = () => {
+            // Basic state management
             const [activeTab, setActiveTab] = React.useState('hauliers');
             const [hauliers, setHauliers] = React.useState([]);
             const [rates, setRates] = React.useState([]);
-            const [showHaulierForm, setShowHaulierForm] = React.useState(false);
-            const [editingHaulier, setEditingHaulier] = React.useState(null);
             const [loading, setLoading] = React.useState(true);
-            const [importErrors, setImportErrors] = React.useState([]);
+            
+            // Modal states
+            const [showHaulierForm, setShowHaulierForm] = React.useState(false);
             const [showRateForm, setShowRateForm] = React.useState(false);
+            const [showRateDetails, setShowRateDetails] = React.useState(false);
+            
+            // Edit states
+            const [editingHaulier, setEditingHaulier] = React.useState(null);
             const [editingRate, setEditingRate] = React.useState(null);
+            const [selectedRate, setSelectedRate] = React.useState(null);
+            
+            // Import/Export states
+            const [importErrors, setImportErrors] = React.useState([]);
+            const [importStats, setImportStats] = React.useState(null);
 
-            // Function to format dates
-            const formatDate = (dateStr) => {
-                const date = new Date(dateStr);
-                if (isNaN(date)) return 'Invalid Date';
-                return date.toLocaleDateString();
-            };
+            // Filter states
+            const [rateFilters, setRateFilters] = React.useState({
+                haulier: '',
+                collectionCountry: '',
+                deliveryCountry: '',
+                transportMode: '',
+                deliveryType: ''
+            });
 
             React.useEffect(() => {
                 // Fetch hauliers from Firebase
@@ -104,6 +156,7 @@
                     setLoading(false);
                 }, error => {
                     console.error('Error fetching hauliers:', error);
+                    setLoading(false);
                 });
 
                 // Fetch rates from Firebase
@@ -123,7 +176,7 @@
                     unsubscribeRates();
                 };
             }, []);
-
+// Haulier Management Functions
             const handleHaulierSubmit = async (e) => {
                 e.preventDefault();
                 const formData = new FormData(e.target);
@@ -137,16 +190,25 @@
                 const haulierData = {
                     name: formData.get('name'),
                     email: formData.get('email'),
+                    phone: formData.get('phone'),
                     countries: selectedCountries,
+                    services: formData.getAll('services'),
+                    certifications: formData.getAll('certifications'),
                     active: true,
-                    // Remove any custom ID field if present
+                    updatedAt: new Date()
                 };
             
                 try {
                     if (editingHaulier) {
-                        await db.collection('hauliers').doc(editingHaulier.id).update(haulierData);
+                        await db.collection('hauliers').doc(editingHaulier.id).update({
+                            ...haulierData,
+                            updatedAt: new Date()
+                        });
                     } else {
-                        await db.collection('hauliers').add(haulierData);
+                        await db.collection('hauliers').add({
+                            ...haulierData,
+                            createdAt: new Date()
+                        });
                     }
                     setShowHaulierForm(false);
                     setEditingHaulier(null);
@@ -157,24 +219,156 @@
             };
 
             const handleHaulierDelete = async (id) => {
-                if (confirm('Are you sure you want to delete this haulier?')) {
-                    try {
-                        await db.collection('hauliers').doc(id).delete();
-                    } catch (error) {
-                        console.error('Error deleting haulier:', error);
-                        alert('Error deleting haulier. Please try again.');
-                    }
+                if (!confirm('Are you sure you want to delete this haulier? This will also remove all associated rates.')) {
+                    return;
+                }
+
+                try {
+                    // Delete the haulier
+                    await db.collection('hauliers').doc(id).delete();
+
+                    // Delete all rates associated with this haulier
+                    const ratesSnapshot = await db.collection('rates')
+                        .where('haulierId', '==', id)
+                        .get();
+
+                    const batch = db.batch();
+                    ratesSnapshot.docs.forEach(doc => {
+                        batch.delete(doc.ref);
+                    });
+                    await batch.commit();
+
+                } catch (error) {
+                    console.error('Error deleting haulier:', error);
+                    alert('Error deleting haulier and associated rates. Please try again.');
                 }
             };
 
             const handleToggleActive = async (id, currentActive) => {
                 try {
                     await db.collection('hauliers').doc(id).update({
-                        active: !currentActive
+                        active: !currentActive,
+                        updatedAt: new Date()
                     });
                 } catch (error) {
                     console.error('Error updating haulier status:', error);
                     alert('Error updating haulier status. Please try again.');
+                }
+            };
+
+            const getHaulierRatesCount = (haulierId) => {
+                return rates.filter(rate => rate.haulierId === haulierId).length;
+            };
+
+            const getHaulierNameById = (haulierId) => {
+                const haulier = hauliers.find(h => h.id === haulierId);
+                return haulier ? haulier.name : 'Unknown Haulier';
+            };
+
+            const getHaulierActiveRoutes = (haulierId) => {
+                const today = new Date();
+                return rates.filter(rate => 
+                    rate.haulierId === haulierId && 
+                    new Date(rate.priceValidity) > today
+                ).length;
+            };
+
+            const getHaulierPerformanceStats = (haulierId) => {
+                const haulierRates = rates.filter(rate => rate.haulierId === haulierId);
+                const today = new Date();
+                
+                return {
+                    totalRoutes: haulierRates.length,
+                    activeRoutes: haulierRates.filter(rate => new Date(rate.priceValidity) > today).length,
+                    uniqueCountries: new Set([
+                        ...haulierRates.map(rate => rate.collectionCountry),
+                        ...haulierRates.map(rate => rate.deliveryCountry)
+                    ]).size,
+                    services: new Set(haulierRates.map(rate => rate.deliveryType)).size
+                };
+            };
+// Rate Management Functions
+            const handleRateSubmit = async (e) => {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+
+                const rateData = {
+                    // Basic route info
+                    collectionCountry: formData.get('collectionCountry'),
+                    collectionPostcode: formData.get('collectionPostcode'),
+                    deliveryCountry: formData.get('deliveryCountry'),
+                    deliveryPostcode: formData.get('deliveryPostcode'),
+                    
+                    // Transport details
+                    transportMode: formData.get('transportMode'),
+                    weightBucket: formData.get('weightBucket'),
+                    incoterms: formData.get('incoterms'),
+                    deliveryType: formData.get('deliveryType'),
+                    
+                    // Pricing and validity
+                    priceValidity: formData.get('priceValidity'),
+                    currency: formData.get('currency'),
+                    isFullTruckLoad: formData.get('loadType') === 'ftl',
+                    
+                    // Associated haulier
+                    haulierId: formData.get('haulierId'),
+                    haulierName: getHaulierNameById(formData.get('haulierId')),
+                    
+                    // Service details
+                    transitTime: parseInt(formData.get('transitTime')),
+                    services: formData.getAll('services'),
+                    
+                    // Container/Air freight specific
+                    containerType: formData.get('containerType') || null,
+                    airWeight: formData.get('airWeight') ? parseFloat(formData.get('airWeight')) : null,
+                    volume: formData.get('volume') ? parseFloat(formData.get('volume')) : null,
+
+                    // Price handling
+                    prices: {},
+                    fullTruckLoadPrice: null,
+                    
+                    // Metadata
+                    updatedAt: new Date()
+                };
+
+                // Handle pricing based on load type
+                if (rateData.isFullTruckLoad) {
+                    rateData.fullTruckLoadPrice = parseFloat(formData.get('ftlPrice'));
+                } else {
+                    // Collect pallet prices
+                    for (let i = 1; i <= 24; i++) {
+                        const price = formData.get(`${i}Pallet`);
+                        if (price) {
+                            rateData.prices[i] = parseFloat(price);
+                        }
+                    }
+                }
+
+                try {
+                    if (editingRate) {
+                        await db.collection('rates').doc(editingRate.id).update(rateData);
+                    } else {
+                        rateData.createdAt = new Date();
+                        await db.collection('rates').add(rateData);
+                    }
+                    setShowRateForm(false);
+                    setEditingRate(null);
+                } catch (error) {
+                    console.error('Error saving rate:', error);
+                    alert('Error saving rate. Please try again.');
+                }
+            };
+
+            const handleRateDelete = async (id) => {
+                if (!confirm('Are you sure you want to delete this rate?')) {
+                    return;
+                }
+
+                try {
+                    await db.collection('rates').doc(id).delete();
+                } catch (error) {
+                    console.error('Error deleting rate:', error);
+                    alert('Error deleting rate. Please try again.');
                 }
             };
 
@@ -192,56 +386,46 @@
 
                         const errors = [];
                         const validData = [];
+                        const stats = {
+                            total: jsonData.length,
+                            valid: 0,
+                            invalid: 0,
+                            updated: 0,
+                            created: 0
+                        };
 
-                        jsonData.forEach((row, index) => {
-                            const collectionCountry = row['Collection Country']?.trim();
-                            const deliveryCountry = row['Delivery Country']?.trim();
-
-                            const isValidCollectionCountry = allowedCountries.includes(collectionCountry);
-                            const isValidDeliveryCountry = allowedCountries.includes(deliveryCountry);
-
-                            if (!isValidCollectionCountry || !isValidDeliveryCountry) {
-                                errors.push(`Row ${index + 2}: Invalid country code(s).`);
+                        for (const row of jsonData) {
+                            const isValid = validateRateData(row);
+                            if (isValid === true) {
+                                validData.push(transformRateData(row));
+                                stats.valid++;
                             } else {
-                                validData.push(row);
+                                errors.push(`Row ${jsonData.indexOf(row) + 2}: ${isValid}`);
+                                stats.invalid++;
                             }
-                        });
-
-                        if (errors.length > 0) {
-                            setImportErrors(errors);
-                            alert('Some records have invalid country codes. Please review the errors.');
                         }
 
                         if (validData.length > 0) {
                             // Process and save each valid rate to Firebase
                             const batch = db.batch();
-                            validData.forEach((row) => {
+                            for (const rate of validData) {
                                 const rateRef = db.collection('rates').doc();
-                                const prices = {};
-                                for (let i = 1; i <= 24; i++) {
-                                    const palletKey = `${i} Pallet`;
-                                    const price = row[palletKey];
-                                    prices[i] = price ? parseFloat(price) : null;
-                                }
                                 batch.set(rateRef, {
-                                    collectionCountry: row['Collection Country'] || '',
-                                    collectionPostcode: row['Collection Postcode'] || '',
-                                    deliveryCountry: row['Delivery Country'] || '',
-                                    deliveryPostcode: row['Delivery Postcode'] || '',
-                                    deliveryType: row['Delivery Type'] || 'STD',
-                                    priceValidity: row['Price Validity'] || '2024-12-31',
-                                    isFullTruckLoad: row['Is Full Truck Load']?.toLowerCase() === 'yes',
-                                    fullTruckLoadPrice: row['Full Truck Load Price'] ? parseFloat(row['Full Truck Load Price']) : null,
-                                    prices: prices
+                                    ...rate,
+                                    createdAt: new Date(),
+                                    updatedAt: new Date()
                                 });
-                            });
+                            }
 
                             await batch.commit();
-                            alert('Valid rates imported successfully!');
-                            event.target.value = ''; // Reset file input
-                        } else {
-                            event.target.value = ''; // Reset file input
+                            setImportStats(stats);
                         }
+
+                        if (errors.length > 0) {
+                            setImportErrors(errors);
+                        }
+                        
+                        event.target.value = ''; // Reset file input
                     } catch (error) {
                         console.error('Error importing rates:', error);
                         alert('Failed to import rates. Please check the file format.');
@@ -257,38 +441,25 @@
                 }
 
                 const exportData = rates.map(rate => ({
+                    'Haulier': getHaulierNameById(rate.haulierId),
                     'Collection Country': rate.collectionCountry,
                     'Collection Postcode': rate.collectionPostcode || '',
                     'Delivery Country': rate.deliveryCountry,
                     'Delivery Postcode': rate.deliveryPostcode || '',
+                    'Transport Mode': rate.transportMode,
+                    'Weight Bucket': rate.weightBucket,
+                    'Incoterms': rate.incoterms,
                     'Delivery Type': rate.deliveryType,
                     'Price Validity': rate.priceValidity,
+                    'Currency': rate.currency,
                     'Is Full Truck Load': rate.isFullTruckLoad ? 'Yes' : 'No',
                     'Full Truck Load Price': rate.fullTruckLoadPrice,
-                    '1 Pallet': rate.prices?.[1],
-                    '2 Pallets': rate.prices?.[2],
-                    '3 Pallets': rate.prices?.[3],
-                    '4 Pallets': rate.prices?.[4],
-                    '5 Pallets': rate.prices?.[5],
-                    '6 Pallets': rate.prices?.[6],
-                    '7 Pallets': rate.prices?.[7],
-                    '8 Pallets': rate.prices?.[8],
-                    '9 Pallets': rate.prices?.[9],
-                    '10 Pallets': rate.prices?.[10],
-                    '11 Pallets': rate.prices?.[11],
-                    '12 Pallets': rate.prices?.[12],
-                    '13 Pallets': rate.prices?.[13],
-                    '14 Pallets': rate.prices?.[14],
-                    '15 Pallets': rate.prices?.[15],
-                    '16 Pallets': rate.prices?.[16],
-                    '17 Pallets': rate.prices?.[17],
-                    '18 Pallets': rate.prices?.[18],
-                    '19 Pallets': rate.prices?.[19],
-                    '20 Pallets': rate.prices?.[20],
-                    '21 Pallets': rate.prices?.[21],
-                    '22 Pallets': rate.prices?.[22],
-                    '23 Pallets': rate.prices?.[23],
-                    '24 Pallets': rate.prices?.[24],
+                    'Transit Time (Days)': rate.transitTime,
+                    'Services': rate.services?.join(', ') || '',
+                    'Container Type': rate.containerType || '',
+                    'Air Weight (kg)': rate.airWeight || '',
+                    'Volume (CBM)': rate.volume || '',
+                    ...generatePalletPriceColumns(rate.prices)
                 }));
 
                 const ws = XLSX.utils.json_to_sheet(exportData);
@@ -296,53 +467,143 @@
                 XLSX.utils.book_append_sheet(wb, ws, "Rates");
                 XLSX.writeFile(wb, "azelis_rates.xlsx");
             };
+// Utility and Validation Functions
+            const validateRateData = (row) => {
+                // Required fields validation
+                const requiredFields = [
+                    'Collection Country', 'Delivery Country', 
+                    'Transport Mode', 'Weight Bucket', 'Incoterms',
+                    'Haulier ID', 'Price Validity', 'Currency'
+                ];
 
-            const handleRateDelete = async (id) => {
-                if (confirm('Are you sure you want to delete this rate?')) {
-                    try {
-                        await db.collection('rates').doc(id).delete();
-                    } catch (error) {
-                        console.error('Error deleting rate:', error);
-                        alert('Error deleting rate. Please try again.');
+                for (const field of requiredFields) {
+                    if (!row[field]) {
+                        return `Missing required field: ${field}`;
                     }
                 }
+
+                // Country code validation
+                if (!allowedCountries.includes(row['Collection Country'])) {
+                    return 'Invalid collection country code';
+                }
+                if (!allowedCountries.includes(row['Delivery Country'])) {
+                    return 'Invalid delivery country code';
+                }
+
+                // Haulier existence validation
+                const haulierExists = hauliers.some(h => h.id === row['Haulier ID']);
+                if (!haulierExists) {
+                    return 'Invalid haulier ID';
+                }
+
+                // Transport mode validation
+                const validModes = ['Road', 'Sea', 'Air'];
+                if (!validModes.includes(row['Transport Mode'])) {
+                    return 'Invalid transport mode';
+                }
+
+                // Weight bucket validation
+                const validWeightBuckets = ['<500kg', '500kg-1ton', '1ton-5tons', '>5tons'];
+                if (!validWeightBuckets.includes(row['Weight Bucket'])) {
+                    return 'Invalid weight bucket';
+                }
+
+                // Price validity date validation
+                const validityDate = new Date(row['Price Validity']);
+                if (isNaN(validityDate.getTime())) {
+                    return 'Invalid price validity date';
+                }
+
+                // Currency validation
+                const validCurrencies = ['GBP', 'EUR', 'USD'];
+                if (!validCurrencies.includes(row['Currency'])) {
+                    return 'Invalid currency';
+                }
+
+                return true;
             };
 
-            const handleRateSubmit = async (e) => {
-                e.preventDefault();
-                const formData = new FormData(e.target);
-                const rateData = {
-                    collectionCountry: formData.get('collectionCountry'),
-                    collectionPostcode: formData.get('collectionPostcode'),
-                    deliveryCountry: formData.get('deliveryCountry'),
-                    deliveryPostcode: formData.get('deliveryPostcode'),
-                    deliveryType: formData.get('deliveryType') || 'STD',
-                    priceValidity: formData.get('priceValidity') || '2024-12-31',
-                    isFullTruckLoad: formData.get('isFullTruckLoad') === 'yes',
-                    fullTruckLoadPrice: formData.get('fullTruckLoadPrice') ? parseFloat(formData.get('fullTruckLoadPrice')) : null,
-                    prices: {}
+            const transformRateData = (row) => {
+                const transformed = {
+                    collectionCountry: row['Collection Country'],
+                    collectionPostcode: row['Collection Postcode'] || '',
+                    deliveryCountry: row['Delivery Country'],
+                    deliveryPostcode: row['Delivery Postcode'] || '',
+                    transportMode: row['Transport Mode'],
+                    weightBucket: row['Weight Bucket'],
+                    incoterms: row['Incoterms'],
+                    deliveryType: row['Delivery Type'] || 'STD',
+                    priceValidity: row['Price Validity'],
+                    currency: row['Currency'],
+                    haulierId: row['Haulier ID'],
+                    haulierName: getHaulierNameById(row['Haulier ID']),
+                    isFullTruckLoad: row['Is Full Truck Load']?.toLowerCase() === 'yes',
+                    transitTime: parseInt(row['Transit Time']) || null,
+                    services: row['Services']?.split(',').map(s => s.trim()) || [],
+                    containerType: row['Container Type'] || null,
+                    airWeight: row['Air Weight'] ? parseFloat(row['Air Weight']) : null,
+                    volume: row['Volume'] ? parseFloat(row['Volume']) : null,
+                    prices: {},
+                    fullTruckLoadPrice: null
                 };
 
-                // Collect pallet prices
-                for (let i = 1; i <= 24; i++) {
-                    const price = formData.get(`${i}Pallet`);
-                    rateData.prices[i] = price ? parseFloat(price) : null;
+                // Handle pricing based on load type
+                if (transformed.isFullTruckLoad) {
+                    transformed.fullTruckLoadPrice = row['Full Truck Load Price'] 
+                        ? parseFloat(row['Full Truck Load Price']) 
+                        : null;
+                } else {
+                    // Extract pallet prices
+                    for (let i = 1; i <= 24; i++) {
+                        const price = row[`${i} Pallet`];
+                        if (price) {
+                            transformed.prices[i] = parseFloat(price);
+                        }
+                    }
                 }
 
-                try {
-                    if (editingRate) {
-                        await db.collection('rates').doc(editingRate.id).update(rateData);
-                    } else {
-                        await db.collection('rates').add(rateData);
-                    }
-                    setShowRateForm(false);
-                    setEditingRate(null);
-                } catch (error) {
-                    console.error('Error saving rate:', error);
-                    alert('Error saving rate. Please try again.');
-                }
+                return transformed;
             };
 
+            const generatePalletPriceColumns = (prices) => {
+                const columns = {};
+                for (let i = 1; i <= 24; i++) {
+                    columns[`${i} Pallet`] = prices?.[i] || '';
+                }
+                return columns;
+            };
+
+            const formatDate = (dateStr) => {
+                const date = new Date(dateStr);
+                return date.toLocaleDateString('en-GB', {
+                    day: '2-digit',
+                    month: 'short',
+                    year: 'numeric'
+                });
+            };
+
+            const formatCurrency = (amount, currency) => {
+                if (amount === null || amount === undefined) return 'N/A';
+                
+                const formatter = new Intl.NumberFormat('en-GB', {
+                    style: 'currency',
+                    currency: currency
+                });
+                return formatter.format(amount);
+            };
+
+            const filterRates = (rates) => {
+                return rates.filter(rate => {
+                    if (rateFilters.haulier && rate.haulierId !== rateFilters.haulier) return false;
+                    if (rateFilters.collectionCountry && rate.collectionCountry !== rateFilters.collectionCountry) return false;
+                    if (rateFilters.deliveryCountry && rate.deliveryCountry !== rateFilters.deliveryCountry) return false;
+                    if (rateFilters.transportMode && rate.transportMode !== rateFilters.transportMode) return false;
+                    if (rateFilters.deliveryType && rate.deliveryType !== rateFilters.deliveryType) return false;
+                    return true;
+                });
+            };
+
+// Main Render Function
             if (loading) {
                 return (
                     <div className="flex items-center justify-center h-64">
@@ -392,10 +653,13 @@
                                                     Company
                                                 </th>
                                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Email
+                                                    Contact
                                                 </th>
                                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Countries of Delivery
+                                                    Countries
+                                                </th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    Statistics
                                                 </th>
                                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                     Status
@@ -406,66 +670,81 @@
                                             </tr>
                                         </thead>
                                         <tbody className="bg-white divide-y divide-gray-200">
-                                            {hauliers.map(haulier => (
-                                                <tr key={haulier.id}>
-                                                    <td className="px-6 py-4 whitespace-nowrap">
-                                                        {haulier.name}
-                                                    </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap">
-                                                        {haulier.email}
-                                                    </td>
-                                                    <td className="px-6 py-4">
-                                                        <div className="flex flex-wrap gap-1">
-                                                            {haulier.countries.map(country => (
-                                                                <span 
-                                                                    key={country}
-                                                                    className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs"
+                                            {hauliers.map(haulier => {
+                                                const stats = getHaulierPerformanceStats(haulier.id);
+                                                return (
+                                                    <tr key={haulier.id}>
+                                                        <td className="px-6 py-4">
+                                                            <div className="font-medium text-gray-900">{haulier.name}</div>
+                                                            <div className="text-sm text-gray-500">ID: {haulier.id}</div>
+                                                        </td>
+                                                        <td className="px-6 py-4">
+                                                            <div className="text-sm text-gray-900">{haulier.email}</div>
+                                                            {haulier.phone && (
+                                                                <div className="text-sm text-gray-500">{haulier.phone}</div>
+                                                            )}
+                                                        </td>
+                                                        <td className="px-6 py-4">
+                                                            <div className="flex flex-wrap gap-1">
+                                                                {haulier.countries.map(country => (
+                                                                    <span 
+                                                                        key={country}
+                                                                        className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs"
+                                                                    >
+                                                                        {country}
+                                                                    </span>
+                                                                ))}
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-6 py-4">
+                                                            <div className="text-sm">
+                                                                <div>Total Routes: {stats.totalRoutes}</div>
+                                                                <div>Active Routes: {stats.activeRoutes}</div>
+                                                                <div>Countries Served: {stats.uniqueCountries}</div>
+                                                                <div>Service Types: {stats.services}</div>
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-6 py-4">
+                                                            <button
+                                                                onClick={() => handleToggleActive(haulier.id, haulier.active)}
+                                                                className={`px-2 py-1 rounded-full text-xs ${
+                                                                    haulier.active
+                                                                        ? 'bg-green-100 text-green-800'
+                                                                        : 'bg-red-100 text-red-800'
+                                                                }`}
+                                                            >
+                                                                {haulier.active ? 'Active' : 'Inactive'}
+                                                            </button>
+                                                        </td>
+                                                        <td className="px-6 py-4">
+                                                            <div className="flex space-x-2">
+                                                                <button
+                                                                    onClick={() => {
+                                                                        setEditingHaulier(haulier);
+                                                                        setShowHaulierForm(true);
+                                                                    }}
+                                                                    className="text-blue-600 hover:text-blue-800"
                                                                 >
-                                                                    {country}
-                                                                </span>
-                                                            ))}
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap">
-                                                        <button
-                                                            onClick={() => handleToggleActive(haulier.id, haulier.active)}
-                                                            className={`px-2 py-1 rounded-full text-xs ${
-                                                                haulier.active
-                                                                    ? 'bg-green-100 text-green-800'
-                                                                    : 'bg-red-100 text-red-800'
-                                                            }`}
-                                                        >
-                                                            {haulier.active ? 'Active' : 'Inactive'}
-                                                        </button>
-                                                    </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap">
-                                                        <div className="flex space-x-2">
-                                                            <button
-                                                                onClick={() => {
-                                                                    setEditingHaulier(haulier);
-                                                                    setShowHaulierForm(true);
-                                                                }}
-                                                                className="text-blue-600 hover:text-blue-800"
-                                                            >
-                                                                Edit
-                                                            </button>
-                                                            <button
-                                                                onClick={() => handleHaulierDelete(haulier.id)}
-                                                                className="text-red-600 hover:text-red-800"
-                                                            >
-                                                                Delete
-                                                            </button>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            ))}
+                                                                    Edit
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => handleHaulierDelete(haulier.id)}
+                                                                    className="text-red-600 hover:text-red-800"
+                                                                >
+                                                                    Delete
+                                                                </button>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
                                         </tbody>
                                     </table>
                                 </div>
                             </div>
                         )}
 
-                        {activeTab === 'rates' && (
+{activeTab === 'rates' && (
                             <div>
                                 <div className="flex justify-between items-center mb-4">
                                     <h2 className="text-xl font-bold">Rates Management</h2>
@@ -497,6 +776,16 @@
                                             Export to Excel
                                         </button>
                                     </div>
+                                    {importStats && (
+                                        <div className="mt-4 p-3 bg-blue-50 text-blue-700 rounded">
+                                            <h4 className="font-semibold">Import Results:</h4>
+                                            <ul className="list-disc pl-5 mt-1">
+                                                <li>Total Rows: {importStats.total}</li>
+                                                <li>Valid Entries: {importStats.valid}</li>
+                                                <li>Invalid Entries: {importStats.invalid}</li>
+                                            </ul>
+                                        </div>
+                                    )}
                                     {importErrors.length > 0 && (
                                         <div className="mt-4 p-4 bg-red-100 text-red-700 rounded">
                                             <h4 className="font-semibold mb-2">Import Errors:</h4>
@@ -509,34 +798,83 @@
                                     )}
                                 </div>
 
+                                {/* Rate Filters */}
+                                <div className="mb-6 p-4 border rounded">
+                                    <h3 className="text-lg font-semibold mb-4">Filter Rates</h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                                        <select
+                                            className="p-2 border rounded"
+                                            value={rateFilters.haulier}
+                                            onChange={e => setRateFilters({...rateFilters, haulier: e.target.value})}
+                                        >
+                                            <option value="">All Hauliers</option>
+                                            {hauliers.map(h => (
+                                                <option key={h.id} value={h.id}>{h.name}</option>
+                                            ))}
+                                        </select>
+                                        <select
+                                            className="p-2 border rounded"
+                                            value={rateFilters.transportMode}
+                                            onChange={e => setRateFilters({...rateFilters, transportMode: e.target.value})}
+                                        >
+                                            <option value="">All Transport Modes</option>
+                                            <option value="Road">Road</option>
+                                            <option value="Sea">Sea</option>
+                                            <option value="Air">Air</option>
+                                        </select>
+                                        <select
+                                            className="p-2 border rounded"
+                                            value={rateFilters.collectionCountry}
+                                            onChange={e => setRateFilters({...rateFilters, collectionCountry: e.target.value})}
+                                        >
+                                            <option value="">All Collection Countries</option>
+                                            {allowedCountries.map(country => (
+                                                <option key={country} value={country}>{country}</option>
+                                            ))}
+                                        </select>
+                                        <select
+                                            className="p-2 border rounded"
+                                            value={rateFilters.deliveryCountry}
+                                            onChange={e => setRateFilters({...rateFilters, deliveryCountry: e.target.value})}
+                                        >
+                                            <option value="">All Delivery Countries</option>
+                                            {allowedCountries.map(country => (
+                                                <option key={country} value={country}>{country}</option>
+                                            ))}
+                                        </select>
+                                        <select
+                                            className="p-2 border rounded"
+                                            value={rateFilters.deliveryType}
+                                            onChange={e => setRateFilters({...rateFilters, deliveryType: e.target.value})}
+                                        >
+                                            <option value="">All Delivery Types</option>
+                                            <option value="STD">Standard</option>
+                                            <option value="EXP">Express</option>
+                                            <option value="ADR">ADR</option>
+                                            <option value="TEMP">Temperature Controlled</option>
+                                        </select>
+                                    </div>
+                                </div>
+
                                 {/* Rates Table */}
                                 <div className="overflow-x-auto">
                                     <table className="w-full">
                                         <thead className="bg-gray-50">
                                             <tr>
                                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Collection Country
+                                                    Haulier
                                                 </th>
                                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Collection Postcode
+                                                    Route Details
                                                 </th>
                                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Delivery Country
+                                                    Transport Details
                                                 </th>
                                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Delivery Postcode
+                                                    Pricing
                                                 </th>
                                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Delivery Type
-                                                </th>
-                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Price Validity
-                                                </th>
-                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Full Truck Load
-                                                </th>
-                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Full Truck Load Price
+                                                    Validity
                                                 </th>
                                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                     Actions
@@ -544,33 +882,42 @@
                                             </tr>
                                         </thead>
                                         <tbody className="bg-white divide-y divide-gray-200">
-                                            {rates.map(rate => (
-                                                <tr key={rate.id}>
-                                                    <td className="px-6 py-4 whitespace-nowrap">
-                                                        {rate.collectionCountry}
+                                            {filterRates(rates).map(rate => (
+                                                <tr key={rate.id} className="hover:bg-gray-50">
+                                                    <td className="px-6 py-4">
+                                                        <div className="font-medium text-gray-900">
+                                                            {getHaulierNameById(rate.haulierId)}
+                                                        </div>
                                                     </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap">
-                                                        {rate.collectionPostcode}
+                                                    <td className="px-6 py-4">
+                                                        <div className="text-sm">
+                                                            <div>From: {rate.collectionCountry} - {rate.collectionPostcode}</div>
+                                                            <div>To: {rate.deliveryCountry} - {rate.deliveryPostcode}</div>
+                                                        </div>
                                                     </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap">
-                                                        {rate.deliveryCountry}
+                                                    <td className="px-6 py-4">
+                                                        <div className="text-sm">
+                                                            <div>Mode: {rate.transportMode}</div>
+                                                            <div>Weight: {rate.weightBucket}</div>
+                                                            <div>Type: {rate.deliveryType}</div>
+                                                            <div>Incoterms: {rate.incoterms}</div>
+                                                        </div>
                                                     </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap">
-                                                        {rate.deliveryPostcode}
+                                                    <td className="px-6 py-4">
+                                                        <button
+                                                            onClick={() => {
+                                                                setSelectedRate(rate);
+                                                                setShowRateDetails(true);
+                                                            }}
+                                                            className="text-blue-600 hover:text-blue-800"
+                                                        >
+                                                            View Pricing Details
+                                                        </button>
                                                     </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap">
-                                                        {rate.deliveryType}
+                                                    <td className="px-6 py-4">
+                                                        <div className="text-sm">{formatDate(rate.priceValidity)}</div>
                                                     </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap">
-                                                        {formatDate(rate.priceValidity)}
-                                                    </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap">
-                                                        {rate.isFullTruckLoad ? 'Yes' : 'No'}
-                                                    </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap">
-                                                        {rate.fullTruckLoadPrice !== null ? `$${rate.fullTruckLoadPrice.toFixed(2)}` : 'N/A'}
-                                                    </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                    <td className="px-6 py-4">
                                                         <div className="flex space-x-2">
                                                             <button
                                                                 onClick={() => {
@@ -591,23 +938,16 @@
                                                     </td>
                                                 </tr>
                                             ))}
-                                            {rates.length === 0 && (
-                                                <tr>
-                                                    <td colSpan="9" className="px-6 py-4 text-center text-gray-500">
-                                                        No rates found.
-                                                    </td>
-                                                </tr>
-                                            )}
                                         </tbody>
                                     </table>
                                 </div>
                             </div>
                         )}
 
-                        {/* Haulier Form Modal */}
+{/* Haulier Form Modal */}
                         {showHaulierForm && (
-                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-                                <div className="bg-white rounded-lg p-6 max-w-2xl w-full">
+                            <div className="modal-overlay">
+                                <div className="modal-content max-w-2xl">
                                     <div className="flex justify-between items-start mb-4">
                                         <h3 className="text-lg font-semibold">
                                             {editingHaulier ? 'Edit Haulier' : 'Add New Haulier'}
@@ -625,7 +965,7 @@
                                     
                                     <form onSubmit={handleHaulierSubmit} className="space-y-4">
                                         <div>
-                                            <label className="block text-sm font-medium mb-1">Company Name</label>
+                                            <label className="block text-sm font-medium mb-1">Company Name *</label>
                                             <input 
                                                 name="name"
                                                 type="text"
@@ -635,25 +975,35 @@
                                             />
                                         </div>
                                         
-                                        <div>
-                                            <label className="block text-sm font-medium mb-1">Email Address</label>
-                                            <input 
-                                                name="email"
-                                                type="email"
-                                                required
-                                                defaultValue={editingHaulier?.email}
-                                                className="w-full p-2 border rounded"
-                                            />
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-sm font-medium mb-1">Email Address *</label>
+                                                <input 
+                                                    name="email"
+                                                    type="email"
+                                                    required
+                                                    defaultValue={editingHaulier?.email}
+                                                    className="w-full p-2 border rounded"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium mb-1">Phone Number</label>
+                                                <input 
+                                                    name="phone"
+                                                    type="tel"
+                                                    defaultValue={editingHaulier?.phone}
+                                                    className="w-full p-2 border rounded"
+                                                />
+                                            </div>
                                         </div>
 
-                                        {/* Updated Countries Field */}
                                         <div>
-                                            <label className="block text-sm font-medium mb-2">Countries of Delivery</label>
+                                            <label className="block text-sm font-medium mb-2">Operating Countries *</label>
                                             <select
                                                 multiple
                                                 name="operatingCountries"
                                                 required
-                                                defaultValue={editingHaulier?.countries || ['GBR']}
+                                                defaultValue={editingHaulier?.countries || []}
                                                 className="w-full p-2 border rounded h-40"
                                             >
                                                 {allowedCountries.map(country => (
@@ -662,7 +1012,71 @@
                                                     </option>
                                                 ))}
                                             </select>
-                                            <small className="text-gray-500">Hold down the Ctrl (Windows) or Command (Mac) button to select multiple options.</small>
+                                            <small className="text-gray-500">
+                                                Hold Ctrl/Cmd to select multiple countries
+                                            </small>
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium mb-2">Services Offered</label>
+                                            <div className="space-y-2">
+                                                <label className="flex items-center">
+                                                    <input 
+                                                        type="checkbox" 
+                                                        name="services" 
+                                                        value="ADR"
+                                                        defaultChecked={editingHaulier?.services?.includes('ADR')}
+                                                        className="mr-2"
+                                                    />
+                                                    ADR/Hazardous Goods
+                                                </label>
+                                                <label className="flex items-center">
+                                                    <input 
+                                                        type="checkbox" 
+                                                        name="services" 
+                                                        value="TEMP"
+                                                        defaultChecked={editingHaulier?.services?.includes('TEMP')}
+                                                        className="mr-2"
+                                                    />
+                                                    Temperature Controlled
+                                                </label>
+                                                <label className="flex items-center">
+                                                    <input 
+                                                        type="checkbox" 
+                                                        name="services" 
+                                                        value="EXPRESS"
+                                                        defaultChecked={editingHaulier?.services?.includes('EXPRESS')}
+                                                        className="mr-2"
+                                                    />
+                                                    Express Delivery
+                                                </label>
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium mb-2">Certifications</label>
+                                            <div className="space-y-2">
+                                                <label className="flex items-center">
+                                                    <input 
+                                                        type="checkbox" 
+                                                        name="certifications" 
+                                                        value="ISO9001"
+                                                        defaultChecked={editingHaulier?.certifications?.includes('ISO9001')}
+                                                        className="mr-2"
+                                                    />
+                                                    ISO 9001
+                                                </label>
+                                                <label className="flex items-center">
+                                                    <input 
+                                                        type="checkbox" 
+                                                        name="certifications" 
+                                                        value="GDP"
+                                                        defaultChecked={editingHaulier?.certifications?.includes('GDP')}
+                                                        className="mr-2"
+                                                    />
+                                                    GDP Compliant
+                                                </label>
+                                            </div>
                                         </div>
 
                                         <div className="flex gap-2">
@@ -688,172 +1102,394 @@
                             </div>
                         )}
 
-                        {/* Rate Form Modal */}
-                        {showRateForm && (
-                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 overflow-y-auto">
-                                <div className="bg-white rounded-lg p-6 max-w-4xl w-full">
+                        {/* Rate Details Modal */}
+                        {showRateDetails && selectedRate && (
+                            <div className="modal-overlay">
+                                <div className="modal-content max-w-2xl">
                                     <div className="flex justify-between items-start mb-4">
-                                        <h3 className="text-lg font-semibold">
-                                            {editingRate ? 'Edit Rate' : 'Add New Rate'}
-                                        </h3>
+                                        <h3 className="text-lg font-semibold">Rate Details</h3>
                                         <button 
                                             onClick={() => {
-                                                setShowRateForm(false);
-                                                setEditingRate(null);
+                                                setShowRateDetails(false);
+                                                setSelectedRate(null);
                                             }}
                                             className="text-gray-400 hover:text-gray-600"
                                         >
                                             ×
                                         </button>
                                     </div>
-                                    
-                                    <form onSubmit={handleRateSubmit} className="space-y-4">
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div>
-                                                <label className="block text-sm font-medium mb-1">Collection Country</label>
-                                                <select
-                                                    name="collectionCountry"
-                                                    required
-                                                    defaultValue={editingRate?.collectionCountry || ''}
-                                                    className="w-full p-2 border rounded"
-                                                >
-                                                    <option value="">Select Country</option>
-                                                    {allowedCountries.map(country => (
-                                                        <option key={country} value={country}>
-                                                            {country}
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium mb-1">Collection Postcode</label>
-                                                <input 
-                                                    name="collectionPostcode"
-                                                    type="text"
-                                                    required
-                                                    defaultValue={editingRate?.collectionPostcode}
-                                                    className="w-full p-2 border rounded"
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium mb-1">Delivery Country</label>
-                                                <select
-                                                    name="deliveryCountry"
-                                                    required
-                                                    defaultValue={editingRate?.deliveryCountry || ''}
-                                                    className="w-full p-2 border rounded"
-                                                >
-                                                    <option value="">Select Country</option>
-                                                    {allowedCountries.map(country => (
-                                                        <option key={country} value={country}>
-                                                            {country}
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium mb-1">Delivery Postcode</label>
-                                                <input 
-                                                    name="deliveryPostcode"
-                                                    type="text"
-                                                    required
-                                                    defaultValue={editingRate?.deliveryPostcode}
-                                                    className="w-full p-2 border rounded"
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium mb-1">Delivery Type</label>
-                                                <select
-                                                    name="deliveryType"
-                                                    defaultValue={editingRate?.deliveryType || 'STD'}
-                                                    className="w-full p-2 border rounded"
-                                                >
-                                                    <option value="STD">Standard</option>
-                                                    <option value="EXP">Express</option>
-                                                    {/* Add more options as needed */}
-                                                </select>
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium mb-1">Price Validity</label>
-                                                <input 
-                                                    name="priceValidity"
-                                                    type="date"
-                                                    defaultValue={editingRate ? new Date(editingRate.priceValidity).toISOString().split('T')[0] : '2024-12-31'}
-                                                    className="w-full p-2 border rounded"
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium mb-1">Is Full Truck Load</label>
-                                                <select
-                                                    name="isFullTruckLoad"
-                                                    defaultValue={editingRate?.isFullTruckLoad ? 'yes' : 'no'}
-                                                    className="w-full p-2 border rounded"
-                                                >
-                                                    <option value="no">No</option>
-                                                    <option value="yes">Yes</option>
-                                                </select>
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium mb-1">Full Truck Load Price</label>
-                                                <input 
-                                                    name="fullTruckLoadPrice"
-                                                    type="number"
-                                                    step="0.01"
-                                                    defaultValue={editingRate?.fullTruckLoadPrice}
-                                                    className="w-full p-2 border rounded"
-                                                />
-                                            </div>
-                                        </div>
 
-                                        {/* Prices for Pallets */}
+                                    <div className="space-y-4">
                                         <div>
-                                            <h4 className="text-md font-semibold mb-2">Prices per Pallet</h4>
-                                            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-4">
-                                                {Array.from({ length: 24 }, (_, i) => i + 1).map(pallet => (
-                                                    <div key={pallet}>
-                                                        <label className="block text-sm font-medium mb-1">{pallet} Pallet{pallet > 1 ? 's' : ''}</label>
-                                                        <input 
-                                                            name={`${pallet}Pallet`}
-                                                            type="number"
-                                                            step="0.01"
-                                                            defaultValue={editingRate?.prices?.[pallet] || ''}
-                                                            className="w-full p-2 border rounded"
-                                                        />
-                                                    </div>
-                                                ))}
-                                            </div>
+                                            <h4 className="font-medium mb-2">Pricing Information</h4>
+                                            {selectedRate.isFullTruckLoad ? (
+                                                <div className="text-lg font-semibold">
+                                                    Full Truck Load Price: {formatCurrency(selectedRate.fullTruckLoadPrice, selectedRate.currency)}
+                                                </div>
+                                            ) : (
+                                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                                                    {Object.entries(selectedRate.prices).map(([pallets, price]) => (
+                                                        <div key={pallets} className="p-2 bg-gray-50 rounded">
+                                                            <div className="text-sm text-gray-600">{pallets} Pallet{pallets > 1 ? 's' : ''}</div>
+                                                            <div className="font-medium">{formatCurrency(price, selectedRate.currency)}</div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
 
-                                        <div className="flex gap-2">
-                                            <button 
-                                                type="submit"
-                                                className="flex-1 bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
-                                            >
-                                                {editingRate ? 'Update' : 'Add'} Rate
-                                            </button>
-                                            <button 
-                                                type="button"
-                                                onClick={() => {
-                                                    setShowRateForm(false);
-                                                    setEditingRate(null);
-                                                }}
-                                                className="flex-1 bg-gray-200 text-gray-700 p-2 rounded hover:bg-gray-300"
-                                            >
-                                                Cancel
-                                            </button>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <h4 className="font-medium mb-2">Service Details</h4>
+                                                <div className="text-sm space-y-1">
+                                                    <div>Transit Time: {selectedRate.transitTime || 'Not specified'} days</div>
+                                                    <div>Services: {selectedRate.services?.join(', ') || 'None specified'}</div>
+                                                </div>
+                                            </div>
+                                            {(selectedRate.containerType || selectedRate.airWeight || selectedRate.volume) && (
+                                                <div>
+                                                    <h4 className="font-medium mb-2">Additional Specifications</h4>
+                                                    <div className="text-sm space-y-1">
+                                                        {selectedRate.containerType && <div>Container: {selectedRate.containerType}</div>}
+                                                        {selectedRate.airWeight && <div>Air Weight: {selectedRate.airWeight}kg</div>}
+                                                        {selectedRate.volume && <div>Volume: {selectedRate.volume}CBM</div>}
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
-                                    </form>
+                                    </div>
                                 </div>
                             </div>
                         )}
 
-                    </div>
+{/* Rate Form Modal */}
+{showRateForm && (
+  <div className="modal-overlay">
+    <div className="modal-content max-w-4xl">
+      <div className="flex justify-between items-start mb-4">
+        <h3 className="text-lg font-semibold">
+          {editingRate ? 'Edit Rate' : 'Add New Rate'}
+        </h3>
+        <button 
+          onClick={() => {
+            setShowRateForm(false);
+            setEditingRate(null);
+          }}
+          className="text-gray-400 hover:text-gray-600"
+        >
+          ×
+        </button>
+      </div>
+                                    
+      <form onSubmit={handleRateSubmit} className="space-y-6">
+        {/* Route Details */}
+        <div>
+          <h4 className="text-md font-semibold mb-2">Route Details</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">Collection Country *</label>
+              <select
+                name="collectionCountry"
+                required
+                defaultValue={editingRate?.collectionCountry || ''}
+                className="w-full p-2 border rounded"
+              >
+                <option value="">Select Country</option>
+                {allowedCountries.map(country => (
+                  <option key={country} value={country}>{country}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Collection Postcode</label>
+              <input 
+                name="collectionPostcode"
+                type="text"
+                defaultValue={editingRate?.collectionPostcode}
+                className="w-full p-2 border rounded"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Delivery Country *</label>
+              <select
+                name="deliveryCountry"
+                required
+                defaultValue={editingRate?.deliveryCountry || ''}
+                className="w-full p-2 border rounded"
+              >
+                <option value="">Select Country</option>
+                {allowedCountries.map(country => (
+                  <option key={country} value={country}>{country}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Delivery Postcode</label>
+              <input 
+                name="deliveryPostcode"
+                type="text"
+                defaultValue={editingRate?.deliveryPostcode}
+                className="w-full p-2 border rounded"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Transport Details */}
+        <div>
+          <h4 className="text-md font-semibold mb-2">Transport Details</h4>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">Transport Mode *</label>
+              <select
+                name="transportMode"
+                required
+                defaultValue={editingRate?.transportMode || ''}
+                className="w-full p-2 border rounded"
+              >
+                <option value="">Select Mode</option>
+                <option value="Road">Road</option>  
+                <option value="Sea">Sea</option>
+                <option value="Air">Air</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Weight Bucket *</label>
+              <select
+                name="weightBucket"
+                required
+                defaultValue={editingRate?.weightBucket || ''}
+                className="w-full p-2 border rounded"
+              >
+                <option value="">Select Bucket</option>
+                <option value="<500kg">&lt;500kg</option>
+                <option value="500kg-1ton">500kg - 1 ton</option>
+                <option value="1ton-5tons">1 ton - 5 tons</option>  
+                <option value=">5tons">&gt;5 tons</option>
+              </select>  
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Incoterms *</label>
+              <select
+                name="incoterms"
+                required
+                defaultValue={editingRate?.incoterms || ''}
+                className="w-full p-2 border rounded"  
+              >
+                <option value="">Select Incoterms</option>
+                <option value="EXW">EXW</option>
+                <option value="FCA">FCA</option>
+                <option value="CPT">CPT</option>
+                <option value="CIP">CIP</option>
+                <option value="DAP">DAP</option>  
+                <option value="DPU">DPU</option>
+                <option value="DDP">DDP</option>
+                <option value="FAS">FAS</option>
+                <option value="FOB">FOB</option>
+                <option value="CFR">CFR</option>
+                <option value="CIF">CIF</option>  
+              </select>
+            </div>  
+          </div>
+        </div>
+
+        {/* Pricing and Validity */}
+        <div>
+          <h4 className="text-md font-semibold mb-2">Pricing and Validity</h4>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>  
+              <label className="block text-sm font-medium mb-1">Price Validity *</label>
+              <input 
+                name="priceValidity"
+                type="date"
+                required
+                defaultValue={editingRate?.priceValidity}
+                className="w-full p-2 border rounded"  
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Currency *</label>
+              <select  
+                name="currency"
+                required
+                defaultValue={editingRate?.currency || 'GBP'}
+                className="w-full p-2 border rounded"
+              >
+                <option value="GBP">GBP</option>
+                <option value="EUR">EUR</option>
+                <option value="USD">USD</option>
+              </select>
+            </div>
+            <div>    
+              <label className="block text-sm font-medium mb-1">Load Type *</label>
+              <select
+                name="loadType"  
+                required
+                defaultValue={editingRate?.isFullTruckLoad ? 'ftl' : 'pl'}
+                className="w-full p-2 border rounded"
+              >
+                <option value="pl">Partial Load</option>
+                <option value="ftl">Full Truck Load</option>   
+              </select>
+            </div>
+          </div>  
+        </div>
+
+        {/* Load Type Pricing */}  
+        <div>
+          <h4 className="text-md font-semibold mb-2">Load Pricing</h4>
+          {editingRate?.isFullTruckLoad || formData.get('loadType') === 'ftl' ? (
+            <div>
+              <label className="block text-sm font-medium mb-1">Full Truck Load Price *</label>
+              <input   
+                name="ftlPrice"
+                type="number"
+                step="0.01"
+                required={formData.get('loadType') === 'ftl'}  
+                defaultValue={editingRate?.fullTruckLoadPrice}
+                className="w-full p-2 border rounded"
+              />  
+            </div>
+          ) : (  
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">  
+              {Array.from({ length: 24 }, (_, i) => i + 1).map(pallet => (
+                <div key={pallet}>
+                  <label className="block text-sm font-medium mb-1">{pallet} Pallet{pallet > 1 ? 's' : ''}</label>
+                  <input   
+                    name={`${pallet}Pallet`}
+                    type="number" 
+                    step="0.01"
+                    defaultValue={editingRate?.prices?.[pallet] || ''}
+                    className="w-full p-2 border rounded"  
+                  />
                 </div>
-            );
+              ))}
+            </div>
+          )}
+        </div>  
 
-        }; // Close the HaulierManagement component
+        {/* Haulier Selection */}
+        <div>
+          <label className="block text-sm font-medium mb-1">Haulier *</label>
+          <select   
+            name="haulierId"
+            required
+            defaultValue={editingRate?.haulierId || ''}
+            className="w-full p-2 border rounded"
+          >
+            <option value="">Select Haulier</option>
+            {hauliers.map(haulier => (  
+              <option key={haulier.id} value={haulier.id}>{haulier.name}</option>
+            ))} 
+          </select>  
+        </div>
 
-        ReactDOM.render(<HaulierManagement />, document.getElementById('root'));
-    </script>
-</body>
-</html>
+        {/* Service and Additional Details */}
+        <div>  
+          <h4 className="text-md font-semibold mb-2">Service & Additional Details</h4>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">Delivery Type</label> 
+              <select
+                name="deliveryType"
+                defaultValue={editingRate?.deliveryType || 'STD'}
+                className="w-full p-2 border rounded"
+              >
+                <option value="STD">Standard</option>
+                <option value="EXP">Express</option>  
+                <option value="ADR">ADR</option>
+                <option value="TEMP">Temperature Controlled</option>
+              </select>  
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Transit Time (Days)</label>
+              <input   
+                name="transitTime"
+                type="number"
+                defaultValue={editingRate?.transitTime}
+                className="w-full p-2 border rounded"
+              />
+            </div>  
+            <div>  
+              <label className="block text-sm font-medium mb-1">Services</label> 
+              <select
+                name="services"  
+                multiple
+                defaultValue={editingRate?.services || []}
+                className="w-full p-2 border rounded"
+              >
+                <option value="Tracking">Tracking</option>
+                <option value="Insurance">Insurance</option>
+                <option value="Customs">Customs</option>  
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* Additional Fields */}
+        {(formData.get('transportMode') === 'Sea' || editingRate?.transportMode === 'Sea') && (
+          <div>
+            <label className="block text-sm font-medium mb-1">Container Type</label>
+            <select
+              name="containerType"
+              defaultValue={editingRate?.containerType || ''}
+              className="w-full p-2 border rounded"
+            >
+              <option value="">Select Container</option>
+              <option value="20ft">20ft</option>
+              <option value="40ft">40ft</option>
+              <option value="40ft HC">40ft HC</option>
+              <option value="45ft">45ft</option>
+              <option value="LCL">LCL</option>
+            </select>
+          </div>
+        )}
+
+        {(formData.get('transportMode') === 'Air' || editingRate?.transportMode === 'Air') && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">Air Weight (Kg)</label>
+              <input
+                name="airWeight" 
+                type="number"
+                step="0.1"
+                defaultValue={editingRate?.airWeight}
+                className="w-full p-2 border rounded"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Volume (CBM)</label>
+              <input
+                name="volume"
+                type="number" 
+                step="0.1"
+                defaultValue={editingRate?.volume}  
+                className="w-full p-2 border rounded"
+              />  
+            </div>
+          </div>  
+        )}
+
+        {/* Form Actions */}  
+        <div className="flex gap-2">
+          <button   
+            type="submit"
+            className="flex-1 bg-blue-500 text-white p-2 rounded hover:bg-blue-600"  
+          >
+            {editingRate ? 'Update' : 'Add'} Rate  
+          </button>
+          <button
+            type="button" 
+            onClick={() => {
+              setShowRateForm(false); 
+              setEditingRate(null);  
+            }}
+            className="flex-1 bg-gray-200 text-gray-700 p-2 rounded hover:bg-gray-300"
+          >
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>  
+  </div>
+)}
