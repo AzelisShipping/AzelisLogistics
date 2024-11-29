@@ -459,9 +459,6 @@
                     <h4 className="text-md font-semibold mb-2">Waypoint {index + 1}</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-sm font-medium mb-1 text-gray-600">
-                                Country *
-                            </label>
                             <CountrySelector
                                 value={waypoint.country}
                                 onChange={(code) => onChange(index, { ...waypoint, country: code, postcode: '' })}
@@ -519,7 +516,8 @@
             const [incoterms, setIncoterms] = useState('EXW');
             
             // Advanced Options State
-            const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
+            // Removed showAdvancedOptions state and toggle button
+            
             const [pallets, setPallets] = useState(1);
             const [isFullTruckLoad, setIsFullTruckLoad] = useState(false);
             const [containerType, setContainerType] = useState('');
@@ -733,13 +731,14 @@
                         transportMode,
                         weightBucket,
                         incoterms,
-                        containerType: showAdvancedOptions ? containerType : null,
-                        airWeight: showAdvancedOptions ? airWeight : null,
-                        volume: showAdvancedOptions ? volume : null,
+                        containerType: transportMode === 'Sea' ? containerType : null,
+                        airWeight: transportMode === 'Air' ? airWeight : null,
+                        volume: volume || null,
                         currency,
                         status: 'pending',
                         createdAt: new Date(),
-                        responses: []
+                        responses: [],
+                        waypoints
                     });
             
                     const quoteId = quoteRef.id;
@@ -868,6 +867,7 @@
                                         onChange={(e) => setWeightBucket(e.target.value)}
                                         required
                                     >
+                                        <option value="<500kg">&lt;500 Kg</option>
                                         <option value="500kg">500 Kg</option>
                                         <option value="1tn">1 Ton</option>
                                         <option value="1.5tn">1.5 Tons</option>
@@ -910,6 +910,47 @@
                             </div>
                         </div>
 
+                        {/* Collection Details */}
+                        <div className="mb-6">
+                            <h2 className="text-lg font-semibold mb-4 text-gray-700">Collection Details</h2>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <CountrySelector
+                                    value={collection.country}
+                                    onChange={(code) => setCollection({...collection, country: code, postcode: ''})}
+                                    label="Collection Country"
+                                    isOpen={showCollectionCountry}
+                                    onToggle={setShowCollectionCountry}
+                                    searchTerm={collectionCountrySearch}
+                                    onSearchChange={setCollectionCountrySearch}
+                                />
+                                
+                                <div className="relative">
+                                    <label className="block text-sm font-medium mb-1 text-gray-600">
+                                        Postcode *
+                                    </label>
+                                    <button
+                                        onClick={() => setShowCollectionPostcode(true)}
+                                        className="combobox-input text-left"
+                                    >
+                                        {collection.postcode || "Select or add postcode"}
+                                    </button>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium mb-1 text-gray-400">
+                                        Location (Optional)
+                                    </label>
+                                    <input
+                                        type="text"
+                                        className="combobox-input"
+                                        value={collection.location}
+                                        onChange={(e) => setCollection({...collection, location: e.target.value})}
+                                        placeholder="City/Town"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
                         {/* Waypoints Section */}
                         <div className="mb-6">
                             <h2 className="text-lg font-semibold mb-4 text-gray-700">Collection Waypoints (Optional)</h2>
@@ -933,7 +974,7 @@
                         {/* Delivery Details */}
                         <div className="mb-6">
                             <h2 className="text-lg font-semibold mb-4 text-gray-700">Delivery Details</h2>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <CountrySelector
                                     value={delivery.country}
                                     onChange={(code) => setDelivery({...delivery, country: code, postcode: ''})}
@@ -971,264 +1012,255 @@
                             </div>
                         </div>
 
-                        {/* Advanced Options Toggle */}
-                        <div className="mb-6">
-                            <button
-                                onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
-                                className="text-blue-600 hover:text-blue-800 flex items-center"
-                            >
-                                {showAdvancedOptions ? 'Hide' : 'Show'} Advanced Options
-                                <span className={`ml-2 transform transition-transform ${showAdvancedOptions ? 'rotate-180' : ''}`}>▼</span>
-                            </button>
-                        </div>
-
                         {/* Advanced Options Section */}
-                        {showAdvancedOptions && (
-                            <div className="mb-6">
-                                <h2 className="text-lg font-semibold mb-4 text-gray-700">Advanced Options</h2>
-                                <div className="space-y-4">
-                                    {/* Load Type Selection */}
-                                    <div>
-                                        <label className="block text-sm font-medium mb-2 text-gray-600">Load Type</label>
-                                        <div className="flex gap-4">
-                                            <button
-                                                type="button"
-                                                className={`flex-1 py-2 px-4 rounded-lg transition-colors ${
-                                                    !isFullTruckLoad 
-                                                        ? 'azelis-blue text-white' 
-                                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                                }`}
-                                                onClick={() => setIsFullTruckLoad(false)}
-                                            >
-                                                Partial Load
-                                            </button>
-                                            <button
-                                                type="button"
-                                                className={`flex-1 py-2 px-4 rounded-lg transition-colors ${
-                                                    isFullTruckLoad 
-                                                        ? 'azelis-blue text-white' 
-                                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                                }`}
-                                                onClick={() => setIsFullTruckLoad(true)}
-                                            >
-                                                Full Truck Load
-                                            </button>
-                                            <button
-                                                type="button"
-                                                className={`flex-1 py-2 px-4 rounded-lg transition-colors ${
-                                                    transportMode === 'Sea' ? 'bg-gray-200 text-gray-700 cursor-not-allowed' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                                }`}
-                                                disabled={transportMode === 'Sea'}
-                                                onClick={() => { /* No action needed for Bulk as it's under Load Type */ }}
-                                            >
-                                                Bulk
-                                            </button>
-                                        </div>
+                        <div className="mb-6">
+                            <h2 className="text-lg font-semibold mb-4 text-gray-700">Advanced Options</h2>
+                            <div className="space-y-4">
+                                {/* Load Type Selection */}
+                                <div>
+                                    <label className="block text-sm font-medium mb-2 text-gray-600">Load Type</label>
+                                    <div className="flex gap-4">
+                                        <button
+                                            type="button"
+                                            className={`flex-1 py-2 px-4 rounded-lg transition-colors ${
+                                                !isFullTruckLoad 
+                                                    ? 'azelis-blue text-white' 
+                                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                            }`}
+                                            onClick={() => setIsFullTruckLoad(false)}
+                                        >
+                                            Partial Load
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className={`flex-1 py-2 px-4 rounded-lg transition-colors ${
+                                                isFullTruckLoad 
+                                                    ? 'azelis-blue text-white' 
+                                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                            }`}
+                                            onClick={() => setIsFullTruckLoad(true)}
+                                        >
+                                            Full Truck Load
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className={`flex-1 py-2 px-4 rounded-lg transition-colors ${
+                                                transportMode === 'Sea' ? 'bg-gray-200 text-gray-700 cursor-not-allowed' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                            }`}
+                                            disabled={transportMode === 'Sea'}
+                                            onClick={() => { 
+                                                if (transportMode !== 'Sea') {
+                                                    // Implement Bulk selection if needed
+                                                }
+                                            }}
+                                        >
+                                            Bulk
+                                        </button>
                                     </div>
-                                    
-                                    {/* Number of Pallets */}
-                                    {!isFullTruckLoad && transportMode !== 'Sea' && (
-                                        <div className="flex items-center">
-                                            <label className="block text-sm font-medium mb-2 text-gray-600 mr-4">
-                                                Pallets:
+                                </div>
+                                
+                                {/* Number of Pallets */}
+                                {!isFullTruckLoad && transportMode !== 'Sea' && (
+                                    <div className="flex items-center">
+                                        <label className="block text-sm font-medium mb-2 text-gray-600 mr-4">
+                                            Pallets:
+                                        </label>
+                                        <input
+                                            type="number"
+                                            className="combobox-input w-24"
+                                            min="1"
+                                            max="24"
+                                            value={pallets}
+                                            onChange={(e) => setPallets(Math.min(Math.max(parseInt(e.target.value) || 1, 1), 24))}
+                                            disabled={transportMode === 'Sea' && containerType === 'lcl'}
+                                        />
+                                        {transportMode === 'Sea' && containerType === 'lcl' && (
+                                            <span className="text-sm text-red-500 ml-2">Pallets not applicable for LCL</span>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* Transport Mode Specific Options */}
+                                {transportMode === 'Sea' && (
+                                    <>
+                                        <div>
+                                            <label className="block text-sm font-medium mb-2 text-gray-600">
+                                                Container Type
                                             </label>
-                                            <input
-                                                type="number"
-                                                className="combobox-input w-24"
-                                                min="1"
-                                                max="24"
-                                                value={pallets}
-                                                onChange={(e) => setPallets(Math.min(Math.max(parseInt(e.target.value) || 1, 1), 24))}
-                                                disabled={transportMode === 'Sea' && containerType === 'lcl'}
-                                            />
-                                            {transportMode === 'Sea' && containerType === 'lcl' && (
-                                                <span className="text-sm text-red-500 ml-2">Pallets not applicable for LCL</span>
-                                            )}
+                                            <select
+                                                className="combobox-input"
+                                                value={containerType}
+                                                onChange={(e) => setContainerType(e.target.value)}
+                                                required
+                                            >
+                                                <option value="">Select Container Type</option>
+                                                <option value="20ft">20ft</option>
+                                                <option value="40ft">40ft</option>
+                                                <option value="40ft-hc">40ft HC</option>
+                                                <option value="lcl">LCL</option>
+                                            </select>
                                         </div>
-                                    )}
-
-                                    {/* Transport Mode Specific Options */}
-                                    {transportMode === 'Sea' && (
-                                        <>
-                                            <div>
-                                                <label className="block text-sm font-medium mb-2 text-gray-600">
-                                                    Container Type
-                                                </label>
-                                                <select
-                                                    className="combobox-input"
-                                                    value={containerType}
-                                                    onChange={(e) => setContainerType(e.target.value)}
-                                                    required
-                                                >
-                                                    <option value="">Select Container Type</option>
-                                                    <option value="20ft">20ft</option>
-                                                    <option value="40ft">40ft</option>
-                                                    <option value="40ft-hc">40ft HC</option>
-                                                    <option value="lcl">LCL</option>
-                                                </select>
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium mb-2 text-gray-600">
-                                                    Volume (CBM)
-                                                </label>
-                                                <div className="flex items-center">
+                                        <div>
+                                            <label className="block text-sm font-medium mb-2 text-gray-600">
+                                                Volume (CBM)
+                                            </label>
+                                            <div className="flex items-center">
+                                                <input
+                                                    type="number"
+                                                    className="combobox-input w-32"
+                                                    value={volume}
+                                                    onChange={(e) => setVolume(e.target.value)}
+                                                    placeholder="Enter volume"
+                                                />
+                                                <label className="ml-4 flex items-center">
                                                     <input
-                                                        type="number"
-                                                        className="combobox-input w-32"
-                                                        value={volume}
-                                                        onChange={(e) => setVolume(e.target.value)}
-                                                        placeholder="Enter volume"
+                                                        type="radio"
+                                                        name={`volumeTypeSea`}
+                                                        value="perPallet"
+                                                        checked={false} // Adjust as needed
+                                                        onChange={() => {}}
+                                                        disabled
                                                     />
-                                                    <label className="ml-4 flex items-center">
-                                                        <input
-                                                            type="radio"
-                                                            name={`volumeTypeSea`}
-                                                            value="perPallet"
-                                                            checked={waypoints.length === 0 ? false : false} // Adjust as needed
-                                                            onChange={() => {}}
-                                                            disabled
-                                                        />
-                                                        <span className="ml-2">Per Pallet</span>
-                                                    </label>
-                                                    <label className="ml-4 flex items-center">
-                                                        <input
-                                                            type="radio"
-                                                            name={`volumeTypeSea`}
-                                                            value="total"
-                                                            checked={true}
-                                                            onChange={() => {}}
-                                                            disabled
-                                                        />
-                                                        <span className="ml-2">Total</span>
-                                                    </label>
-                                                </div>
-                                            </div>
-                                        </>
-                                    )}
-
-                                    {transportMode === 'Air' && (
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div>
-                                                <label className="block text-sm font-medium mb-2 text-gray-600">
-                                                    Weight (Kg)
+                                                    <span className="ml-2">Per Pallet</span>
                                                 </label>
-                                                <div className="flex items-center">
+                                                <label className="ml-4 flex items-center">
                                                     <input
-                                                        type="number"
-                                                        className="combobox-input w-32"
-                                                        value={airWeight}
-                                                        onChange={(e) => setAirWeight(e.target.value)}
-                                                        placeholder="Enter weight"
+                                                        type="radio"
+                                                        name={`volumeTypeSea`}
+                                                        value="total"
+                                                        checked={true}
+                                                        onChange={() => {}}
+                                                        disabled
                                                     />
-                                                    <label className="ml-4 flex items-center">
-                                                        <input
-                                                            type="radio"
-                                                            name="weightTypeAir"
-                                                            value="perPallet"
-                                                            checked={false} // Implement toggle functionality as needed
-                                                            onChange={() => {}}
-                                                        />
-                                                        <span className="ml-2">Per Pallet</span>
-                                                    </label>
-                                                    <label className="ml-4 flex items-center">
-                                                        <input
-                                                            type="radio"
-                                                            name="weightTypeAir"
-                                                            value="total"
-                                                            checked={true}
-                                                            onChange={() => {}}
-                                                        />
-                                                        <span className="ml-2">Total</span>
-                                                    </label>
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium mb-2 text-gray-600">
-                                                    Volume (CBM)
+                                                    <span className="ml-2">Total</span>
                                                 </label>
-                                                <div className="flex items-center">
-                                                    <input
-                                                        type="number"
-                                                        className="combobox-input w-32"
-                                                        value={volume}
-                                                        onChange={(e) => setVolume(e.target.value)}
-                                                        placeholder="Enter volume"
-                                                    />
-                                                    <label className="ml-4 flex items-center">
-                                                        <input
-                                                            type="radio"
-                                                            name="volumeTypeAir"
-                                                            value="perPallet"
-                                                            checked={false} // Implement toggle functionality as needed
-                                                            onChange={() => {}}
-                                                        />
-                                                        <span className="ml-2">Per Pallet</span>
-                                                    </label>
-                                                    <label className="ml-4 flex items-center">
-                                                        <input
-                                                            type="radio"
-                                                            name="volumeTypeAir"
-                                                            value="total"
-                                                            checked={true}
-                                                            onChange={() => {}}
-                                                        />
-                                                        <span className="ml-2">Total</span>
-                                                    </label>
-                                                </div>
                                             </div>
                                         </div>
-                                    )}
+                                    </>
+                                )}
 
-                                    {/* Common Advanced Options */}
+                                {transportMode === 'Air' && (
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div>
                                             <label className="block text-sm font-medium mb-2 text-gray-600">
-                                                Delivery Type
+                                                Weight (Kg)
                                             </label>
-                                            <select
-                                                className="combobox-input"
-                                                value={deliveryType}
-                                                onChange={(e) => setDeliveryType(e.target.value)}
-                                            >
-                                                <option value="STD">Standard</option>
-                                                <option value="ADR">ADR (Hazardous)</option>
-                                                <option value="TEMP">Climate-Controlled</option>
-                                                <option value="BULK">Bulk</option>
-                                            </select>
+                                            <div className="flex items-center">
+                                                <input
+                                                    type="number"
+                                                    className="combobox-input w-32"
+                                                    value={airWeight}
+                                                    onChange={(e) => setAirWeight(e.target.value)}
+                                                    placeholder="Enter weight"
+                                                />
+                                                <label className="ml-4 flex items-center">
+                                                    <input
+                                                        type="radio"
+                                                        name="weightTypeAir"
+                                                        value="perPallet"
+                                                        checked={false} // Implement toggle functionality as needed
+                                                        onChange={() => {}}
+                                                    />
+                                                    <span className="ml-2">Per Pallet</span>
+                                                </label>
+                                                <label className="ml-4 flex items-center">
+                                                    <input
+                                                        type="radio"
+                                                        name="weightTypeAir"
+                                                        value="total"
+                                                        checked={true}
+                                                        onChange={() => {}}
+                                                    />
+                                                    <span className="ml-2">Total</span>
+                                                </label>
+                                            </div>
                                         </div>
-
                                         <div>
                                             <label className="block text-sm font-medium mb-2 text-gray-600">
-                                                Currency
+                                                Volume (CBM)
                                             </label>
-                                            <select
-                                                className="combobox-input"
-                                                value={currency}
-                                                onChange={(e) => setCurrency(e.target.value)}
-                                            >
-                                                <option value="GBP">GBP (£)</option>
-                                                <option value="EUR">EUR (€)</option>
-                                                <option value="USD">USD ($)</option>
-                                            </select>
+                                            <div className="flex items-center">
+                                                <input
+                                                    type="number"
+                                                    className="combobox-input w-32"
+                                                    value={volume}
+                                                    onChange={(e) => setVolume(e.target.value)}
+                                                    placeholder="Enter volume"
+                                                />
+                                                <label className="ml-4 flex items-center">
+                                                    <input
+                                                        type="radio"
+                                                        name="volumeTypeAir"
+                                                        value="perPallet"
+                                                        checked={false} // Implement toggle functionality as needed
+                                                        onChange={() => {}}
+                                                    />
+                                                    <span className="ml-2">Per Pallet</span>
+                                                </label>
+                                                <label className="ml-4 flex items-center">
+                                                    <input
+                                                        type="radio"
+                                                        name="volumeTypeAir"
+                                                        value="total"
+                                                        checked={true}
+                                                        onChange={() => {}}
+                                                    />
+                                                    <span className="ml-2">Total</span>
+                                                </label>
+                                            </div>
                                         </div>
                                     </div>
+                                )}
 
-                                    {/* Hide Documents */}
-                                    <div className="flex items-center space-x-2">
-                                        <input
-                                            type="checkbox"
-                                            id="hideDocuments"
-                                            checked={hideDocuments}
-                                            onChange={(e) => setHideDocuments(e.target.checked)}
-                                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                        />
-                                        <label htmlFor="hideDocuments" className="text-sm text-gray-700">
-                                            Hide Documents from Customer
+                                {/* Common Advanced Options */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2 text-gray-600">
+                                            Delivery Type
                                         </label>
+                                        <select
+                                            className="combobox-input"
+                                            value={deliveryType}
+                                            onChange={(e) => setDeliveryType(e.target.value)}
+                                        >
+                                            <option value="STD">Standard</option>
+                                            <option value="ADR">ADR (Hazardous)</option>
+                                            <option value="TEMP">Climate-Controlled</option>
+                                            <option value="BULK">Bulk</option>
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2 text-gray-600">
+                                            Currency
+                                        </label>
+                                        <select
+                                            className="combobox-input"
+                                            value={currency}
+                                            onChange={(e) => setCurrency(e.target.value)}
+                                        >
+                                            <option value="GBP">GBP (£)</option>
+                                            <option value="EUR">EUR (€)</option>
+                                            <option value="USD">USD ($)</option>
+                                        </select>
                                     </div>
                                 </div>
+
+                                {/* Hide Documents */}
+                                <div className="flex items-center space-x-2">
+                                    <input
+                                        type="checkbox"
+                                        id="hideDocuments"
+                                        checked={hideDocuments}
+                                        onChange={(e) => setHideDocuments(e.target.checked)}
+                                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                    />
+                                    <label htmlFor="hideDocuments" className="text-sm text-gray-700">
+                                        Hide Documents from Customer
+                                    </label>
+                                </div>
                             </div>
-                        )}
+                        </div>
 
                         {/* Calculate Button */}
                         <button
