@@ -320,748 +320,747 @@
             Object.entries(COUNTRY_MAPPING).map(([name, code]) => [code, name])
         );
     </script>
+</body>
+</html>
+<script type="text/babel">
+    const { useState, useEffect } = React;
 
-    <!-- React Components and Main Script -->
-    <script type="text/babel">
-        const { useState, useEffect } = React;
+    // CountrySelector component
+    const CountrySelector = ({ value, onChange, label }) => {
+        const [isOpen, setIsOpen] = useState(false);
+        const [searchTerm, setSearchTerm] = useState('');
 
-            // CountrySelector component
-        const CountrySelector = ({ value, onChange, label, isOpen, onToggle, searchTerm, onSearchChange }) => {
-            // Get the country name for the current value
-            const currentCountryName = value ? COUNTRY_REVERSE_MAPPING[value] : '';
-        
-            return (
-                <div className="relative" style={{ zIndex: isOpen ? 1000 : 1 }}>
-                    <label className="block text-sm font-medium mb-1 text-gray-600">
-                        {label} *
-                    </label>
-                    <div className="relative">
-                        <input
-                            type="text"
-                            className="combobox-input pr-10"
-                            value={searchTerm || currentCountryName}
-                            onChange={(e) => {
-                                onSearchChange(e.target.value);
-                                if (!isOpen) onToggle(true);
-                            }}
-                            onClick={() => onToggle(true)}
-                            placeholder="Search or select country"
-                        />
-                        <button
-                            type="button"
-                            className="absolute inset-y-0 right-0 px-3 flex items-center"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                onToggle(!isOpen);
-                            }}
-                        >
-                            ▼
-                        </button>
-                    </div>
-                    {isOpen && (
-                        <div 
-                            className="country-dropdown" 
-                            style={{ zIndex: 1000 }}
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            {COUNTRY_NAMES.filter(name => 
-                                name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                                COUNTRY_MAPPING[name].toLowerCase().includes(searchTerm.toLowerCase())
-                            ).map(name => (
+        const currentCountryName = value ? COUNTRY_REVERSE_MAPPING[value] : '';
+
+        const filteredCountries = COUNTRY_NAMES.filter(name => 
+            name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            COUNTRY_MAPPING[name].toLowerCase().includes(searchTerm.toLowerCase())
+        );
+
+        const handleCountrySelect = (name) => {
+            const code = COUNTRY_MAPPING[name];
+            onChange(code);
+            setSearchTerm(name);
+            setIsOpen(false);
+        };
+
+        return (
+            <div className="relative" style={{ zIndex: isOpen ? 1000 : 1 }}>
+                <label className="block text-sm font-medium mb-1 text-gray-600">
+                    {label} *
+                </label>
+                <div className="relative">
+                    <input
+                        type="text"
+                        className="combobox-input pr-10"
+                        value={searchTerm || currentCountryName}
+                        onChange={(e) => {
+                            setSearchTerm(e.target.value);
+                            if (!isOpen) setIsOpen(true);
+                        }}
+                        onClick={() => setIsOpen(true)}
+                        placeholder="Search or select country"
+                    />
+                    <button
+                        type="button"
+                        className="absolute inset-y-0 right-0 px-3 flex items-center"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setIsOpen(!isOpen);
+                        }}
+                    >
+                        ▼
+                    </button>
+                </div>
+                {isOpen && (
+                    <div 
+                        className="country-dropdown" 
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {filteredCountries.length > 0 ? (
+                            filteredCountries.map(name => (
                                 <div
                                     key={name}
                                     className="country-option"
-                                    onClick={() => {
-                                        const code = COUNTRY_MAPPING[name];
-                                        onChange(code);
-                                        onSearchChange(name);
-                                        onToggle(false);
-                                    }}
+                                    onClick={() => handleCountrySelect(name)}
                                 >
                                     <span>{name}</span>
                                     <span className="text-gray-500">{COUNTRY_MAPPING[name]}</span>
                                 </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
+                            ))
+                        ) : (
+                            <div className="p-2 text-gray-500">No countries found.</div>
+                        )}
+                    </div>
+                )}
+            </div>
+        );
+    };
+
+    // PostcodeSelector component
+    const PostcodeSelector = ({ isOpen, onClose, onSelect, savedPostcodes, country, type }) => {
+        const [searchTerm, setSearchTerm] = useState('');
+        const [newPostcode, setNewPostcode] = useState('');
+
+        useEffect(() => {
+            if (isOpen) {
+                setSearchTerm('');
+                setNewPostcode('');
+            }
+        }, [isOpen]);
+
+        if (!isOpen) return null;
+
+        const filteredPostcodes = (savedPostcodes || [])
+            .map(postcode => postcode.toString())
+            .filter(postcode =>
+                postcode.toLowerCase().includes(searchTerm.toLowerCase())
             );
+
+        const handlePostcodeSelect = (postcode) => {
+            onSelect(postcode);
+            onClose();
         };
 
-          // PostcodeSelector component
-        const PostcodeSelector = ({ isOpen, onClose, onSelect, savedPostcodes, country, type }) => {
-            const [searchTerm, setSearchTerm] = useState('');
-            const [newPostcode, setNewPostcode] = useState('');
-        
-            useEffect(() => {
-                if (isOpen) {
-                    setSearchTerm('');
-                    setNewPostcode('');
-                }
-            }, [isOpen]);
-        
-            if (!isOpen) return null;
-        
-            const filteredPostcodes = (savedPostcodes || [])
-                .map(postcode => postcode.toString())
-                .filter(postcode =>
-                    postcode.toLowerCase().includes(searchTerm.toLowerCase())
-                );
-        
-            const handlePostcodeSelect = (postcode) => {
-                onSelect(postcode);
+        const handleAddNewPostcode = () => {
+            if (newPostcode.trim()) {
+                onSelect(newPostcode.trim());
                 onClose();
-            };
-        
-            const handleAddNewPostcode = () => {
-                if (newPostcode.trim()) {
-                    onSelect(newPostcode.trim());
-                    onClose();
-                }
-            };
-        
-            const stopPropagation = (e) => {
-                e.stopPropagation();
-            };
-        
-            return (
-                <div className="postcode-modal" onClick={onClose}>
-                    <div 
-                        className="bg-white rounded-lg p-6 w-full max-w-md"
-                        onClick={stopPropagation}
-                        style={{ zIndex: 1100 }}
-                    >
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-lg font-semibold">Select or Add Postcode</h3>
-                            <button 
-                                onClick={onClose}
-                                className="text-gray-400 hover:text-gray-600"
-                            >
-                                ×
-                            </button>
-                        </div>
-        
+            }
+        };
+
+        const stopPropagation = (e) => {
+            e.stopPropagation();
+        };
+
+        return (
+            <div className="postcode-modal" onClick={onClose}>
+                <div 
+                    className="bg-white rounded-lg p-6 w-full max-w-md"
+                    onClick={stopPropagation}
+                    style={{ zIndex: 1100 }}
+                >
+                    <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-lg font-semibold">Select or Add Postcode</h3>
+                        <button 
+                            onClick={onClose}
+                            className="text-gray-400 hover:text-gray-600"
+                        >
+                            ×
+                        </button>
+                    </div>
+
+                    <input
+                        type="text"
+                        className="combobox-input mb-4"
+                        placeholder="Search existing postcodes"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        autoFocus
+                    />
+
+                    <div className="max-h-60 overflow-y-auto mb-4">
+                        {filteredPostcodes.length > 0 ? (
+                            filteredPostcodes.map(postcode => (
+                                <div
+                                    key={postcode}
+                                    className="p-2 hover:bg-gray-100 cursor-pointer rounded"
+                                    onClick={() => handlePostcodeSelect(postcode)}
+                                >
+                                    {postcode}
+                                </div>
+                            ))
+                        ) : (
+                            <div className="p-2 text-gray-500">No postcodes found.</div>
+                        )}
+                    </div>
+
+                    <div className="border-t pt-4">
+                        <p className="text-sm text-gray-600 mb-2">Add new postcode:</p>
                         <input
                             type="text"
-                            className="combobox-input mb-4"
-                            placeholder="Search existing postcodes"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            autoFocus
+                            className="combobox-input mb-2"
+                            placeholder="Enter new postcode"
+                            value={newPostcode}
+                            onChange={(e) => setNewPostcode(e.target.value)}
+                            onKeyPress={(e) => {
+                                if (e.key === 'Enter') {
+                                    handleAddNewPostcode();
+                                }
+                            }}
                         />
-        
-                        <div className="max-h-60 overflow-y-auto mb-4">
-                            {filteredPostcodes.length > 0 ? (
-                                filteredPostcodes.map(postcode => (
-                                    <div
-                                        key={postcode}
-                                        className="p-2 hover:bg-gray-100 cursor-pointer rounded"
-                                        onClick={() => handlePostcodeSelect(postcode)}
-                                    >
-                                        {postcode}
-                                    </div>
-                                ))
-                            ) : (
-                                <div className="p-2 text-gray-500">No postcodes found.</div>
-                            )}
-                        </div>
-        
-                        <div className="border-t pt-4">
-                            <p className="text-sm text-gray-600 mb-2">Add new postcode:</p>
-                            <input
-                                type="text"
-                                className="combobox-input mb-2"
-                                placeholder="Enter new postcode"
-                                value={newPostcode}
-                                onChange={(e) => setNewPostcode(e.target.value)}
-                                onKeyPress={(e) => {
-                                    if (e.key === 'Enter') {
-                                        handleAddNewPostcode();
-                                    }
-                                }}
-                            />
-                            <div className="flex justify-end space-x-2">
-                                <button
-                                    onClick={onClose}
-                                    className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    onClick={handleAddNewPostcode}
-                                    className="px-4 py-2 azelis-blue text-white rounded hover:bg-blue-700"
-                                >
-                                    Add & Select
-                                </button>
-                            </div>
+                        <div className="flex justify-end space-x-2">
+                            <button
+                                onClick={onClose}
+                                className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleAddNewPostcode}
+                                className="px-4 py-2 azelis-blue text-white rounded hover:bg-blue-700"
+                            >
+                                Add & Select
+                            </button>
                         </div>
                     </div>
-                </div>
-            );
-        };
-
-       const Waypoint = ({ waypoint, onChange, onRemove, savedPostcodesCollection }) => {
-    // Determine the waypoint number based on its position in the array
-    // This requires passing the index or alternatively, manage numbering differently
-    // For simplicity, you can omit the numbering or manage it externally
-
-    return (
-        <div className="border p-4 rounded-lg mb-4 relative">
-            <h4 className="text-md font-semibold mb-2">Waypoint</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <CountrySelector
-                        value={waypoint.country}
-                        onChange={(code) => onChange({ 
-                            ...waypoint, 
-                            country: code, 
-                            postcode: '', 
-                            isOpen: false, 
-                            searchTerm: COUNTRY_REVERSE_MAPPING[code] || '',
-                            savedPostcodes: savedPostcodesCollection[code] || []
-                        })}
-                        label="Country"
-                        isOpen={waypoint.isOpen}
-                        onToggle={(isOpen) => onChange({ ...waypoint, isOpen })}
-                        searchTerm={waypoint.searchTerm}
-                        onSearchChange={(term) => onChange({ ...waypoint, searchTerm: term })}
-                    />
-                </div>
-                <div className="relative">
-                    <label className="block text-sm font-medium mb-1 text-gray-600">
-                        Postcode *
-                    </label>
-                    <button
-                        onClick={() => onChange({ ...waypoint, showPostcode: true })}
-                        className="combobox-input text-left"
-                    >
-                        {waypoint.postcode || "Select or add postcode"}
-                    </button>
                 </div>
             </div>
-            {waypoint.showPostcode && (
-                <PostcodeSelector
-                    isOpen={waypoint.showPostcode}
-                    onClose={() => onChange({ ...waypoint, showPostcode: false })}
-                    onSelect={(postcode) => onChange({ ...waypoint, postcode })}
-                    savedPostcodes={waypoint.savedPostcodes || []}
-                    country={waypoint.country}
-                    type="collection"
-                />
-            )}
-            <button
-                onClick={onRemove}
-                className="absolute top-2 right-2 text-red-500 hover:text-red-700"
-                title="Remove Waypoint"
-            >
-                ✕
-            </button>
-        </div>
-    );
-};
+        );
+    };
 
-    </script>
+    // Waypoint Component
+    const Waypoint = ({ waypoint, onChange, onRemove, savedPostcodesCollection }) => {
+        const [isOpen, setIsOpen] = useState(false);
+        const [searchTerm, setSearchTerm] = useState('');
 
-    <script type="text/babel">
-        const Calculator = () => {
-            // Basic State
-            const [userEmail, setUserEmail] = useState('');
-            const [collection, setCollection] = useState({ country: '', location: '', postcode: '' });
-            const [delivery, setDelivery] = useState({ country: '', location: '', postcode: '' });
-            const [deliveryType, setDeliveryType] = useState('STD');
-            const [hideDocuments, setHideDocuments] = useState(false);
-            
-            // New Basic Fields
-            const [transportMode, setTransportMode] = useState('Road');
-            const [weightBucket, setWeightBucket] = useState('0-500kg');
-            const [incoterms, setIncoterms] = useState('EXW');
-            
-            // Advanced Options State
-            const [loadType, setLoadType] = useState('Partial Load'); // Changed from isFullTruckLoad
-            const [weightType, setWeightType] = useState('perPallet'); // 'perPallet' or 'total'
-            const [pallets, setPallets] = useState(1);
-            const [containerType, setContainerType] = useState('');
-            const [airWeight, setAirWeight] = useState('');
-            const [volume, setVolume] = useState('');
-            const [currency, setCurrency] = useState('GBP');
+        const handleCountryChange = (code) => {
+            onChange({ 
+                ...waypoint, 
+                country: code, 
+                postcode: '', 
+                savedPostcodes: savedPostcodesCollection[code] || [] 
+            });
+            setSearchTerm(COUNTRY_REVERSE_MAPPING[code] || '');
+            setIsOpen(false);
+        };
 
-            // New Fields
-            const [isPeakSeason, setIsPeakSeason] = useState(false);
-            const [peakSeasonDetails, setPeakSeasonDetails] = useState('');
-            const [urgency, setUrgency] = useState('');
-            const [preferredDeliveryDate, setPreferredDeliveryDate] = useState('');
-
-            // Pallet Type
-            const [palletType, setPalletType] = useState('');
-
-            // Waypoints State
-            const [waypoints, setWaypoints] = useState([]);
-
-            // UI State
-            const [showTenderForm, setShowTenderForm] = useState(false);
-            const [sending, setSending] = useState(false);
-            const [error, setError] = useState(null);
-            const [loading, setLoading] = useState(true);
-            const [savedRoutes, setSavedRoutes] = useState([]);
-            const [similarRoutes, setSimilarRoutes] = useState([]);
-            const [showSimilarRoutes, setShowSimilarRoutes] = useState(false);
-            const [exactMatchRate, setExactMatchRate] = useState(null);
-
-            // Dropdown States
-            const [showCollectionCountry, setShowCollectionCountry] = useState(false);
-            const [showDeliveryCountry, setShowDeliveryCountry] = useState(false);
-            const [showCollectionPostcode, setShowCollectionPostcode] = useState(false);
-            const [showDeliveryPostcode, setShowDeliveryPostcode] = useState(false);
-            const [collectionCountrySearch, setCollectionCountrySearch] = useState('');
-            const [deliveryCountrySearch, setDeliveryCountrySearch] = useState('');
-            const [savedPostcodes, setSavedPostcodes] = useState({ collection: [], delivery: [] });
-
-            useEffect(() => {
-                // Set up real-time listener for the 'rates' collection
-                const unsubscribe = db.collection('rates').onSnapshot(snapshot => {
-                    const routes = snapshot.docs.map(doc => ({
-                        id: doc.id,
-                        ...doc.data()
-                    }));
-                    setSavedRoutes(routes);
-
-                    // Extract unique postcodes grouped by country
-                    const collectionPostcodes = {};
-                    const deliveryPostcodes = {};
-
-                    routes.forEach(route => {
-                        const cc = route.collectionCountry;
-                        const pc = route.collectionPostcode ? route.collectionPostcode.toString() : '';
-                        if (pc.trim() !== '') {
-                            if (!collectionPostcodes[cc]) collectionPostcodes[cc] = new Set();
-                            collectionPostcodes[cc].add(pc);
-                        }
-                        const dc = route.deliveryCountry;
-                        const dp = route.deliveryPostcode ? route.deliveryPostcode.toString() : '';
-                        if (dp.trim() !== '') {
-                            if (!deliveryPostcodes[dc]) deliveryPostcodes[dc] = new Set();
-                            deliveryPostcodes[dc].add(dp);
-                        }
-                    });
-
-                    setSavedPostcodes({
-                        collection: Object.fromEntries(
-                            Object.entries(collectionPostcodes).map(([country, set]) => [country, Array.from(set)])
-                        ),
-                        delivery: Object.fromEntries(
-                            Object.entries(deliveryPostcodes).map(([country, set]) => [country, Array.from(set)])
-                        ),
-                    });
-
-                    setLoading(false);
-                }, error => {
-                    console.error("Error fetching routes:", error);
-                    setError("Failed to load saved routes.");
-                    setLoading(false);
-                });
-
-                // Cleanup subscription on unmount
-                return () => unsubscribe();
-            }, []);
-
-            // Update loadType based on transportMode
-            useEffect(() => {
-                if (transportMode === 'Sea') {
-                    setLoadType('Container');
-                } else if (transportMode === 'Air') {
-                    setLoadType('Pallets');
-                } else { // Road
-                    setLoadType('Partial Load');
-                }
-                // Reset related fields
-                setContainerType('');
-                setAirWeight('');
-                setVolume('');
-                setPallets(1);
-                setPalletType('');
-            }, [transportMode]);
-
-            const findSimilarRoutes = () => {
-                if (!collection.country || !delivery.country) return;
-
-                let matches = savedRoutes.filter(route => 
-                    route.collectionCountry === collection.country &&
-                    route.deliveryCountry === delivery.country &&
-                    route.deliveryType === deliveryType &&
-                    route.transportMode === transportMode &&
-                    route.weightBucket === weightBucket &&
-                    route.incoterms === incoterms &&
-                    route.loadType === loadType &&
-                    route.weightType === weightType
-                );
-
-                const exactMatch = matches.find(route =>
-                    route.collectionPostcode === collection.postcode &&
-                    route.deliveryPostcode === delivery.postcode &&
-                    route.weightType === weightType
-                );
-
-                if (exactMatch) {
-                    setExactMatchRate(exactMatch);
-                    matches = matches.filter(r => r.id !== exactMatch.id);
-                } else {
-                    setExactMatchRate(null);
-                }
-
-                matches.sort((a, b) => {
-                    const aCollectionSimilarity = stringSimilarity(a.collectionPostcode, collection.postcode);
-                    const aDeliverySimilarity = stringSimilarity(a.deliveryPostcode, delivery.postcode);
-                    const bCollectionSimilarity = stringSimilarity(b.collectionPostcode, collection.postcode);
-                    const bDeliverySimilarity = stringSimilarity(b.deliveryPostcode, delivery.postcode);
-                    
-                    return (bCollectionSimilarity + bDeliverySimilarity) - (aCollectionSimilarity + aDeliverySimilarity);
-                });
-
-                setSimilarRoutes(matches.slice(0, 5));
-                setShowSimilarRoutes(true);
-            };
-
-            const stringSimilarity = (str1, str2) => {
-                if (!str1 || !str2) return 0;
-                const distance = levenshteinDistance(str1, str2);
-                const maxLen = Math.max(str1.length, str2.length);
-                if (maxLen === 0) return 1;
-                return (maxLen - distance) / maxLen;
-            };
-
-            const levenshteinDistance = (a, b) => {
-                const matrix = Array.from({ length: a.length + 1 }, () => Array(b.length + 1).fill(0));
-
-                for (let i = 0; i <= a.length; i++) matrix[i][0] = i;
-                for (let j = 0; j <= b.length; j++) matrix[0][j] = j;
-
-                for (let i = 1; i <= a.length; i++) {
-                    for (let j = 1; j <= b.length; j++) {
-                        if (a[i - 1] === b[j - 1]) {
-                            matrix[i][j] = matrix[i - 1][j - 1];
-                        } else {
-                            matrix[i][j] = 1 + Math.min(
-                                matrix[i - 1][j],
-                                matrix[i][j - 1],
-                                matrix[i - 1][j - 1]
-                            );
-                        }
-                    }
-                }
-
-                return matrix[a.length][b.length];
-            };
-
-            const handleCalculate = () => {
-                setError(null);
-
-                // Validate required fields
-                if (!collection.country || !delivery.country) {
-                    setError('Please select both collection and delivery countries.');
-                    return;
-                }
-
-                if (!collection.postcode || !delivery.postcode) {
-                    setError('Please enter both collection and delivery postcodes.');
-                    return;
-                }
-
-                if (!transportMode || !weightBucket || !incoterms || !loadType) {
-                    setError('Please fill in all required fields.');
-                    return;
-                }
-
-                if (!COUNTRY_CODES.includes(collection.country)) {
-                    setError('Invalid collection country code.');
-                    return;
-                }
-
-                if (!COUNTRY_CODES.includes(delivery.country)) {
-                    setError('Invalid delivery country code.');
-                    return;
-                }
-
-                findSimilarRoutes();
-            };
-
-            const sendQuoteRequest = async () => {
-                setSending(true);
-                setError(null);
-            
-                if (!userEmail) {
-                    setError('Please enter your email address');
-                    setSending(false);
-                    return;
-                }
-            
-                try {
-                    const hauliersSnapshot = await db.collection('hauliers')
-                        .where('active', '==', true)
-                        .get();
-            
-                    const relevantHauliers = hauliersSnapshot.docs
-                        .map(doc => ({ id: doc.id, ...doc.data() }))
-                        .filter(h => h.countries.includes(collection.country) || h.countries.includes(delivery.country));
-            
-                    if (relevantHauliers.length === 0) {
-                        throw new Error('No active hauliers found for these countries.');
-                    }
-            
-                    // Create a quote document in Firestore with new fields
-                    const quoteRef = await db.collection('quotes').add({
-                        userEmail,
-                        collection,
-                        delivery,
-                        deliveryType,
-                        hideDocuments,
-                        transportMode,
-                        weightBucket,
-                        incoterms,
-                        loadType,
-                        weightType,
-                        pallets: loadType !== 'Full Truck Load' ? pallets : null,
-                        containerType: transportMode === 'Sea' ? containerType : null,
-                        airWeight: transportMode === 'Air' ? airWeight : null,
-                        volume: volume || null,
-                        currency,
-                        isPeakSeason,
-                        peakSeasonDetails: isPeakSeason ? peakSeasonDetails : null,
-                        urgency,
-                        preferredDeliveryDate: preferredDeliveryDate || null,
-                        palletType: (loadType === 'Pallets' || loadType === 'Partial Load' || loadType === 'LCL') ? palletType : null,
-                        status: 'pending',
-                        createdAt: new Date(),
-                        responses: [],
-                        waypoints
-                    });
-            
-                    const quoteId = quoteRef.id;
-            
-                    // Get country names
-                    const collectionCountryName = COUNTRY_REVERSE_MAPPING[collection.country] || collection.country;
-                    const deliveryCountryName = COUNTRY_REVERSE_MAPPING[delivery.country] || delivery.country;
-            
-                    // Send emails to each relevant haulier
-                    const emailPromises = relevantHauliers.map(haulier => {
-                        const tenderLink = `https://azelisshipping.github.io/AzelisLogistics/tender.html?quoteId=${quoteRef.id}&haulierId=${haulier.id}`;
-            
-                        const templateParams = {
-                            to_email: haulier.email,
-                            subject: `Quote Request: ${collectionCountryName} to ${deliveryCountryName}`,
-                            transportMode: transportMode,
-                            weightBucket: weightBucket,
-                            incoterms: incoterms,
-                            collectionCountry: collectionCountryName,
-                            collectionPostcode: collection.postcode,
-                            collectionLocation: collection.location || '',
-                            deliveryCountry: deliveryCountryName,
-                            deliveryPostcode: delivery.postcode,
-                            deliveryLocation: delivery.location || '',
-                            deliveryType: deliveryType,
-                            loadType: loadType,
-                            weightType: weightType,
-                            pallets: pallets || '',
-                            containerType: containerType || '',
-                            airWeight: airWeight || '',
-                            volume: volume || '',
-                            currency: currency,
-                            isPeakSeason: isPeakSeason ? 'Yes' : 'No',
-                            peakSeasonDetails: isPeakSeason ? peakSeasonDetails : 'N/A',
-                            urgency: urgency || 'N/A',
-                            preferredDeliveryDate: preferredDeliveryDate || 'N/A',
-                            palletType: palletType || 'N/A',
-                            tenderLink: tenderLink,
-                            quoteId: quoteId,
-                            reply_to: userEmail
-                        };
-            
-                        return emailjs.send('Azelis_Logistics', 'template_hho0c06', templateParams);
-                    });
-            
-                    await Promise.all(emailPromises);
-                    alert(`Quote requests sent successfully to ${relevantHauliers.length} haulier(s)! You'll receive notifications at ${userEmail}`);
-                    setShowTenderForm(false);
-                } catch (err) {
-                    console.error('Failed to send quote request:', err);
-                    setError(err.message || 'Failed to send quote request. Please try again.');
-                } finally {
-                    setSending(false);
-                }
-            };
-
-            // Handle Adding Waypoints with Unique IDs
-            const addWaypoint = () => {
-                setWaypoints([
-                    ...waypoints, 
-                    { 
-                        id: Date.now(), // Unique ID based on timestamp
-                        country: '', 
-                        postcode: '', 
-                        showPostcode: false, 
-                        isOpen: false, 
-                        searchTerm: '', 
-                        savedPostcodes: [] 
-                    }
-                ]);
-            };
-
-
-            // Handle Updating Waypoints by ID
-            const updateWaypoint = (id, updatedWaypoint) => {
-                const updatedWaypoints = waypoints.map(wp => wp.id === id ? updatedWaypoint : wp);
-                setWaypoints(updatedWaypoints);
-            };
-            
-            // Handle Removing Waypoints by ID
-            const removeWaypoint = (id) => {
-                const updatedWaypoints = waypoints.filter(wp => wp.id !== id);
-                setWaypoints(updatedWaypoints);
-            };
-
-
-            if (loading) {
-                return (
-                    <div className="flex items-center justify-center h-64">
-                        <div className="text-lg">Loading...</div>
+        return (
+            <div className="border p-4 rounded-lg mb-4 relative">
+                <h4 className="text-md font-semibold mb-2">Waypoint</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <CountrySelector
+                            value={waypoint.country}
+                            onChange={handleCountryChange}
+                            label="Country"
+                        />
                     </div>
-                );
+                    <div className="relative">
+                        <label className="block text-sm font-medium mb-1 text-gray-600">
+                            Postcode *
+                        </label>
+                        <button
+                            onClick={() => onChange({ ...waypoint, showPostcode: true })}
+                            className="combobox-input text-left"
+                        >
+                            {waypoint.postcode || "Select or add postcode"}
+                        </button>
+                    </div>
+                </div>
+                {waypoint.showPostcode && (
+                    <PostcodeSelector
+                        isOpen={waypoint.showPostcode}
+                        onClose={() => onChange({ ...waypoint, showPostcode: false })}
+                        onSelect={(postcode) => onChange({ ...waypoint, postcode })}
+                        savedPostcodes={waypoint.savedPostcodes || []}
+                        country={waypoint.country}
+                        type="collection"
+                    />
+                )}
+                <button
+                    onClick={onRemove}
+                    className="absolute top-2 right-2 text-red-500 hover:text-red-700"
+                    title="Remove Waypoint"
+                >
+                    ✕
+                </button>
+            </div>
+        );
+    };
+</script>
+<script type="text/babel">
+    const Calculator = () => {
+        // Basic State
+        const [userEmail, setUserEmail] = useState('');
+        const [collection, setCollection] = useState({ country: '', location: '', postcode: '' });
+        const [delivery, setDelivery] = useState({ country: '', location: '', postcode: '' });
+        const [deliveryType, setDeliveryType] = useState('STD');
+        const [hideDocuments, setHideDocuments] = useState(false);
+        
+        // New Basic Fields
+        const [transportMode, setTransportMode] = useState('Road');
+        const [weightBucket, setWeightBucket] = useState('0-500kg');
+        const [incoterms, setIncoterms] = useState('EXW');
+        
+        // Advanced Options State
+        const [loadType, setLoadType] = useState('Partial Load'); // Changed from isFullTruckLoad
+        const [weightType, setWeightType] = useState('perPallet'); // 'perPallet' or 'total'
+        const [pallets, setPallets] = useState(1);
+        const [containerType, setContainerType] = useState('');
+        const [airWeight, setAirWeight] = useState('');
+        const [volume, setVolume] = useState('');
+        const [currency, setCurrency] = useState('GBP');
+
+        // New Fields
+        const [isPeakSeason, setIsPeakSeason] = useState(false);
+        const [peakSeasonDetails, setPeakSeasonDetails] = useState('');
+        const [urgency, setUrgency] = useState('');
+        const [preferredDeliveryDate, setPreferredDeliveryDate] = useState('');
+
+        // Pallet Type
+        const [palletType, setPalletType] = useState('');
+
+        // Waypoints State
+        const [waypoints, setWaypoints] = useState([]);
+
+        // UI State
+        const [showTenderForm, setShowTenderForm] = useState(false);
+        const [sending, setSending] = useState(false);
+        const [error, setError] = useState(null);
+        const [loading, setLoading] = useState(true);
+        const [savedRoutes, setSavedRoutes] = useState([]);
+        const [similarRoutes, setSimilarRoutes] = useState([]);
+        const [showSimilarRoutes, setShowSimilarRoutes] = useState(false);
+        const [exactMatchRate, setExactMatchRate] = useState(null);
+
+        // Dropdown States
+        const [showCollectionCountry, setShowCollectionCountry] = useState(false);
+        const [showDeliveryCountry, setShowDeliveryCountry] = useState(false);
+        const [showCollectionPostcode, setShowCollectionPostcode] = useState(false);
+        const [showDeliveryPostcode, setShowDeliveryPostcode] = useState(false);
+        const [collectionCountrySearch, setCollectionCountrySearch] = useState('');
+        const [deliveryCountrySearch, setDeliveryCountrySearch] = useState('');
+        const [savedPostcodes, setSavedPostcodes] = useState({ collection: [], delivery: [] });
+
+        useEffect(() => {
+            // Set up real-time listener for the 'rates' collection
+            const unsubscribe = db.collection('rates').onSnapshot(snapshot => {
+                const routes = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+                setSavedRoutes(routes);
+
+                // Extract unique postcodes grouped by country
+                const collectionPostcodes = {};
+                const deliveryPostcodes = {};
+
+                routes.forEach(route => {
+                    const cc = route.collectionCountry;
+                    const pc = route.collectionPostcode ? route.collectionPostcode.toString() : '';
+                    if (pc.trim() !== '') {
+                        if (!collectionPostcodes[cc]) collectionPostcodes[cc] = new Set();
+                        collectionPostcodes[cc].add(pc);
+                    }
+                    const dc = route.deliveryCountry;
+                    const dp = route.deliveryPostcode ? route.deliveryPostcode.toString() : '';
+                    if (dp.trim() !== '') {
+                        if (!deliveryPostcodes[dc]) deliveryPostcodes[dc] = new Set();
+                        deliveryPostcodes[dc].add(dp);
+                    }
+                });
+
+                setSavedPostcodes({
+                    collection: Object.fromEntries(
+                        Object.entries(collectionPostcodes).map(([country, set]) => [country, Array.from(set)])
+                    ),
+                    delivery: Object.fromEntries(
+                        Object.entries(deliveryPostcodes).map(([country, set]) => [country, Array.from(set)])
+                    ),
+                });
+
+                setLoading(false);
+            }, error => {
+                console.error("Error fetching routes:", error);
+                setError("Failed to load saved routes.");
+                setLoading(false);
+            });
+
+            // Cleanup subscription on unmount
+            return () => unsubscribe();
+        }, []);
+
+        // Update loadType based on transportMode
+        useEffect(() => {
+            if (transportMode === 'Sea') {
+                setLoadType('Container');
+            } else if (transportMode === 'Air') {
+                setLoadType('Pallets');
+            } else { // Road
+                setLoadType('Partial Load');
+            }
+            // Reset related fields
+            setContainerType('');
+            setAirWeight('');
+            setVolume('');
+            setPallets(1);
+            setPalletType('');
+        }, [transportMode]);
+
+        const findSimilarRoutes = () => {
+            if (!collection.country || !delivery.country) return;
+
+            let matches = savedRoutes.filter(route => 
+                route.collectionCountry === collection.country &&
+                route.deliveryCountry === delivery.country &&
+                route.deliveryType === deliveryType &&
+                route.transportMode === transportMode &&
+                route.weightBucket === weightBucket &&
+                route.incoterms === incoterms &&
+                route.loadType === loadType &&
+                route.weightType === weightType
+            );
+
+            const exactMatch = matches.find(route =>
+                route.collectionPostcode === collection.postcode &&
+                route.deliveryPostcode === delivery.postcode &&
+                route.weightType === weightType
+            );
+
+            if (exactMatch) {
+                setExactMatchRate(exactMatch);
+                matches = matches.filter(r => r.id !== exactMatch.id);
+            } else {
+                setExactMatchRate(null);
             }
 
+            matches.sort((a, b) => {
+                const aCollectionSimilarity = stringSimilarity(a.collectionPostcode, collection.postcode);
+                const aDeliverySimilarity = stringSimilarity(a.deliveryPostcode, delivery.postcode);
+                const bCollectionSimilarity = stringSimilarity(b.collectionPostcode, collection.postcode);
+                const bDeliverySimilarity = stringSimilarity(b.deliveryPostcode, delivery.postcode);
+                
+                return (bCollectionSimilarity + bDeliverySimilarity) - (aCollectionSimilarity + aDeliverySimilarity);
+            });
+
+            setSimilarRoutes(matches.slice(0, 5));
+            setShowSimilarRoutes(true);
+        };
+
+        const stringSimilarity = (str1, str2) => {
+            if (!str1 || !str2) return 0;
+            const distance = levenshteinDistance(str1, str2);
+            const maxLen = Math.max(str1.length, str2.length);
+            if (maxLen === 0) return 1;
+            return (maxLen - distance) / maxLen;
+        };
+
+        const levenshteinDistance = (a, b) => {
+            const matrix = Array.from({ length: a.length + 1 }, () => Array(b.length + 1).fill(0));
+
+            for (let i = 0; i <= a.length; i++) matrix[i][0] = i;
+            for (let j = 0; j <= b.length; j++) matrix[0][j] = j;
+
+            for (let i = 1; i <= a.length; i++) {
+                for (let j = 1; j <= b.length; j++) {
+                    if (a[i - 1] === b[j - 1]) {
+                        matrix[i][j] = matrix[i - 1][j - 1];
+                    } else {
+                        matrix[i][j] = 1 + Math.min(
+                            matrix[i - 1][j],
+                            matrix[i][j - 1],
+                            matrix[i - 1][j - 1]
+                        );
+                    }
+                }
+            }
+
+            return matrix[a.length][b.length];
+        };
+
+        const handleCalculate = () => {
+            setError(null);
+
+            // Validate required fields
+            if (!collection.country || !delivery.country) {
+                setError('Please select both collection and delivery countries.');
+                return;
+            }
+
+            if (!collection.postcode || !delivery.postcode) {
+                setError('Please enter both collection and delivery postcodes.');
+                return;
+            }
+
+            if (!transportMode || !weightBucket || !incoterms || !loadType) {
+                setError('Please fill in all required fields.');
+                return;
+            }
+
+            if (!COUNTRY_CODES.includes(collection.country)) {
+                setError('Invalid collection country code.');
+                return;
+            }
+
+            if (!COUNTRY_CODES.includes(delivery.country)) {
+                setError('Invalid delivery country code.');
+                return;
+            }
+
+            findSimilarRoutes();
+        };
+
+        const sendQuoteRequest = async () => {
+            setSending(true);
+            setError(null);
+        
+            if (!userEmail) {
+                setError('Please enter your email address');
+                setSending(false);
+                return;
+            }
+        
+            try {
+                const hauliersSnapshot = await db.collection('hauliers')
+                    .where('active', '==', true)
+                    .get();
+        
+                const relevantHauliers = hauliersSnapshot.docs
+                    .map(doc => ({ id: doc.id, ...doc.data() }))
+                    .filter(h => h.countries.includes(collection.country) || h.countries.includes(delivery.country));
+        
+                if (relevantHauliers.length === 0) {
+                    throw new Error('No active hauliers found for these countries.');
+                }
+        
+                // Create a quote document in Firestore with new fields
+                const quoteRef = await db.collection('quotes').add({
+                    userEmail,
+                    collection,
+                    delivery,
+                    deliveryType,
+                    hideDocuments,
+                    transportMode,
+                    weightBucket,
+                    incoterms,
+                    loadType,
+                    weightType,
+                    pallets: loadType !== 'Full Truck Load' ? pallets : null,
+                    containerType: transportMode === 'Sea' ? containerType : null,
+                    airWeight: transportMode === 'Air' ? airWeight : null,
+                    volume: volume || null,
+                    currency,
+                    isPeakSeason,
+                    peakSeasonDetails: isPeakSeason ? peakSeasonDetails : null,
+                    urgency,
+                    preferredDeliveryDate: preferredDeliveryDate || null,
+                    palletType: (loadType === 'Pallets' || loadType === 'Partial Load' || loadType === 'LCL') ? palletType : null,
+                    status: 'pending',
+                    createdAt: new Date(),
+                    responses: [],
+                    waypoints
+                });
+        
+                const quoteId = quoteRef.id;
+        
+                // Get country names
+                const collectionCountryName = COUNTRY_REVERSE_MAPPING[collection.country] || collection.country;
+                const deliveryCountryName = COUNTRY_REVERSE_MAPPING[delivery.country] || delivery.country;
+        
+                // Send emails to each relevant haulier
+                const emailPromises = relevantHauliers.map(haulier => {
+                    const tenderLink = `https://azelisshipping.github.io/AzelisLogistics/tender.html?quoteId=${quoteRef.id}&haulierId=${haulier.id}`;
+        
+                    const templateParams = {
+                        to_email: haulier.email,
+                        subject: `Quote Request: ${collectionCountryName} to ${deliveryCountryName}`,
+                        transportMode: transportMode,
+                        weightBucket: weightBucket,
+                        incoterms: incoterms,
+                        collectionCountry: collectionCountryName,
+                        collectionPostcode: collection.postcode,
+                        collectionLocation: collection.location || '',
+                        deliveryCountry: deliveryCountryName,
+                        deliveryPostcode: delivery.postcode,
+                        deliveryLocation: delivery.location || '',
+                        deliveryType: deliveryType,
+                        loadType: loadType,
+                        weightType: weightType,
+                        pallets: pallets || '',
+                        containerType: containerType || '',
+                        airWeight: airWeight || '',
+                        volume: volume || '',
+                        currency: currency,
+                        isPeakSeason: isPeakSeason ? 'Yes' : 'No',
+                        peakSeasonDetails: isPeakSeason ? peakSeasonDetails : 'N/A',
+                        urgency: urgency || 'N/A',
+                        preferredDeliveryDate: preferredDeliveryDate || 'N/A',
+                        palletType: palletType || 'N/A',
+                        tenderLink: tenderLink,
+                        quoteId: quoteId,
+                        reply_to: userEmail
+                    };
+        
+                    return emailjs.send('Azelis_Logistics', 'template_hho0c06', templateParams);
+                });
+        
+                await Promise.all(emailPromises);
+                alert(`Quote requests sent successfully to ${relevantHauliers.length} haulier(s)! You'll receive notifications at ${userEmail}`);
+                setShowTenderForm(false);
+            } catch (err) {
+                console.error('Failed to send quote request:', err);
+                setError(err.message || 'Failed to send quote request. Please try again.');
+            } finally {
+                setSending(false);
+            }
+        };
+
+        // Handle Adding Waypoints with Unique IDs
+        const addWaypoint = () => {
+            setWaypoints([
+                ...waypoints, 
+                { 
+                    id: Date.now(), // Unique ID based on timestamp
+                    country: '', 
+                    postcode: '', 
+                    showPostcode: false, 
+                    savedPostcodes: [] 
+                }
+            ]);
+        };
+
+        // Handle Updating Waypoints by ID
+        const updateWaypoint = (id, updatedWaypoint) => {
+            const updatedWaypoints = waypoints.map(wp => wp.id === id ? updatedWaypoint : wp);
+            setWaypoints(updatedWaypoints);
+        };
+        
+        // Handle Removing Waypoints by ID
+        const removeWaypoint = (id) => {
+            const updatedWaypoints = waypoints.filter(wp => wp.id !== id);
+            setWaypoints(updatedWaypoints);
+        };
+
+        if (loading) {
             return (
-                <div className="max-w-4xl mx-auto p-4">
-                    <div className="bg-white rounded-lg shadow-lg p-6">
-                        {/* Email Address Section */}
-                        <div className="mb-6">
-                            <div className="max-w-md">
+                <div className="flex items-center justify-center h-64">
+                    <div className="text-lg">Loading...</div>
+                </div>
+            );
+        }
+
+        return (
+            <div className="max-w-4xl mx-auto p-4">
+                <div className="bg-white rounded-lg shadow-lg p-6">
+                    {/* Email Address Section */}
+                    <div className="mb-6">
+                        <div className="max-w-md">
+                            <label className="block text-sm font-medium mb-1 text-gray-600">
+                                Your Email Address *
+                            </label>
+                            <input
+                                type="email"
+                                className="combobox-input"
+                                value={userEmail}
+                                onChange={(e) => setUserEmail(e.target.value)}
+                                placeholder="Enter your email address"
+                                required
+                            />
+                            <p className="text-sm text-gray-500 mt-1">
+                                You'll receive quote notifications at this email address
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Basic Quote Fields */}
+                    <div className="mb-6">
+                        <h2 className="text-lg font-semibold mb-4 text-gray-700">Basic Quote Details</h2>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
                                 <label className="block text-sm font-medium mb-1 text-gray-600">
-                                    Your Email Address *
+                                    Transport Mode *
                                 </label>
-                                <input
-                                    type="email"
+                                <select
                                     className="combobox-input"
-                                    value={userEmail}
-                                    onChange={(e) => setUserEmail(e.target.value)}
-                                    placeholder="Enter your email address"
+                                    value={transportMode}
+                                    onChange={(e) => setTransportMode(e.target.value)}
                                     required
-                                />
+                                >
+                                    <option value="Road">Road</option>
+                                    <option value="Sea">Sea</option>
+                                    <option value="Air">Air</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium mb-1 text-gray-600">
+                                    Weight Bucket {weightType === 'perPallet' ? '(per pallet)' : '(total load)'} *
+                                </label>
+                                <select
+                                    className="combobox-input"
+                                    value={weightBucket}
+                                    onChange={(e) => setWeightBucket(e.target.value)}
+                                    required
+                                >
+                                    <option value="0-500kg">0 - 500 Kg</option>
+                                    <option value="501-1000kg">501 - 1000 Kg</option>
+                                    <option value="1001-1500kg">1001 - 1500 Kg</option>
+                                    <option value="1501-2000kg">1501 - 2000 Kg</option>
+                                    <option value="2001-2500kg">2001 - 2500 Kg</option>
+                                    <option value="2501-3000kg">2501 - 3000 Kg</option>
+                                    <option value="3001-3500kg">3001 - 3500 Kg</option>
+                                    <option value="3501-4000kg">3501 - 4000 Kg</option>
+                                    <option value="4001-4500kg">4001 - 4500 Kg</option>
+                                    <option value="4501-5000kg">4501 - 5000 Kg</option>
+                                </select>
                                 <p className="text-sm text-gray-500 mt-1">
-                                    You'll receive quote notifications at this email address
+                                    Select weight {weightType === 'perPallet' ? 'per pallet' : 'in total'} in 500kg increments up to 5000 Kg
                                 </p>
                             </div>
-                        </div>
 
-                        {/* Basic Quote Fields */}
-                        <div className="mb-6">
-                            <h2 className="text-lg font-semibold mb-4 text-gray-700">Basic Quote Details</h2>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium mb-1 text-gray-600">
-                                        Transport Mode *
-                                    </label>
-                                    <select
-                                        className="combobox-input"
-                                        value={transportMode}
-                                        onChange={(e) => setTransportMode(e.target.value)}
-                                        required
-                                    >
-                                        <option value="Road">Road</option>
-                                        <option value="Sea">Sea</option>
-                                        <option value="Air">Air</option>
-                                    </select>
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium mb-1 text-gray-600">
-                                        Weight Bucket {weightType === 'perPallet' ? '(per pallet)' : '(total load)'} *
-                                    </label>
-                                    <select
-                                        className="combobox-input"
-                                        value={weightBucket}
-                                        onChange={(e) => setWeightBucket(e.target.value)}
-                                        required
-                                    >
-                                        <option value="0-500kg">0 - 500 Kg</option>
-                                        <option value="501-1000kg">501 - 1000 Kg</option>
-                                        <option value="1001-1500kg">1001 - 1500 Kg</option>
-                                        <option value="1501-2000kg">1501 - 2000 Kg</option>
-                                        <option value="2001-2500kg">2001 - 2500 Kg</option>
-                                        <option value="2501-3000kg">2501 - 3000 Kg</option>
-                                        <option value="3001-3500kg">3001 - 3500 Kg</option>
-                                        <option value="3501-4000kg">3501 - 4000 Kg</option>
-                                        <option value="4001-4500kg">4001 - 4500 Kg</option>
-                                        <option value="4501-5000kg">4501 - 5000 Kg</option>
-                                    </select>
-                                    <p className="text-sm text-gray-500 mt-1">
-                                        Select weight {weightType === 'perPallet' ? 'per pallet' : 'in total'} in 500kg increments up to 5000 Kg
-                                    </p>
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium mb-1 text-gray-600">
-                                        Incoterms *
-                                    </label>
-                                    <select
-                                        className="combobox-input"
-                                        value={incoterms}
-                                        onChange={(e) => setIncoterms(e.target.value)}
-                                        required
-                                    >
-                                        <option value="EXW">EXW</option>
-                                        <option value="FCA">FCA</option>
-                                        <option value="CPT">CPT</option>
-                                        <option value="CIP">CIP</option>
-                                        <option value="DAP">DAP</option>
-                                        <option value="DPU">DPU</option>
-                                        <option value="DDP">DDP</option>
-                                        <option value="FAS">FAS</option>
-                                        <option value="FOB">FOB</option>
-                                        <option value="CFR">CFR</option>
-                                        <option value="CIF">CIF</option>
-                                    </select>
-                                </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-1 text-gray-600">
+                                    Incoterms *
+                                </label>
+                                <select
+                                    className="combobox-input"
+                                    value={incoterms}
+                                    onChange={(e) => setIncoterms(e.target.value)}
+                                    required
+                                >
+                                    <option value="EXW">EXW</option>
+                                    <option value="FCA">FCA</option>
+                                    <option value="CPT">CPT</option>
+                                    <option value="CIP">CIP</option>
+                                    <option value="DAP">DAP</option>
+                                    <option value="DPU">DPU</option>
+                                    <option value="DDP">DDP</option>
+                                    <option value="FAS">FAS</option>
+                                    <option value="FOB">FOB</option>
+                                    <option value="CFR">CFR</option>
+                                    <option value="CIF">CIF</option>
+                                </select>
                             </div>
                         </div>
+                    </div>
 
-                        {/* Collection Details */}
-                        <div className="mb-6">
-                            <h2 className="text-lg font-semibold mb-4 text-gray-700">Collection Details</h2>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <CountrySelector
-                                    value={collection.country}
-                                    onChange={(code) => setCollection({...collection, country: code, postcode: ''})}
-                                    label="Collection Country"
-                                    isOpen={showCollectionCountry}
-                                    onToggle={setShowCollectionCountry}
-                                    searchTerm={collectionCountrySearch}
-                                    onSearchChange={setCollectionCountrySearch}
+                    {/* Collection Details */}
+                    <div className="mb-6">
+                        <h2 className="text-lg font-semibold mb-4 text-gray-700">Collection Details</h2>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <CountrySelector
+                                value={collection.country}
+                                onChange={(code) => setCollection({...collection, country: code, postcode: ''})}
+                                label="Collection Country"
+                            />
+                            
+                            <div className="relative">
+                                <label className="block text-sm font-medium mb-1 text-gray-600">
+                                    Postcode *
+                                </label>
+                                <button
+                                    onClick={() => setShowCollectionPostcode(true)}
+                                    className="combobox-input text-left"
+                                >
+                                    {collection.postcode || "Select or add postcode"}
+                                </button>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium mb-1 text-gray-400">
+                                    Location (Optional)
+                                </label>
+                                <input
+                                    type="text"
+                                    className="combobox-input"
+                                    value={collection.location}
+                                    onChange={(e) => setCollection({...collection, location: e.target.value})}
+                                    placeholder="City/Town"
                                 />
-                                
-                                <div className="relative">
-                                    <label className="block text-sm font-medium mb-1 text-gray-600">
-                                        Postcode *
-                                    </label>
-                                    <button
-                                        onClick={() => setShowCollectionPostcode(true)}
-                                        className="combobox-input text-left"
-                                    >
-                                        {collection.postcode || "Select or add postcode"}
-                                    </button>
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium mb-1 text-gray-400">
-                                        Location (Optional)
-                                    </label>
-                                    <input
-                                        type="text"
-                                        className="combobox-input"
-                                        value={collection.location}
-                                        onChange={(e) => setCollection({...collection, location: e.target.value})}
-                                        placeholder="City/Town"
-                                    />
-                                </div>
                             </div>
                         </div>
+                    </div>
 
                     {/* Waypoints Section */}
                     <div className="mb-6">
@@ -1083,664 +1082,657 @@
                         </button>
                     </div>
 
+                    {/* Delivery Details */}
+                    <div className="mb-6">
+                        <h2 className="text-lg font-semibold mb-4 text-gray-700">Delivery Details</h2>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <CountrySelector
+                                value={delivery.country}
+                                onChange={(code) => setDelivery({...delivery, country: code, postcode: ''})}
+                                label="Delivery Country"
+                            />
+                            
+                            <div className="relative">
+                                <label className="block text-sm font-medium mb-1 text-gray-600">
+                                    Postcode *
+                                </label>
+                                <button
+                                    onClick={() => setShowDeliveryPostcode(true)}
+                                    className="combobox-input text-left"
+                                >
+                                    {delivery.postcode || "Select or add postcode"}
+                                </button>
+                            </div>
 
-                        {/* Delivery Details */}
-                        <div className="mb-6">
-                            <h2 className="text-lg font-semibold mb-4 text-gray-700">Delivery Details</h2>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <CountrySelector
-                                    value={delivery.country}
-                                    onChange={(code) => setDelivery({...delivery, country: code, postcode: ''})}
-                                    label="Delivery Country"
-                                    isOpen={showDeliveryCountry}
-                                    onToggle={setShowDeliveryCountry}
-                                    searchTerm={deliveryCountrySearch}
-                                    onSearchChange={setDeliveryCountrySearch}
+                            <div>
+                                <label className="block text-sm font-medium mb-1 text-gray-400">
+                                    Location (Optional)
+                                </label>
+                                <input
+                                    type="text"
+                                    className="combobox-input"
+                                    value={delivery.location}
+                                    onChange={(e) => setDelivery({...delivery, location: e.target.value})}
+                                    placeholder="City/Town"
                                 />
-                                
-                                <div className="relative">
-                                    <label className="block text-sm font-medium mb-1 text-gray-600">
-                                        Postcode *
-                                    </label>
-                                    <button
-                                        onClick={() => setShowDeliveryPostcode(true)}
-                                        className="combobox-input text-left"
-                                    >
-                                        {delivery.postcode || "Select or add postcode"}
-                                    </button>
-                                </div>
+                            </div>
+                        </div>
+                    </div>
 
+                    {/* Advanced Options Section */}
+                    <div className="mb-6">
+                        <h2 className="text-lg font-semibold mb-4 text-gray-700">Advanced Options</h2>
+                        <div className="space-y-4">
+                            {/* Load Type Selection */}
+                            <div>
+                                <label className="block text-sm font-medium mb-2 text-gray-600">Load Type</label>
+                                <div className="flex gap-4">
+                                    {transportMode === 'Road' && (
+                                        <>
+                                            <button
+                                                type="button"
+                                                className={`flex-1 py-2 px-4 rounded-lg transition-colors ${
+                                                    loadType === 'Partial Load' 
+                                                        ? 'azelis-blue text-white' 
+                                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                                }`}
+                                                onClick={() => setLoadType('Partial Load')}
+                                            >
+                                                Partial Load
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className={`flex-1 py-2 px-4 rounded-lg transition-colors ${
+                                                    loadType === 'Full Truck Load' 
+                                                        ? 'azelis-blue text-white' 
+                                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                                }`}
+                                                onClick={() => setLoadType('Full Truck Load')}
+                                            >
+                                                Full Truck Load
+                                            </button>
+                                        </>
+                                    )}
+                                    {transportMode === 'Sea' && (
+                                        <>
+                                            <button
+                                                type="button"
+                                                className={`flex-1 py-2 px-4 rounded-lg transition-colors ${
+                                                    loadType === 'Container' 
+                                                        ? 'azelis-blue text-white' 
+                                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                                }`}
+                                                onClick={() => setLoadType('Container')}
+                                            >
+                                                Container
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className={`flex-1 py-2 px-4 rounded-lg transition-colors ${
+                                                    loadType === 'LCL' 
+                                                        ? 'azelis-blue text-white' 
+                                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                                }`}
+                                                onClick={() => setLoadType('LCL')}
+                                            >
+                                                LCL
+                                            </button>
+                                        </>
+                                    )}
+                                    {transportMode === 'Air' && (
+                                        <button
+                                            type="button"
+                                            className={`flex-1 py-2 px-4 rounded-lg transition-colors ${
+                                                loadType === 'Pallets' 
+                                                    ? 'azelis-blue text-white' 
+                                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                            }`}
+                                            onClick={() => setLoadType('Pallets')}
+                                        >
+                                            Pallets
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                            
+                            {/* Weight Type Selection */}
+                            <div className="flex items-center">
+                                <label className="block text-sm font-medium mb-2 text-gray-600 mr-4">
+                                    Weight Type:
+                                </label>
+                                <label className="flex items-center mr-4">
+                                    <input
+                                        type="radio"
+                                        name="weightType"
+                                        value="perPallet"
+                                        checked={weightType === 'perPallet'}
+                                        onChange={() => setWeightType('perPallet')}
+                                        className="form-radio"
+                                    />
+                                    <span className="ml-2">Per Pallet</span>
+                                </label>
+                                <label className="flex items-center">
+                                    <input
+                                        type="radio"
+                                        name="weightType"
+                                        value="total"
+                                        checked={weightType === 'total'}
+                                        onChange={() => setWeightType('total')}
+                                        className="form-radio"
+                                    />
+                                    <span className="ml-2">Total Load</span>
+                                </label>
+                            </div>
+
+                            {/* Number of Pallets */}
+                            {(transportMode === 'Road' && loadType === 'Partial Load') || (transportMode === 'Sea' && loadType === 'LCL') || (transportMode === 'Air' && loadType === 'Pallets') ? (
+                                <div className="flex items-center">
+                                    <label className="block text-sm font-medium mb-2 text-gray-600 mr-4">
+                                        Number of Pallets:
+                                    </label>
+                                    <input
+                                        type="number"
+                                        className="combobox-input w-24"
+                                        min="1"
+                                        max="24"
+                                        value={pallets}
+                                        onChange={(e) => setPallets(Math.min(Math.max(parseInt(e.target.value) || 1, 1), 24))}
+                                    />
+                                </div>
+                            ) : null}
+
+                            {/* Pallet Type */}
+                            {(loadType === 'Pallets' || loadType === 'Partial Load' || loadType === 'LCL') && (
                                 <div>
-                                    <label className="block text-sm font-medium mb-1 text-gray-400">
-                                        Location (Optional)
+                                    <label className="block text-sm font-medium mb-2 text-gray-600">
+                                        Pallet Type
+                                    </label>
+                                    <select
+                                        className="combobox-input"
+                                        value={palletType}
+                                        onChange={(e) => setPalletType(e.target.value)}
+                                    >
+                                        <option value="">Select Pallet Type</option>
+                                        <option value="EURO">EURO</option>
+                                        <option value="Standard UK">Standard UK</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                </div>
+                            )}
+
+                            {/* Transport Mode Specific Options */}
+                            {transportMode === 'Sea' && (
+                                <>
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2 text-gray-600">
+                                            Container Type
+                                        </label>
+                                        <select
+                                            className="combobox-input"
+                                            value={containerType}
+                                            onChange={(e) => setContainerType(e.target.value)}
+                                            required={loadType === 'Container'}
+                                        >
+                                            <option value="">Select Container Type</option>
+                                            <option value="20ft">20ft</option>
+                                            <option value="40ft">40ft</option>
+                                            <option value="40ft-hc">40ft HC</option>
+                                            <option value="LCL">LCL</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2 text-gray-600">
+                                            Volume (CBM)
+                                        </label>
+                                        <div className="flex items-center">
+                                            <input
+                                                type="number"
+                                                className="combobox-input w-32"
+                                                value={volume}
+                                                onChange={(e) => setVolume(e.target.value)}
+                                                placeholder="Enter volume"
+                                            />
+                                            <span className="ml-4 text-sm text-gray-600">
+                                                CBM
+                                            </span>
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+
+                            {transportMode === 'Air' && (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2 text-gray-600">
+                                            Weight (Kg)
+                                        </label>
+                                        <div className="flex items-center">
+                                            <input
+                                                type="number"
+                                                className="combobox-input w-32"
+                                                value={airWeight}
+                                                onChange={(e) => setAirWeight(e.target.value)}
+                                                placeholder="Enter weight"
+                                            />
+                                            <span className="ml-4 text-sm text-gray-600">
+                                                Kg
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2 text-gray-600">
+                                            Volume (CBM)
+                                        </label>
+                                        <div className="flex items-center">
+                                            <input
+                                                type="number"
+                                                className="combobox-input w-32"
+                                                value={volume}
+                                                onChange={(e) => setVolume(e.target.value)}
+                                                placeholder="Enter volume"
+                                            />
+                                            <span className="ml-4 text-sm text-gray-600">
+                                                CBM
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Seasonality (Peak Period) */}
+                            <div className="flex items-center">
+                                <input
+                                    type="checkbox"
+                                    id="isPeakSeason"
+                                    checked={isPeakSeason}
+                                    onChange={(e) => setIsPeakSeason(e.target.checked)}
+                                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                />
+                                <label htmlFor="isPeakSeason" className="ml-2 text-sm text-gray-700">
+                                    Is this for a peak season?
+                                </label>
+                            </div>
+                            {isPeakSeason && (
+                                <div>
+                                    <label className="block text-sm font-medium mb-1 text-gray-600">
+                                        Specify Peak Season
                                     </label>
                                     <input
                                         type="text"
                                         className="combobox-input"
-                                        value={delivery.location}
-                                        onChange={(e) => setDelivery({...delivery, location: e.target.value})}
-                                        placeholder="City/Town"
+                                        value={peakSeasonDetails}
+                                        onChange={(e) => setPeakSeasonDetails(e.target.value)}
+                                        placeholder="e.g., December to February"
                                     />
                                 </div>
+                            )}
+
+                            {/* Urgency */}
+                            <div>
+                                <label className="block text-sm font-medium mb-2 text-gray-600">
+                                    Urgency (Optional)
+                                </label>
+                                <select
+                                    className="combobox-input"
+                                    value={urgency}
+                                    onChange={(e) => setUrgency(e.target.value)}
+                                >
+                                    <option value="">Select Urgency</option>
+                                    <option value="Standard">Standard</option>
+                                    <option value="Express">Express</option>
+                                    <option value="Expedited">Expedited</option>
+                                </select>
                             </div>
-                        </div>
 
-                        {/* Advanced Options Section */}
-                        <div className="mb-6">
-                            <h2 className="text-lg font-semibold mb-4 text-gray-700">Advanced Options</h2>
-                            <div className="space-y-4">
-                                {/* Load Type Selection */}
-                                <div>
-                                    <label className="block text-sm font-medium mb-2 text-gray-600">Load Type</label>
-                                    <div className="flex gap-4">
-                                        {transportMode === 'Road' && (
-                                            <>
-                                                <button
-                                                    type="button"
-                                                    className={`flex-1 py-2 px-4 rounded-lg transition-colors ${
-                                                        loadType === 'Partial Load' 
-                                                            ? 'azelis-blue text-white' 
-                                                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                                    }`}
-                                                    onClick={() => setLoadType('Partial Load')}
-                                                >
-                                                    Partial Load
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    className={`flex-1 py-2 px-4 rounded-lg transition-colors ${
-                                                        loadType === 'Full Truck Load' 
-                                                            ? 'azelis-blue text-white' 
-                                                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                                    }`}
-                                                    onClick={() => setLoadType('Full Truck Load')}
-                                                >
-                                                    Full Truck Load
-                                                </button>
-                                            </>
-                                        )}
-                                        {transportMode === 'Sea' && (
-                                            <>
-                                                <button
-                                                    type="button"
-                                                    className={`flex-1 py-2 px-4 rounded-lg transition-colors ${
-                                                        loadType === 'Container' 
-                                                            ? 'azelis-blue text-white' 
-                                                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                                    }`}
-                                                    onClick={() => setLoadType('Container')}
-                                                >
-                                                    Container
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    className={`flex-1 py-2 px-4 rounded-lg transition-colors ${
-                                                        loadType === 'LCL' 
-                                                            ? 'azelis-blue text-white' 
-                                                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                                    }`}
-                                                    onClick={() => setLoadType('LCL')}
-                                                >
-                                                    LCL
-                                                </button>
-                                            </>
-                                        )}
-                                        {transportMode === 'Air' && (
-                                            <button
-                                                type="button"
-                                                className={`flex-1 py-2 px-4 rounded-lg transition-colors ${
-                                                    loadType === 'Pallets' 
-                                                        ? 'azelis-blue text-white' 
-                                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                                }`}
-                                                onClick={() => setLoadType('Pallets')}
-                                            >
-                                                Pallets
-                                            </button>
-                                        )}
-                                    </div>
-                                </div>
-                                
-                                {/* Weight Type Selection */}
-                                <div className="flex items-center">
-                                    <label className="block text-sm font-medium mb-2 text-gray-600 mr-4">
-                                        Weight Type:
-                                    </label>
-                                    <label className="flex items-center mr-4">
-                                        <input
-                                            type="radio"
-                                            name="weightType"
-                                            value="perPallet"
-                                            checked={weightType === 'perPallet'}
-                                            onChange={() => setWeightType('perPallet')}
-                                            className="form-radio"
-                                        />
-                                        <span className="ml-2">Per Pallet</span>
-                                    </label>
-                                    <label className="flex items-center">
-                                        <input
-                                            type="radio"
-                                            name="weightType"
-                                            value="total"
-                                            checked={weightType === 'total'}
-                                            onChange={() => setWeightType('total')}
-                                            className="form-radio"
-                                        />
-                                        <span className="ml-2">Total Load</span>
-                                    </label>
-                                </div>
+                            {/* Preferred Delivery Date */}
+                            <div>
+                                <label className="block text-sm font-medium mb-2 text-gray-600">
+                                    Preferred Delivery Date (Optional)
+                                </label>
+                                <input
+                                    type="date"
+                                    className="combobox-input"
+                                    value={preferredDeliveryDate}
+                                    onChange={(e) => setPreferredDeliveryDate(e.target.value)}
+                                    placeholder="Select preferred delivery date"
+                                />
+                            </div>
 
-                                {/* Number of Pallets */}
-                                {(transportMode === 'Road' && loadType === 'Partial Load') || (transportMode === 'Sea' && loadType === 'LCL') || (transportMode === 'Air' && loadType === 'Pallets') ? (
-                                    <div className="flex items-center">
-                                        <label className="block text-sm font-medium mb-2 text-gray-600 mr-4">
-                                            Number of Pallets:
-                                        </label>
-                                        <input
-                                            type="number"
-                                            className="combobox-input w-24"
-                                            min="1"
-                                            max="24"
-                                            value={pallets}
-                                            onChange={(e) => setPallets(Math.min(Math.max(parseInt(e.target.value) || 1, 1), 24))}
-                                        />
-                                    </div>
-                                ) : null}
-
-                                {/* Pallet Type */}
-                                {(loadType === 'Pallets' || loadType === 'Partial Load' || loadType === 'LCL') && (
-                                    <div>
-                                        <label className="block text-sm font-medium mb-2 text-gray-600">
-                                            Pallet Type
-                                        </label>
-                                        <select
-                                            className="combobox-input"
-                                            value={palletType}
-                                            onChange={(e) => setPalletType(e.target.value)}
-                                        >
-                                            <option value="">Select Pallet Type</option>
-                                            <option value="EURO">EURO</option>
-                                            <option value="Standard UK">Standard UK</option>
-                                            <option value="Other">Other</option>
-                                        </select>
-                                    </div>
-                                )}
-
-                                {/* Transport Mode Specific Options */}
-                                {transportMode === 'Sea' && (
-                                    <>
-                                        <div>
-                                            <label className="block text-sm font-medium mb-2 text-gray-600">
-                                                Container Type
-                                            </label>
-                                            <select
-                                                className="combobox-input"
-                                                value={containerType}
-                                                onChange={(e) => setContainerType(e.target.value)}
-                                                required={loadType === 'Container'}
-                                            >
-                                                <option value="">Select Container Type</option>
-                                                <option value="20ft">20ft</option>
-                                                <option value="40ft">40ft</option>
-                                                <option value="40ft-hc">40ft HC</option>
-                                                <option value="LCL">LCL</option>
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium mb-2 text-gray-600">
-                                                Volume (CBM)
-                                            </label>
-                                            <div className="flex items-center">
-                                                <input
-                                                    type="number"
-                                                    className="combobox-input w-32"
-                                                    value={volume}
-                                                    onChange={(e) => setVolume(e.target.value)}
-                                                    placeholder="Enter volume"
-                                                />
-                                                <span className="ml-4 text-sm text-gray-600">
-                                                    CBM
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </>
-                                )}
-
-                                {transportMode === 'Air' && (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-sm font-medium mb-2 text-gray-600">
-                                                Weight (Kg)
-                                            </label>
-                                            <div className="flex items-center">
-                                                <input
-                                                    type="number"
-                                                    className="combobox-input w-32"
-                                                    value={airWeight}
-                                                    onChange={(e) => setAirWeight(e.target.value)}
-                                                    placeholder="Enter weight"
-                                                />
-                                                <span className="ml-4 text-sm text-gray-600">
-                                                    Kg
-                                                </span>
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium mb-2 text-gray-600">
-                                                Volume (CBM)
-                                            </label>
-                                            <div className="flex items-center">
-                                                <input
-                                                    type="number"
-                                                    className="combobox-input w-32"
-                                                    value={volume}
-                                                    onChange={(e) => setVolume(e.target.value)}
-                                                    placeholder="Enter volume"
-                                                />
-                                                <span className="ml-4 text-sm text-gray-600">
-                                                    CBM
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Seasonality (Peak Period) */}
-                                <div className="flex items-center">
-                                    <input
-                                        type="checkbox"
-                                        id="isPeakSeason"
-                                        checked={isPeakSeason}
-                                        onChange={(e) => setIsPeakSeason(e.target.checked)}
-                                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                    />
-                                    <label htmlFor="isPeakSeason" className="ml-2 text-sm text-gray-700">
-                                        Is this for a peak season?
-                                    </label>
-                                </div>
-                                {isPeakSeason && (
-                                    <div>
-                                        <label className="block text-sm font-medium mb-1 text-gray-600">
-                                            Specify Peak Season
-                                        </label>
-                                        <input
-                                            type="text"
-                                            className="combobox-input"
-                                            value={peakSeasonDetails}
-                                            onChange={(e) => setPeakSeasonDetails(e.target.value)}
-                                            placeholder="e.g., December to February"
-                                        />
-                                    </div>
-                                )}
-
-                                {/* Urgency */}
+                            {/* Common Advanced Options */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium mb-2 text-gray-600">
-                                        Urgency (Optional)
+                                        Delivery Type
                                     </label>
                                     <select
                                         className="combobox-input"
-                                        value={urgency}
-                                        onChange={(e) => setUrgency(e.target.value)}
+                                        value={deliveryType}
+                                        onChange={(e) => setDeliveryType(e.target.value)}
                                     >
-                                        <option value="">Select Urgency</option>
-                                        <option value="Standard">Standard</option>
-                                        <option value="Express">Express</option>
-                                        <option value="Expedited">Expedited</option>
+                                        <option value="STD">Standard</option>
+                                        <option value="ADR">ADR (Hazardous)</option>
+                                        <option value="TEMP">Climate-Controlled</option>
                                     </select>
                                 </div>
 
-                                {/* Preferred Delivery Date */}
                                 <div>
                                     <label className="block text-sm font-medium mb-2 text-gray-600">
-                                        Preferred Delivery Date (Optional)
+                                        Currency
                                     </label>
-                                    <input
-                                        type="date"
+                                    <select
                                         className="combobox-input"
-                                        value={preferredDeliveryDate}
-                                        onChange={(e) => setPreferredDeliveryDate(e.target.value)}
-                                        placeholder="Select preferred delivery date"
-                                    />
+                                        value={currency}
+                                        onChange={(e) => setCurrency(e.target.value)}
+                                    >
+                                        <option value="GBP">GBP (£)</option>
+                                        <option value="EUR">EUR (€)</option>
+                                        <option value="USD">USD ($)</option>
+                                    </select>
                                 </div>
+                            </div>
 
-                                {/* Common Advanced Options */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium mb-2 text-gray-600">
-                                            Delivery Type
-                                        </label>
-                                        <select
-                                            className="combobox-input"
-                                            value={deliveryType}
-                                            onChange={(e) => setDeliveryType(e.target.value)}
-                                        >
-                                            <option value="STD">Standard</option>
-                                            <option value="ADR">ADR (Hazardous)</option>
-                                            <option value="TEMP">Climate-Controlled</option>
-                                        </select>
-                                    </div>
+                            {/* Hide Documents */}
+                            <div className="flex items-center space-x-2">
+                                <input
+                                    type="checkbox"
+                                    id="hideDocuments"
+                                    checked={hideDocuments}
+                                    onChange={(e) => setHideDocuments(e.target.checked)}
+                                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                />
+                                <label htmlFor="hideDocuments" className="text-sm text-gray-700">
+                                    Hide Documents from Customer
+                                </label>
+                            </div>
+                        </div>
+                    </div>
 
-                                    <div>
-                                        <label className="block text-sm font-medium mb-2 text-gray-600">
-                                            Currency
-                                        </label>
-                                        <select
-                                            className="combobox-input"
-                                            value={currency}
-                                            onChange={(e) => setCurrency(e.target.value)}
-                                        >
-                                            <option value="GBP">GBP (£)</option>
-                                            <option value="EUR">EUR (€)</option>
-                                            <option value="USD">USD ($)</option>
-                                        </select>
+                    {/* Calculate Button */}
+                    <button
+                        onClick={handleCalculate}
+                        className="w-full azelis-blue text-white p-3 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                    >
+                        Calculate Price
+                    </button>
+
+                    {/* Error Display */}
+                    {error && (
+                        <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                            <div className="text-red-700">{error}</div>
+                        </div>
+                    )}
+
+                    {/* Similar Routes Display */}
+                    {showSimilarRoutes && (
+                        <div className="mt-6">
+                            {exactMatchRate && (
+                                <div className="mb-4">
+                                    <h3 className="text-lg font-semibold mb-2">Exact Match Found</h3>
+                                    <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <p className="text-sm text-gray-600">
+                                                    Collection: {exactMatchRate.collectionPostcode}, {COUNTRY_REVERSE_MAPPING[exactMatchRate.collectionCountry] || exactMatchRate.collectionCountry}
+                                                </p>
+                                                <p className="text-sm text-gray-600">
+                                                    Delivery: {exactMatchRate.deliveryPostcode}, {COUNTRY_REVERSE_MAPPING[exactMatchRate.deliveryCountry] || exactMatchRate.deliveryCountry}
+                                                </p>
+                                                <p className="text-sm text-gray-600">
+                                                    Transport: {exactMatchRate.transportMode} ({exactMatchRate.weightBucket})
+                                                </p>
+                                                <p className="text-sm text-gray-600">
+                                                    Incoterms: {exactMatchRate.incoterms}
+                                                </p>
+                                                {exactMatchRate.containerType && (
+                                                    <p className="text-sm text-gray-600">
+                                                        Container: {exactMatchRate.containerType}
+                                                    </p>
+                                                )}
+                                                {exactMatchRate.airWeight && (
+                                                    <p className="text-sm text-gray-600">
+                                                        Air Weight: {exactMatchRate.airWeight}kg / {exactMatchRate.volume}CBM
+                                                    </p>
+                                                )}
+                                                <p className="text-sm text-gray-600">
+                                                    Currency: {exactMatchRate.currency}
+                                                </p>
+                                                <p className="text-sm text-gray-600">
+                                                    Load Type: {exactMatchRate.loadType}
+                                                </p>
+                                                <p className="text-sm text-gray-600">
+                                                    Weight Type: {exactMatchRate.weightType === 'perPallet' ? 'Per Pallet' : 'Total Load'}
+                                                </p>
+                                                {exactMatchRate.isPeakSeason && (
+                                                    <p className="text-sm text-gray-600">
+                                                        Peak Season: Yes - {exactMatchRate.peakSeasonDetails}
+                                                    </p>
+                                                )}
+                                                {exactMatchRate.urgency && (
+                                                    <p className="text-sm text-gray-600">
+                                                        Urgency: {exactMatchRate.urgency}
+                                                    </p>
+                                                )}
+                                                {exactMatchRate.preferredDeliveryDate && (
+                                                    <p className="text-sm text-gray-600">
+                                                        Preferred Delivery Date: {exactMatchRate.preferredDeliveryDate}
+                                                    </p>
+                                                )}
+                                                {exactMatchRate.palletType && (
+                                                    <p className="text-sm text-gray-600">
+                                                        Pallet Type: {exactMatchRate.palletType}
+                                                    </p>
+                                                )}
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="text-lg font-semibold text-green-700">
+                                                    {exactMatchRate.currency} {loadType === 'Full Truck Load' 
+                                                        ? exactMatchRate.fullTruckLoadPrice?.toFixed(2) || 'N/A'
+                                                        : exactMatchRate.prices ? exactMatchRate.prices[pallets]?.toFixed(2) || 'N/A' : 'N/A'
+                                                    }
+                                                </p>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
+                            )}
 
-                                {/* Hide Documents */}
-                                <div className="flex items-center space-x-2">
-                                    <input
-                                        type="checkbox"
-                                        id="hideDocuments"
-                                        checked={hideDocuments}
-                                        onChange={(e) => setHideDocuments(e.target.checked)}
-                                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                    />
-                                    <label htmlFor="hideDocuments" className="text-sm text-gray-700">
-                                        Hide Documents from Customer
-                                    </label>
+                            {similarRoutes.length > 0 ? (
+                                <div>
+                                    <h3 className="text-lg font-semibold mb-3">Similar Routes</h3>
+                                    <div className="space-y-3">
+                                        {similarRoutes.map(route => (
+                                            <div key={route.id} className="p-4 bg-gray-50 rounded-lg similar-route">
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div>
+                                                        <p className="text-sm text-gray-600">
+                                                            Collection: {route.collectionPostcode}, {COUNTRY_REVERSE_MAPPING[route.collectionCountry] || route.collectionCountry}
+                                                        </p>
+                                                        <p className="text-sm text-gray-600">
+                                                            Delivery: {route.deliveryPostcode}, {COUNTRY_REVERSE_MAPPING[route.deliveryCountry] || route.deliveryCountry}
+                                                        </p>
+                                                        <p className="text-sm text-gray-600">
+                                                            Transport: {route.transportMode} ({route.weightBucket})
+                                                        </p>
+                                                        <p className="text-sm text-gray-600">
+                                                            Incoterms: {route.incoterms}
+                                                        </p>
+                                                        {route.containerType && (
+                                                            <p className="text-sm text-gray-600">
+                                                                Container: {route.containerType}
+                                                            </p>
+                                                        )}
+                                                        {route.airWeight && (
+                                                            <p className="text-sm text-gray-600">
+                                                                Air Weight: {route.airWeight}kg / {route.volume}CBM
+                                                            </p>
+                                                        )}
+                                                        <p className="text-sm text-gray-600">
+                                                            Currency: {route.currency}
+                                                        </p>
+                                                        <p className="text-sm text-gray-600">
+                                                            Load Type: {route.loadType}
+                                                        </p>
+                                                        <p className="text-sm text-gray-600">
+                                                            Weight Type: {route.weightType === 'perPallet' ? 'Per Pallet' : 'Total Load'}
+                                                        </p>
+                                                        {route.isPeakSeason && (
+                                                            <p className="text-sm text-gray-600">
+                                                                Peak Season: Yes - {route.peakSeasonDetails}
+                                                            </p>
+                                                        )}
+                                                        {route.urgency && (
+                                                            <p className="text-sm text-gray-600">
+                                                                Urgency: {route.urgency}
+                                                            </p>
+                                                        )}
+                                                        {route.preferredDeliveryDate && (
+                                                            <p className="text-sm text-gray-600">
+                                                                Preferred Delivery Date: {route.preferredDeliveryDate}
+                                                            </p>
+                                                        )}
+                                                        {route.palletType && (
+                                                            <p className="text-sm text-gray-600">
+                                                                Pallet Type: {route.palletType}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <p className="font-semibold">
+                                                            {route.currency} {loadType === 'Full Truck Load' 
+                                                                ? route.fullTruckLoadPrice?.toFixed(2) || 'N/A'
+                                                                : route.prices ? route.prices[pallets]?.toFixed(2) || 'N/A' : 'N/A'
+                                                            }
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <button
+                                        onClick={() => setShowTenderForm(true)}
+                                        className="mt-4 w-full bg-gray-100 text-gray-700 p-3 rounded-lg font-medium hover:bg-gray-200 transition-colors"
+                                    >
+                                        Request New Quote
+                                    </button>
+                                </div>
+                            ) : (
+                                <div>
+                                    <p className="text-gray-700">No similar routes found.</p>
+                                    <button
+                                        onClick={() => setShowTenderForm(true)}
+                                        className="mt-4 w-full bg-gray-100 text-gray-700 p-3 rounded-lg font-medium hover:bg-gray-200 transition-colors"
+                                    >
+                                        Request New Quote
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Postcode Selection Modals */}
+                    <PostcodeSelector
+                        isOpen={showCollectionPostcode}
+                        onClose={() => setShowCollectionPostcode(false)}
+                        onSelect={(postcode) => setCollection({...collection, postcode})}
+                        savedPostcodes={savedPostcodes.collection[collection.country] || []}
+                        country={collection.country}
+                        type="collection"
+                    />
+                    <PostcodeSelector
+                        isOpen={showDeliveryPostcode}
+                        onClose={() => setShowDeliveryPostcode(false)}
+                        onSelect={(postcode) => setDelivery({...delivery, postcode})}
+                        savedPostcodes={savedPostcodes.delivery[delivery.country] || []}
+                        country={delivery.country}
+                        type="delivery"
+                    />
+
+                    {/* Quote Request Modal */}
+                    {showTenderForm && (
+                        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                            <div className="bg-white rounded-lg p-6 max-w-md w-full">
+                                <h3 className="text-lg font-semibold mb-4">Request Quote for Route</h3>
+                                <div className="space-y-2 text-sm mb-4">
+                                    {/* Basic Details */}
+                                    <p><strong>Transport Mode:</strong> {transportMode}</p>
+                                    <p><strong>Weight Bucket:</strong> {weightBucket} ({weightType === 'perPallet' ? 'Per Pallet' : 'Total Load'})</p>
+                                    <p><strong>Incoterms:</strong> {incoterms}</p>
+
+                                    {/* Route Details */}
+                                    <p><strong>Collection:</strong> {collection.postcode}, {COUNTRY_REVERSE_MAPPING[collection.country] || collection.country}</p>
+                                    {collection.location && <p><strong>Collection Location:</strong> {collection.location}</p>}
+                                    
+                                    {/* Waypoints Details */}
+                                    {waypoints.length > 0 && waypoints.map((wp, idx) => (
+                                        <div key={wp.id}>
+                                            <p><strong>Waypoint {idx + 1}:</strong> {wp.postcode}, {COUNTRY_REVERSE_MAPPING[wp.country] || wp.country}</p>
+                                        </div>
+                                    ))}
+
+                                    <p><strong>Delivery:</strong> {delivery.postcode}, {COUNTRY_REVERSE_MAPPING[delivery.country] || delivery.country}</p>
+                                    {delivery.location && <p><strong>Delivery Location:</strong> {delivery.location}</p>}
+                                    
+                                    {/* Transport Details */}
+                                    <p><strong>Delivery Type:</strong> {deliveryType}</p>
+                                    <p><strong>Transport Mode:</strong> {transportMode}</p>
+                                    <p><strong>Weight Bucket:</strong> {weightBucket} ({weightType === 'perPallet' ? 'Per Pallet' : 'Total Load'})</p>
+                                    <p><strong>Incoterms:</strong> {incoterms}</p>
+                                    <p><strong>Load Type:</strong> {loadType}</p>
+                                    {transportMode === 'Sea' && (
+                                        <>
+                                            {containerType && <p><strong>Container Type:</strong> {containerType}</p>}
+                                            {volume && <p><strong>Volume:</strong> {volume} CBM</p>}
+                                        </>
+                                    )}
+                                    {transportMode === 'Air' && (
+                                        <>
+                                            {airWeight && <p><strong>Air Weight:</strong> {airWeight} Kg</p>}
+                                            {volume && <p><strong>Volume:</strong> {volume} CBM</p>}
+                                        </>
+                                    )}
+                                    {((transportMode === 'Road' && loadType === 'Partial Load') || 
+                                      (transportMode === 'Sea' && loadType === 'LCL') ||
+                                      (transportMode === 'Air' && loadType === 'Pallets')) && (
+                                        <p><strong>Number of Pallets:</strong> {pallets}</p>
+                                    )}
+                                    {palletType && (
+                                        <p><strong>Pallet Type:</strong> {palletType}</p>
+                                    )}
+                                    {isPeakSeason && (
+                                        <p><strong>Peak Season:</strong> Yes - {peakSeasonDetails}</p>
+                                    )}
+                                    {urgency && (
+                                        <p><strong>Urgency:</strong> {urgency}</p>
+                                    )}
+                                    {preferredDeliveryDate && (
+                                        <p><strong>Preferred Delivery Date:</strong> {preferredDeliveryDate}</p>
+                                    )}
+                                    <p><strong>Currency:</strong> {currency}</p>
+                                </div>
+                                <div className="flex gap-2">
+                                    <button 
+                                        onClick={sendQuoteRequest}
+                                        disabled={sending}
+                                        className={`flex-1 azelis-blue text-white p-2 rounded hover:bg-blue-700 disabled:opacity-50 transition-colors`}
+                                    >
+                                        {sending ? "Sending..." : "Send Request"}
+                                    </button>
+                                    <button 
+                                        onClick={() => setShowTenderForm(false)}
+                                        disabled={sending}
+                                        className="flex-1 bg-gray-200 text-gray-700 p-2 rounded hover:bg-gray-300 transition-colors"
+                                    >
+                                        Cancel
+                                    </button>
                                 </div>
                             </div>
                         </div>
-
-                        {/* Calculate Button */}
-                        <button
-                            onClick={handleCalculate}
-                            className="w-full azelis-blue text-white p-3 rounded-lg font-medium hover:bg-blue-700 transition-colors"
-                        >
-                            Calculate Price
-                        </button>
-
-                        {/* Error Display */}
-                        {error && (
-                            <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-                                <div className="text-red-700">{error}</div>
-                            </div>
-                        )}
-
-                        {/* Similar Routes Display */}
-                        {showSimilarRoutes && (
-                            <div className="mt-6">
-                                {exactMatchRate && (
-                                    <div className="mb-4">
-                                        <h3 className="text-lg font-semibold mb-2">Exact Match Found</h3>
-                                        <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div>
-                                                    <p className="text-sm text-gray-600">
-                                                        Collection: {exactMatchRate.collectionPostcode}, {COUNTRY_REVERSE_MAPPING[exactMatchRate.collectionCountry] || exactMatchRate.collectionCountry}
-                                                    </p>
-                                                    <p className="text-sm text-gray-600">
-                                                        Delivery: {exactMatchRate.deliveryPostcode}, {COUNTRY_REVERSE_MAPPING[exactMatchRate.deliveryCountry] || exactMatchRate.deliveryCountry}
-                                                    </p>
-                                                    <p className="text-sm text-gray-600">
-                                                        Transport: {exactMatchRate.transportMode} ({exactMatchRate.weightBucket})
-                                                    </p>
-                                                    <p className="text-sm text-gray-600">
-                                                        Incoterms: {exactMatchRate.incoterms}
-                                                    </p>
-                                                    {exactMatchRate.containerType && (
-                                                        <p className="text-sm text-gray-600">
-                                                            Container: {exactMatchRate.containerType}
-                                                        </p>
-                                                    )}
-                                                    {exactMatchRate.airWeight && (
-                                                        <p className="text-sm text-gray-600">
-                                                            Air Weight: {exactMatchRate.airWeight}kg / {exactMatchRate.volume}CBM
-                                                        </p>
-                                                    )}
-                                                    <p className="text-sm text-gray-600">
-                                                        Currency: {exactMatchRate.currency}
-                                                    </p>
-                                                    <p className="text-sm text-gray-600">
-                                                        Load Type: {exactMatchRate.loadType}
-                                                    </p>
-                                                    <p className="text-sm text-gray-600">
-                                                        Weight Type: {exactMatchRate.weightType === 'perPallet' ? 'Per Pallet' : 'Total Load'}
-                                                    </p>
-                                                    {exactMatchRate.isPeakSeason && (
-                                                        <p className="text-sm text-gray-600">
-                                                            Peak Season: Yes - {exactMatchRate.peakSeasonDetails}
-                                                        </p>
-                                                    )}
-                                                    {exactMatchRate.urgency && (
-                                                        <p className="text-sm text-gray-600">
-                                                            Urgency: {exactMatchRate.urgency}
-                                                        </p>
-                                                    )}
-                                                    {exactMatchRate.preferredDeliveryDate && (
-                                                        <p className="text-sm text-gray-600">
-                                                            Preferred Delivery Date: {exactMatchRate.preferredDeliveryDate}
-                                                        </p>
-                                                    )}
-                                                    {exactMatchRate.palletType && (
-                                                        <p className="text-sm text-gray-600">
-                                                            Pallet Type: {exactMatchRate.palletType}
-                                                        </p>
-                                                    )}
-                                                </div>
-                                                <div className="text-right">
-                                                    <p className="text-lg font-semibold text-green-700">
-                                                        {exactMatchRate.currency} {loadType === 'Full Truck Load' 
-                                                            ? exactMatchRate.fullTruckLoadPrice?.toFixed(2) || 'N/A'
-                                                            : exactMatchRate.prices ? exactMatchRate.prices[pallets]?.toFixed(2) || 'N/A' : 'N/A'
-                                                        }
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {similarRoutes.length > 0 ? (
-                                    <div>
-                                        <h3 className="text-lg font-semibold mb-3">Similar Routes</h3>
-                                        <div className="space-y-3">
-                                            {similarRoutes.map(route => (
-                                                <div key={route.id} className="p-4 bg-gray-50 rounded-lg similar-route">
-                                                    <div className="grid grid-cols-2 gap-4">
-                                                        <div>
-                                                            <p className="text-sm text-gray-600">
-                                                                Collection: {route.collectionPostcode}, {COUNTRY_REVERSE_MAPPING[route.collectionCountry] || route.collectionCountry}
-                                                            </p>
-                                                            <p className="text-sm text-gray-600">
-                                                                Delivery: {route.deliveryPostcode}, {COUNTRY_REVERSE_MAPPING[route.deliveryCountry] || route.deliveryCountry}
-                                                            </p>
-                                                            <p className="text-sm text-gray-600">
-                                                                Transport: {route.transportMode} ({route.weightBucket})
-                                                            </p>
-                                                            <p className="text-sm text-gray-600">
-                                                                Incoterms: {route.incoterms}
-                                                            </p>
-                                                            {route.containerType && (
-                                                                <p className="text-sm text-gray-600">
-                                                                    Container: {route.containerType}
-                                                                </p>
-                                                            )}
-                                                            {route.airWeight && (
-                                                                <p className="text-sm text-gray-600">
-                                                                    Air Weight: {route.airWeight}kg / {route.volume}CBM
-                                                                </p>
-                                                            )}
-                                                            <p className="text-sm text-gray-600">
-                                                                Currency: {route.currency}
-                                                            </p>
-                                                            <p className="text-sm text-gray-600">
-                                                                Load Type: {route.loadType}
-                                                            </p>
-                                                            <p className="text-sm text-gray-600">
-                                                                Weight Type: {route.weightType === 'perPallet' ? 'Per Pallet' : 'Total Load'}
-                                                            </p>
-                                                            {route.isPeakSeason && (
-                                                                <p className="text-sm text-gray-600">
-                                                                    Peak Season: Yes - {route.peakSeasonDetails}
-                                                                </p>
-                                                            )}
-                                                            {route.urgency && (
-                                                                <p className="text-sm text-gray-600">
-                                                                    Urgency: {route.urgency}
-                                                                </p>
-                                                            )}
-                                                            {route.preferredDeliveryDate && (
-                                                                <p className="text-sm text-gray-600">
-                                                                    Preferred Delivery Date: {route.preferredDeliveryDate}
-                                                                </p>
-                                                            )}
-                                                            {route.palletType && (
-                                                                <p className="text-sm text-gray-600">
-                                                                    Pallet Type: {route.palletType}
-                                                                </p>
-                                                            )}
-                                                        </div>
-                                                        <div className="text-right">
-                                                            <p className="font-semibold">
-                                                                {route.currency} {loadType === 'Full Truck Load' 
-                                                                    ? route.fullTruckLoadPrice?.toFixed(2) || 'N/A'
-                                                                    : route.prices ? route.prices[pallets]?.toFixed(2) || 'N/A' : 'N/A'
-                                                                }
-                                                            </p>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                        <button
-                                            onClick={() => setShowTenderForm(true)}
-                                            className="mt-4 w-full bg-gray-100 text-gray-700 p-3 rounded-lg font-medium hover:bg-gray-200 transition-colors"
-                                        >
-                                            Request New Quote
-                                        </button>
-                                    </div>
-                                ) : (
-                                    <div>
-                                        <p className="text-gray-700">No similar routes found.</p>
-                                        <button
-                                            onClick={() => setShowTenderForm(true)}
-                                            className="mt-4 w-full bg-gray-100 text-gray-700 p-3 rounded-lg font-medium hover:bg-gray-200 transition-colors"
-                                        >
-                                            Request New Quote
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-
-                        {/* Postcode Selection Modals */}
-                        <PostcodeSelector
-                            isOpen={showCollectionPostcode}
-                            onClose={() => setShowCollectionPostcode(false)}
-                            onSelect={(postcode) => setCollection({...collection, postcode})}
-                            savedPostcodes={savedPostcodes.collection[collection.country] || []}
-                            country={collection.country}
-                            type="collection"
-                        />
-                        <PostcodeSelector
-                            isOpen={showDeliveryPostcode}
-                            onClose={() => setShowDeliveryPostcode(false)}
-                            onSelect={(postcode) => setDelivery({...delivery, postcode})}
-                            savedPostcodes={savedPostcodes.delivery[delivery.country] || []}
-                            country={delivery.country}
-                            type="delivery"
-                        />
-
-                        {/* Quote Request Modal */}
-                        {showTenderForm && (
-                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-                                <div className="bg-white rounded-lg p-6 max-w-md w-full">
-                                    <h3 className="text-lg font-semibold mb-4">Request Quote for Route</h3>
-                                    <div className="space-y-2 text-sm mb-4">
-                                        {/* Basic Details */}
-                                        <p><strong>Transport Mode:</strong> {transportMode}</p>
-                                        <p><strong>Weight Bucket:</strong> {weightBucket} ({weightType === 'perPallet' ? 'Per Pallet' : 'Total Load'})</p>
-                                        <p><strong>Incoterms:</strong> {incoterms}</p>
-
-                                        {/* Route Details */}
-                                        <p><strong>Collection:</strong> {collection.postcode}, {COUNTRY_REVERSE_MAPPING[collection.country] || collection.country}</p>
-                                        {collection.location && <p><strong>Collection Location:</strong> {collection.location}</p>}
-                                        
-                                        {/* Waypoints Details */}
-                                        {waypoints.length > 0 && waypoints.map((wp, idx) => (
-                                            <div key={idx}>
-                                                <p><strong>Waypoint {idx + 1}:</strong> {wp.postcode}, {COUNTRY_REVERSE_MAPPING[wp.country] || wp.country}</p>
-                                            </div>
-                                        ))}
-
-                                        <p><strong>Delivery:</strong> {delivery.postcode}, {COUNTRY_REVERSE_MAPPING[delivery.country] || delivery.country}</p>
-                                        {delivery.location && <p><strong>Delivery Location:</strong> {delivery.location}</p>}
-                                        
-                                        {/* Transport Details */}
-                                        <p><strong>Delivery Type:</strong> {deliveryType}</p>
-                                        <p><strong>Transport Mode:</strong> {transportMode}</p>
-                                        <p><strong>Weight Bucket:</strong> {weightBucket} ({weightType === 'perPallet' ? 'Per Pallet' : 'Total Load'})</p>
-                                        <p><strong>Incoterms:</strong> {incoterms}</p>
-                                        <p><strong>Load Type:</strong> {loadType}</p>
-                                        {transportMode === 'Sea' && (
-                                            <>
-                                                {containerType && <p><strong>Container Type:</strong> {containerType}</p>}
-                                                {volume && <p><strong>Volume:</strong> {volume} CBM</p>}
-                                            </>
-                                        )}
-                                        {transportMode === 'Air' && (
-                                            <>
-                                                {airWeight && <p><strong>Air Weight:</strong> {airWeight} Kg</p>}
-                                                {volume && <p><strong>Volume:</strong> {volume} CBM</p>}
-                                            </>
-                                        )}
-                                        {((transportMode === 'Road' && loadType === 'Partial Load') || 
-                                          (transportMode === 'Sea' && loadType === 'LCL') ||
-                                          (transportMode === 'Air' && loadType === 'Pallets')) && (
-                                            <p><strong>Number of Pallets:</strong> {pallets}</p>
-                                        )}
-                                        {palletType && (
-                                            <p><strong>Pallet Type:</strong> {palletType}</p>
-                                        )}
-                                        {isPeakSeason && (
-                                            <p><strong>Peak Season:</strong> Yes - {peakSeasonDetails}</p>
-                                        )}
-                                        {urgency && (
-                                            <p><strong>Urgency:</strong> {urgency}</p>
-                                        )}
-                                        {preferredDeliveryDate && (
-                                            <p><strong>Preferred Delivery Date:</strong> {preferredDeliveryDate}</p>
-                                        )}
-                                        <p><strong>Currency:</strong> {currency}</p>
-                                    </div>
-                                    <div className="flex gap-2">
-                                        <button 
-                                            onClick={sendQuoteRequest}
-                                            disabled={sending}
-                                            className={`flex-1 azelis-blue text-white p-2 rounded hover:bg-blue-700 disabled:opacity-50 transition-colors`}
-                                        >
-                                            {sending ? "Sending..." : "Send Request"}
-                                        </button>
-                                        <button 
-                                            onClick={() => setShowTenderForm(false)}
-                                            disabled={sending}
-                                            className="flex-1 bg-gray-200 text-gray-700 p-2 rounded hover:bg-gray-300 transition-colors"
-                                        >
-                                            Cancel
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-                    </div>
+                    )}
                 </div>
-            );
-        }; // Close the Calculator component
+            </div>
+        );
+    }; // Close the Calculator component
 
-        // Render the Calculator component to the DOM
-        ReactDOM.render(<Calculator />, document.getElementById('root'));
-    </script>
-</body>
-</html>
+    // Render the Calculator component to the DOM
+    ReactDOM.render(<Calculator />, document.getElementById('root'));
+</script>
