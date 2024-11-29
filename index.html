@@ -328,7 +328,7 @@
         // CountrySelector component
         const CountrySelector = ({ value, onChange, label, isOpen, onToggle, searchTerm, onSearchChange }) => {
             return (
-                <div className="relative">
+                <div className="relative" style={{ zIndex: isOpen ? 1000 : 1 }}>
                     <label className="block text-sm font-medium mb-1 text-gray-600">
                         {label} *
                     </label>
@@ -350,7 +350,7 @@
                         </button>
                     </div>
                     {isOpen && (
-                        <div className="country-dropdown">
+                        <div className="country-dropdown" style={{ zIndex: 1000 }}>
                             {COUNTRY_NAMES.filter(name => 
                                 name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                                 COUNTRY_MAPPING[name].toLowerCase().includes(searchTerm.toLowerCase())
