@@ -806,110 +806,112 @@ const PostcodeSelector = ({ isOpen, onClose, onSelect, savedPostcodes, country, 
             findSimilarRoutes();
         };
 
-        const sendQuoteRequest = async () => {
-            setSending(true);
-            setError(null);
-        
-            if (!userEmail) {
-                setError('Please enter your email address');
-                setSending(false);
-                return;
-            }
-        
-            try {
-                const hauliersSnapshot = await db.collection('hauliers')
-                    .where('active', '==', true)
-                    .get();
-        
-                const relevantHauliers = hauliersSnapshot.docs
-                    .map(doc => ({ id: doc.id, ...doc.data() }))
-                    .filter(h => h.countries.includes(collection.country) || h.countries.includes(delivery.country));
-        
-                if (relevantHauliers.length === 0) {
-                    throw new Error('No active hauliers found for these countries.');
-                }
-        
-                // Create a quote document in Firestore with new fields
-                const quoteRef = await db.collection('quotes').add({
-                    userEmail,
-                    collection,
-                    delivery,
-                    deliveryType,
-                    hideDocuments,
-                    transportMode,
-                    weightBucket,
-                    incoterms,
-                    loadType,
-                    weightType,
-                    pallets: loadType !== 'Full Truck Load' ? pallets : null,
-                    containerType: transportMode === 'Sea' ? containerType : null,
-                    airWeight: transportMode === 'Air' ? airWeight : null,
-                    volume: volume || null,
-                    currency,
-                    isPeakSeason,
-                    peakSeasonDetails: isPeakSeason ? peakSeasonDetails : null,
-                    urgency,
-                    preferredDeliveryDate: preferredDeliveryDate || null,
-                    palletType: (loadType === 'Pallets' || loadType === 'Partial Load' || loadType === 'LCL') ? palletType : null,
-                    status: 'pending',
-                    createdAt: new Date(),
-                    responses: [],
-                    waypoints
-                });
-        
-                const quoteId = quoteRef.id;
-        
-                // Get country names
-                const collectionCountryName = COUNTRY_REVERSE_MAPPING[collection.country] || collection.country;
-                const deliveryCountryName = COUNTRY_REVERSE_MAPPING[delivery.country] || delivery.country;
-        
-                // Send emails to each relevant haulier
-                const emailPromises = relevantHauliers.map(haulier => {
-                    const tenderLink = `https://azelisshipping.github.io/AzelisLogistics/tender.html?quoteId=${quoteRef.id}&haulierId=${haulier.id}`;
-        
-                    const templateParams = {
-                        to_email: haulier.email,
-                        subject: `Quote Request: ${collectionCountryName} to ${deliveryCountryName}`,
-                        transportMode: transportMode,
-                        weightBucket: weightBucket,
-                        incoterms: incoterms,
-                        collectionCountry: collectionCountryName,
-                        collectionPostcode: collection.postcode,
-                        collectionLocation: collection.location || '',
-                        deliveryCountry: deliveryCountryName,
-                        deliveryPostcode: delivery.postcode,
-                        deliveryLocation: delivery.location || '',
-                        deliveryType: deliveryType,
-                        loadType: loadType,
-                        weightType: weightType,
-                        pallets: pallets || '',
-                        containerType: containerType || '',
-                        airWeight: airWeight || '',
-                        volume: volume || '',
-                        currency: currency,
-                        isPeakSeason: isPeakSeason ? 'Yes' : 'No',
-                        peakSeasonDetails: isPeakSeason ? peakSeasonDetails : 'N/A',
-                        urgency: urgency || 'N/A',
-                        preferredDeliveryDate: preferredDeliveryDate || 'N/A',
-                        palletType: palletType || 'N/A',
-                        tenderLink: tenderLink,
-                        quoteId: quoteId,
-                        reply_to: userEmail
-                    };
-        
-                    return emailjs.send('Azelis_Logistics', 'template_hho0c06', templateParams);
-                });
-        
-                await Promise.all(emailPromises);
-                alert(`Quote requests sent successfully to ${relevantHauliers.length} haulier(s)! You'll receive notifications at ${userEmail}`);
-                setShowTenderForm(false);
-            } catch (err) {
-                console.error('Failed to send quote request:', err);
-                setError(err.message || 'Failed to send quote request. Please try again.');
-            } finally {
-                setSending(false);
-            }
-        };
+ const sendQuoteRequest = async () => {
+    setSending(true);
+    setError(null);
+
+    if (!userEmail) {
+        setError('Please enter your email address');
+        setSending(false);
+        return;
+    }
+
+    try {
+        const hauliersSnapshot = await db.collection('hauliers')
+            .where('active', '==', true)
+            .get();
+
+        const relevantHauliers = hauliersSnapshot.docs
+            .map(doc => ({ id: doc.id, ...doc.data() }))
+            .filter(h => h.countries.includes(collection.country) || h.countries.includes(delivery.country));
+
+        if (relevantHauliers.length === 0) {
+            throw new Error('No active hauliers found for these countries.');
+        }
+
+        // Create a quote document in Firestore with new fields
+        const quoteRef = await db.collection('quotes').add({
+            userEmail,
+            collection,
+            delivery,
+            deliveryType,
+            hideDocuments,
+            transportMode,
+            weightBucket,
+            incoterms,
+            loadType,
+            weightType,
+            pallets: loadType !== 'Full Truck Load' ? pallets : null,
+            palletType: (loadType === 'Pallets' || loadType === 'Partial Load' || loadType === 'LCL') ? palletType : null,
+            containerType: transportMode === 'Sea' ? containerType : null,
+            airWeight: transportMode === 'Air' ? airWeight : null,
+            volume: volume || null,
+            currency,
+            isPeakSeason,
+            peakSeasonDetails: isPeakSeason ? peakSeasonDetails : null,
+            urgency,
+            preferredDeliveryDate: preferredDeliveryDate || null,
+            status: 'pending',
+            createdAt: new Date(),
+            responses: [],
+            waypoints
+        });
+
+        const quoteId = quoteRef.id;
+
+        // Get country names
+        const collectionCountryName = COUNTRY_REVERSE_MAPPING[collection.country] || collection.country;
+        const deliveryCountryName = COUNTRY_REVERSE_MAPPING[delivery.country] || delivery.country;
+
+        // Send emails to each relevant haulier
+        const emailPromises = relevantHauliers.map(haulier => {
+            const tenderLink = `https://azelisshipping.github.io/AzelisLogistics/tender.html?quoteId=${quoteRef.id}&haulierId=${haulier.id}`;
+
+            const templateParams = {
+                to_email: haulier.email,
+                subject: `Quote Request: ${collectionCountryName} to ${deliveryCountryName}`,
+                transportMode: transportMode,
+                weightBucket: weightBucket,
+                incoterms: incoterms,
+                collectionCountry: collectionCountryName,
+                collectionPostcode: collection.postcode,
+                collectionLocation: collection.location || 'N/A',
+                deliveryCountry: deliveryCountryName,
+                deliveryPostcode: delivery.postcode,
+                deliveryLocation: delivery.location || 'N/A',
+                deliveryType: deliveryType,
+                loadType: loadType,
+                weightType: weightType === 'perPallet' ? 'Per Pallet' : 'Total Load',
+                pallets: pallets || 'N/A',
+                palletType: palletType || 'N/A',
+                containerType: containerType || 'N/A',
+                airWeight: airWeight ? `${airWeight} kg` : 'N/A',
+                volume: volume ? `${volume} CBM` : 'N/A',
+                currency: currency,
+                isPeakSeason: isPeakSeason ? 'Yes' : 'No',
+                peakSeasonDetails: isPeakSeason ? peakSeasonDetails : 'N/A',
+                urgency: urgency || 'N/A',
+                preferredDeliveryDate: preferredDeliveryDate || 'N/A',
+                waypoints: waypoints.map(wp => ({ country: wp.country, postcode: wp.postcode })),
+                hideDocuments: hideDocuments ? 'Yes' : 'No',
+                tenderLink: tenderLink,
+                quoteId: quoteId,
+                reply_to: userEmail
+            };
+
+            return emailjs.send('Azelis_Logistics', 'template_hho0c06', templateParams);
+        });
+
+        await Promise.all(emailPromises);
+        alert(`Quote requests sent successfully to ${relevantHauliers.length} haulier(s)! You'll receive notifications at ${userEmail}`);
+        setShowTenderForm(false);
+    } catch (err) {
+        console.error('Failed to send quote request:', err);
+        setError(err.message || 'Failed to send quote request. Please try again.');
+    } finally {
+        setSending(false);
+    }
+};
 
         // Handle Adding Waypoints with Unique IDs
         const addWaypoint = () => {
