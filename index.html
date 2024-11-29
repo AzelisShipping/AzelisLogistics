@@ -514,8 +514,7 @@
             );
         };
     </script>
-</body>
-</html>
+
     <script type="text/babel">
         const Calculator = () => {
             // Basic State
@@ -538,6 +537,15 @@
             const [airWeight, setAirWeight] = useState('');
             const [volume, setVolume] = useState('');
             const [currency, setCurrency] = useState('GBP');
+
+            // New Fields
+            const [isPeakSeason, setIsPeakSeason] = useState(false);
+            const [peakSeasonDetails, setPeakSeasonDetails] = useState('');
+            const [urgency, setUrgency] = useState('');
+            const [preferredDeliveryDate, setPreferredDeliveryDate] = useState('');
+
+            // Pallet Type
+            const [palletType, setPalletType] = useState('');
 
             // Waypoints State
             const [waypoints, setWaypoints] = useState([]);
@@ -622,6 +630,8 @@
                 setContainerType('');
                 setAirWeight('');
                 setVolume('');
+                setPallets(1);
+                setPalletType('');
             }, [transportMode]);
 
             const findSimilarRoutes = () => {
@@ -640,7 +650,7 @@
 
                 const exactMatch = matches.find(route =>
                     route.collectionPostcode === collection.postcode &&
-                    route.delivery.postcode === delivery.postcode &&
+                    route.deliveryPostcode === delivery.postcode &&
                     route.weightType === weightType
                 );
 
@@ -767,6 +777,11 @@
                         airWeight: transportMode === 'Air' ? airWeight : null,
                         volume: volume || null,
                         currency,
+                        isPeakSeason,
+                        peakSeasonDetails: isPeakSeason ? peakSeasonDetails : null,
+                        urgency,
+                        preferredDeliveryDate: preferredDeliveryDate || null,
+                        palletType: (loadType === 'Pallets' || loadType === 'Partial Load' || loadType === 'LCL') ? palletType : null,
                         status: 'pending',
                         createdAt: new Date(),
                         responses: [],
@@ -803,6 +818,11 @@
                             airWeight: airWeight || '',
                             volume: volume || '',
                             currency: currency,
+                            isPeakSeason: isPeakSeason ? 'Yes' : 'No',
+                            peakSeasonDetails: isPeakSeason ? peakSeasonDetails : 'N/A',
+                            urgency: urgency || 'N/A',
+                            preferredDeliveryDate: preferredDeliveryDate || 'N/A',
+                            palletType: palletType || 'N/A',
                             tenderLink: tenderLink,
                             quoteId: quoteId,
                             reply_to: userEmail
@@ -1151,10 +1171,10 @@
                                 </div>
 
                                 {/* Number of Pallets */}
-                                {(transportMode === 'Road' && loadType !== 'Full Truck Load') && (
+                                {(transportMode === 'Road' && loadType === 'Partial Load') || (transportMode === 'Sea' && loadType === 'LCL') || (transportMode === 'Air' && loadType === 'Pallets') ? (
                                     <div className="flex items-center">
                                         <label className="block text-sm font-medium mb-2 text-gray-600 mr-4">
-                                            Pallets:
+                                            Number of Pallets:
                                         </label>
                                         <input
                                             type="number"
@@ -1164,9 +1184,25 @@
                                             value={pallets}
                                             onChange={(e) => setPallets(Math.min(Math.max(parseInt(e.target.value) || 1, 1), 24))}
                                         />
-                                        {transportMode === 'Sea' && containerType === 'lcl' && (
-                                            <span className="text-sm text-red-500 ml-2">Pallets not applicable for LCL</span>
-                                        )}
+                                    </div>
+                                ) : null}
+
+                                {/* Pallet Type */}
+                                {(loadType === 'Pallets' || loadType === 'Partial Load' || loadType === 'LCL') && (
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2 text-gray-600">
+                                            Pallet Type
+                                        </label>
+                                        <select
+                                            className="combobox-input"
+                                            value={palletType}
+                                            onChange={(e) => setPalletType(e.target.value)}
+                                        >
+                                            <option value="">Select Pallet Type</option>
+                                            <option value="EURO">EURO</option>
+                                            <option value="Standard UK">Standard UK</option>
+                                            <option value="Other">Other</option>
+                                        </select>
                                     </div>
                                 )}
 
@@ -1248,6 +1284,65 @@
                                         </div>
                                     </div>
                                 )}
+
+                                {/* Seasonality (Peak Period) */}
+                                <div className="flex items-center">
+                                    <input
+                                        type="checkbox"
+                                        id="isPeakSeason"
+                                        checked={isPeakSeason}
+                                        onChange={(e) => setIsPeakSeason(e.target.checked)}
+                                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                    />
+                                    <label htmlFor="isPeakSeason" className="ml-2 text-sm text-gray-700">
+                                        Is this for a peak season?
+                                    </label>
+                                </div>
+                                {isPeakSeason && (
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1 text-gray-600">
+                                            Specify Peak Season
+                                        </label>
+                                        <input
+                                            type="text"
+                                            className="combobox-input"
+                                            value={peakSeasonDetails}
+                                            onChange={(e) => setPeakSeasonDetails(e.target.value)}
+                                            placeholder="e.g., December to February"
+                                        />
+                                    </div>
+                                )}
+
+                                {/* Urgency */}
+                                <div>
+                                    <label className="block text-sm font-medium mb-2 text-gray-600">
+                                        Urgency (Optional)
+                                    </label>
+                                    <select
+                                        className="combobox-input"
+                                        value={urgency}
+                                        onChange={(e) => setUrgency(e.target.value)}
+                                    >
+                                        <option value="">Select Urgency</option>
+                                        <option value="Standard">Standard</option>
+                                        <option value="Express">Express</option>
+                                        <option value="Expedited">Expedited</option>
+                                    </select>
+                                </div>
+
+                                {/* Preferred Delivery Date */}
+                                <div>
+                                    <label className="block text-sm font-medium mb-2 text-gray-600">
+                                        Preferred Delivery Date (Optional)
+                                    </label>
+                                    <input
+                                        type="date"
+                                        className="combobox-input"
+                                        value={preferredDeliveryDate}
+                                        onChange={(e) => setPreferredDeliveryDate(e.target.value)}
+                                        placeholder="Select preferred delivery date"
+                                    />
+                                </div>
 
                                 {/* Common Advanced Options */}
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1353,6 +1448,26 @@
                                                     <p className="text-sm text-gray-600">
                                                         Weight Type: {exactMatchRate.weightType === 'perPallet' ? 'Per Pallet' : 'Total Load'}
                                                     </p>
+                                                    {exactMatchRate.isPeakSeason && (
+                                                        <p className="text-sm text-gray-600">
+                                                            Peak Season: Yes - {exactMatchRate.peakSeasonDetails}
+                                                        </p>
+                                                    )}
+                                                    {exactMatchRate.urgency && (
+                                                        <p className="text-sm text-gray-600">
+                                                            Urgency: {exactMatchRate.urgency}
+                                                        </p>
+                                                    )}
+                                                    {exactMatchRate.preferredDeliveryDate && (
+                                                        <p className="text-sm text-gray-600">
+                                                            Preferred Delivery Date: {exactMatchRate.preferredDeliveryDate}
+                                                        </p>
+                                                    )}
+                                                    {exactMatchRate.palletType && (
+                                                        <p className="text-sm text-gray-600">
+                                                            Pallet Type: {exactMatchRate.palletType}
+                                                        </p>
+                                                    )}
                                                 </div>
                                                 <div className="text-right">
                                                     <p className="text-lg font-semibold text-green-700">
@@ -1406,6 +1521,26 @@
                                                             <p className="text-sm text-gray-600">
                                                                 Weight Type: {route.weightType === 'perPallet' ? 'Per Pallet' : 'Total Load'}
                                                             </p>
+                                                            {route.isPeakSeason && (
+                                                                <p className="text-sm text-gray-600">
+                                                                    Peak Season: Yes - {route.peakSeasonDetails}
+                                                                </p>
+                                                            )}
+                                                            {route.urgency && (
+                                                                <p className="text-sm text-gray-600">
+                                                                    Urgency: {route.urgency}
+                                                                </p>
+                                                            )}
+                                                            {route.preferredDeliveryDate && (
+                                                                <p className="text-sm text-gray-600">
+                                                                    Preferred Delivery Date: {route.preferredDeliveryDate}
+                                                                </p>
+                                                            )}
+                                                            {route.palletType && (
+                                                                <p className="text-sm text-gray-600">
+                                                                    Pallet Type: {route.palletType}
+                                                                </p>
+                                                            )}
                                                         </div>
                                                         <div className="text-right">
                                                             <p className="font-semibold">
@@ -1500,6 +1635,23 @@
                                                 {airWeight && <p><strong>Air Weight:</strong> {airWeight} Kg</p>}
                                                 {volume && <p><strong>Volume:</strong> {volume} CBM</p>}
                                             </>
+                                        )}
+                                        {((transportMode === 'Road' && loadType === 'Partial Load') || 
+                                          (transportMode === 'Sea' && loadType === 'LCL') ||
+                                          (transportMode === 'Air' && loadType === 'Pallets')) && (
+                                            <p><strong>Number of Pallets:</strong> {pallets}</p>
+                                        )}
+                                        {palletType && (
+                                            <p><strong>Pallet Type:</strong> {palletType}</p>
+                                        )}
+                                        {isPeakSeason && (
+                                            <p><strong>Peak Season:</strong> Yes - {peakSeasonDetails}</p>
+                                        )}
+                                        {urgency && (
+                                            <p><strong>Urgency:</strong> {urgency}</p>
+                                        )}
+                                        {preferredDeliveryDate && (
+                                            <p><strong>Preferred Delivery Date:</strong> {preferredDeliveryDate}</p>
                                         )}
                                         <p><strong>Currency:</strong> {currency}</p>
                                     </div>
