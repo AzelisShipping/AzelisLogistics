@@ -94,7 +94,7 @@
             apiKey: "AIzaSyDiIRLwLeMAf1VZbZ7ygvGDu-gZH6sA424", // Replace with your actual API key
             authDomain: "azelislogistics.firebaseapp.com",
             projectId: "azelislogistics",
-            storageBucket: "azelislogistics.appspot.com", // Corrected storageBucket
+            storageBucket: "azelislogistics.appspot.com",
             messagingSenderId: "13102382958",
             appId: "1:13102382958:web:82a3324843432519cb8b7f",
             measurementId: "G-Q6JNN8DHJQ"
@@ -445,14 +445,29 @@
         };
 
         const Calculator = () => {
+            // Basic State
             const [userEmail, setUserEmail] = useState('');
             const [collection, setCollection] = useState({ country: '', location: '', postcode: '' });
             const [delivery, setDelivery] = useState({ country: '', location: '', postcode: '' });
-            const [pallets, setPallets] = useState(1);
             const [deliveryType, setDeliveryType] = useState('STD');
             const [hideDocuments, setHideDocuments] = useState(false);
-            const [showTenderForm, setShowTenderForm] = useState(false);
+            
+            // New Basic Fields
+            const [transportMode, setTransportMode] = useState('Road');
+            const [weightBucket, setWeightBucket] = useState('<500kg');
+            const [incoterms, setIncoterms] = useState('EXW');
+            
+            // Advanced Options State
+            const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
+            const [pallets, setPallets] = useState(1);
             const [isFullTruckLoad, setIsFullTruckLoad] = useState(false);
+            const [containerType, setContainerType] = useState('');
+            const [airWeight, setAirWeight] = useState('');
+            const [volume, setVolume] = useState('');
+            const [currency, setCurrency] = useState('GBP');
+            
+            // UI State
+            const [showTenderForm, setShowTenderForm] = useState(false);
             const [sending, setSending] = useState(false);
             const [error, setError] = useState(null);
             const [loading, setLoading] = useState(true);
@@ -461,7 +476,7 @@
             const [showSimilarRoutes, setShowSimilarRoutes] = useState(false);
             const [exactMatchRate, setExactMatchRate] = useState(null);
 
-            // New state for improved dropdowns
+            // Dropdown States
             const [showCollectionCountry, setShowCollectionCountry] = useState(false);
             const [showDeliveryCountry, setShowDeliveryCountry] = useState(false);
             const [showCollectionPostcode, setShowCollectionPostcode] = useState(false);
@@ -525,6 +540,9 @@
                     route.collectionCountry === collection.country &&
                     route.deliveryCountry === delivery.country &&
                     route.deliveryType === deliveryType &&
+                    route.transportMode === transportMode &&
+                    route.weightBucket === weightBucket &&
+                    route.incoterms === incoterms &&
                     route.isFullTruckLoad === isFullTruckLoad
                 );
 
@@ -555,7 +573,6 @@
 
             const stringSimilarity = (str1, str2) => {
                 if (!str1 || !str2) return 0;
-                // Implement Levenshtein distance for better similarity
                 const distance = levenshteinDistance(str1, str2);
                 const maxLen = Math.max(str1.length, str2.length);
                 if (maxLen === 0) return 1;
@@ -573,7 +590,11 @@
                         if (a[i - 1] === b[j - 1]) {
                             matrix[i][j] = matrix[i - 1][j - 1];
                         } else {
-                            matrix[i][j] = 1 + Math.min(matrix[i - 1][j], matrix[i][j - 1], matrix[i - 1][j - 1]);
+                            matrix[i][j] = 1 + Math.min(
+                                matrix[i - 1][j],
+                                matrix[i][j - 1],
+                                matrix[i - 1][j - 1]
+                            );
                         }
                     }
                 }
@@ -584,19 +605,22 @@
             const handleCalculate = () => {
                 setError(null);
 
-                // Validate country selections
+                // Validate required fields
                 if (!collection.country || !delivery.country) {
                     setError('Please select both collection and delivery countries.');
                     return;
                 }
 
-                // Validate postcode entries
                 if (!collection.postcode || !delivery.postcode) {
                     setError('Please enter both collection and delivery postcodes.');
                     return;
                 }
 
-                // Validate country codes
+                if (!transportMode || !weightBucket || !incoterms) {
+                    setError('Please fill in all required fields.');
+                    return;
+                }
+
                 if (!COUNTRY_CODES.includes(collection.country)) {
                     setError('Invalid collection country code.');
                     return;
@@ -633,7 +657,7 @@
                         throw new Error('No active hauliers found for these countries.');
                     }
             
-                    // Create a quote document in Firestore
+                    // Create a quote document in Firestore with new fields
                     const quoteRef = await db.collection('quotes').add({
                         userEmail,
                         collection,
@@ -642,6 +666,13 @@
                         pallets: isFullTruckLoad ? null : pallets,
                         deliveryType,
                         hideDocuments,
+                        transportMode,
+                        weightBucket,
+                        incoterms,
+                        containerType: showAdvancedOptions ? containerType : null,
+                        airWeight: showAdvancedOptions ? airWeight : null,
+                        volume: showAdvancedOptions ? volume : null,
+                        currency,
                         status: 'pending',
                         createdAt: new Date(),
                         responses: []
@@ -653,33 +684,45 @@
                     const collectionCountryName = COUNTRY_NAMES.find(name => COUNTRY_MAPPING[name] === collection.country) || collection.country;
                     const deliveryCountryName = COUNTRY_NAMES.find(name => COUNTRY_MAPPING[name] === delivery.country) || delivery.country;
             
-                    // Iterate through each relevant haulier and send a unique tender link
+                    // Send emails to each relevant haulier
                     const emailPromises = relevantHauliers.map(haulier => {
-                        // Generate unique tender link with both quoteId and haulierId
                         const tenderLink = `https://azelisshipping.github.io/AzelisLogistics/tender.html?quoteId=${quoteRef.id}&haulierId=${haulier.id}`;
             
-                        // Prepare email parameters
                         const templateParams = {
-                            to_email: haulier.email, // **Important:** Include the recipient's email
+                            to_email: haulier.email,
                             subject: `Quote Request: ${collectionCountryName} to ${deliveryCountryName}`,
                             message: `
+                                <strong>Basic Details:</strong><br/>
+                                Transport Mode: ${transportMode}<br/>
+                                Weight Bucket: ${weightBucket}<br/>
+                                Incoterms: ${incoterms}<br/><br/>
+
                                 <strong>Collection:</strong><br/>
                                 Country: ${collectionCountryName} (${collection.country})<br/>
                                 Postcode: ${collection.postcode}<br/>
                                 ${collection.location ? `Location: ${collection.location}<br/>` : ''}<br/>
-            
+
                                 <strong>Delivery:</strong><br/>
                                 Country: ${deliveryCountryName} (${delivery.country})<br/>
                                 Postcode: ${delivery.postcode}<br/>
                                 ${delivery.location ? `Location: ${delivery.location}<br/>` : ''}<br/>
-            
+
                                 <strong>Shipping Details:</strong><br/>
+                                Transport Mode: ${transportMode}<br/>
                                 Type: ${isFullTruckLoad ? 'Full Truck Load' : `${pallets} Pallets`}<br/>
                                 Delivery Type: ${deliveryType}<br/>
                                 Hide Documents: ${hideDocuments ? 'Yes' : 'No'}<br/>
+                                ${showAdvancedOptions ? `<strong>Advanced Options:</strong><br/>` : ''}
+                                ${showAdvancedOptions && containerType ? `Container Type: ${containerType}<br/>` : ''}
+                                ${showAdvancedOptions && airWeight ? `Air Weight: ${airWeight}kg<br/>` : ''}
+                                ${showAdvancedOptions && volume ? `Volume: ${volume}CBM<br/>` : ''}
+                                ${showAdvancedOptions ? `Currency: ${currency}<br/>` : ''}
+                                <br/>
+                                <a href="${tenderLink}" target="_blank">Respond to Quote</a>
                             `,
-                            tenderLink: tenderLink, // Pass the tenderLink variable
-                            reply_to: userEmail // For reply purposes
+                            tenderLink: tenderLink,
+                            quoteId: quoteId,
+                            reply_to: userEmail
                         };
             
                         return emailjs.send('Azelis_Logistics', 'template_hho0c06', templateParams);
@@ -707,7 +750,7 @@
             return (
                 <div className="max-w-4xl mx-auto p-4">
                     <div className="bg-white rounded-lg shadow-lg p-6">
-                        {/* User Email */}
+                        {/* Email Address Section */}
                         <div className="mb-6">
                             <div className="max-w-md">
                                 <label className="block text-sm font-medium mb-1 text-gray-600">
@@ -724,6 +767,69 @@
                                 <p className="text-sm text-gray-500 mt-1">
                                     You'll receive quote notifications at this email address
                                 </p>
+                            </div>
+                        </div>
+
+                        {/* Basic Quote Fields */}
+                        <div className="mb-6">
+                            <h2 className="text-lg font-semibold mb-4 text-gray-700">Basic Quote Details</h2>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium mb-1 text-gray-600">
+                                        Transport Mode *
+                                    </label>
+                                    <select
+                                        className="combobox-input"
+                                        value={transportMode}
+                                        onChange={(e) => setTransportMode(e.target.value)}
+                                        required
+                                    >
+                                        <option value="Road">Road</option>
+                                        <option value="Sea">Sea</option>
+                                        <option value="Air">Air</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium mb-1 text-gray-600">
+                                        Weight Bucket *
+                                    </label>
+                                    <select
+                                        className="combobox-input"
+                                        value={weightBucket}
+                                        onChange={(e) => setWeightBucket(e.target.value)}
+                                        required
+                                    >
+                                        <option value="<500kg">&lt;500 Kg</option>
+                                        <option value="500kg-1ton">500 Kg - 1 Ton</option>
+                                        <option value="1ton-5tons">1 Ton - 5 Tons</option>
+                                        <option value=">5tons">&gt;5 Tons</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium mb-1 text-gray-600">
+                                        Incoterms *
+                                    </label>
+                                    <select
+                                        className="combobox-input"
+                                        value={incoterms}
+                                        onChange={(e) => setIncoterms(e.target.value)}
+                                        required
+                                    >
+                                        <option value="EXW">EXW</option>
+                                        <option value="FCA">FCA</option>
+                                        <option value="CPT">CPT</option>
+                                        <option value="CIP">CIP</option>
+                                        <option value="DAP">DAP</option>
+                                        <option value="DPU">DPU</option>
+                                        <option value="DDP">DDP</option>
+                                        <option value="FAS">FAS</option>
+                                        <option value="FOB">FOB</option>
+                                        <option value="CFR">CFR</option>
+                                        <option value="CIF">CIF</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
 
@@ -809,85 +915,184 @@
                             </div>
                         </div>
 
-                        {/* Shipping Details */}
+                        {/* Advanced Options Toggle */}
                         <div className="mb-6">
-                            <h2 className="text-lg font-semibold mb-4 text-gray-700">Shipping Details</h2>
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium mb-2 text-gray-600">Load Type</label>
-                                    <div className="flex gap-4">
-                                        <button
-                                            type="button"
-                                            className={`flex-1 py-2 px-4 rounded-lg transition-colors ${
-                                                !isFullTruckLoad 
-                                                    ? 'azelis-blue text-white' 
-                                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                            }`}
-                                            onClick={() => setIsFullTruckLoad(false)}
-                                        >
-                                            Partial Load
-                                        </button>
-                                        <button
-                                            type="button"
-                                            className={`flex-1 py-2 px-4 rounded-lg transition-colors ${
-                                                isFullTruckLoad 
-                                                    ? 'azelis-blue text-white' 
-                                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                            }`}
-                                            onClick={() => setIsFullTruckLoad(true)}
-                                        >
-                                            Full Truck Load
-                                        </button>
-                                    </div>
-                                </div>
+                            <button
+                                onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
+                                className="text-blue-600 hover:text-blue-800 flex items-center"
+                            >
+                                {showAdvancedOptions ? 'Hide' : 'Show'} Advanced Options
+                                <span className={`ml-2 transform transition-transform ${showAdvancedOptions ? 'rotate-180' : ''}`}>▼</span>
+                            </button>
+                        </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {!isFullTruckLoad && (
-                                        <div>
-                                            <label className="block text-sm font-medium mb-2 text-gray-600">
-                                                Number of Pallets
-                                            </label>
-                                            <input
-                                                type="number"
-                                                className="combobox-input"
-                                                min="1"
-                                                max="24"
-                                                value={pallets}
-                                                onChange={(e) => setPallets(Math.min(Math.max(parseInt(e.target.value) || 1, 1), 24))}
-                                            />
+                        {/* Advanced Options Section */}
+                        {showAdvancedOptions && (
+                            <div className="mb-6">
+                                <h2 className="text-lg font-semibold mb-4 text-gray-700">Advanced Options</h2>
+                                <div className="space-y-4">
+                                    {/* Load Type Selection for Road Transport */}
+                                    {transportMode === 'Road' && (
+                                        <>
+                                            <div>
+                                                <label className="block text-sm font-medium mb-2 text-gray-600">Load Type</label>
+                                                <div className="flex gap-4">
+                                                    <button
+                                                        type="button"
+                                                        className={`flex-1 py-2 px-4 rounded-lg transition-colors ${
+                                                            !isFullTruckLoad 
+                                                                ? 'azelis-blue text-white' 
+                                                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                                        }`}
+                                                        onClick={() => setIsFullTruckLoad(false)}
+                                                    >
+                                                        Partial Load
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        className={`flex-1 py-2 px-4 rounded-lg transition-colors ${
+                                                            isFullTruckLoad 
+                                                                ? 'azelis-blue text-white' 
+                                                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                                        }`}
+                                                        onClick={() => setIsFullTruckLoad(true)}
+                                                    >
+                                                        Full Truck Load
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            
+                                            {!isFullTruckLoad && (
+                                                <div>
+                                                    <label className="block text-sm font-medium mb-2 text-gray-600">
+                                                        Number of Pallets
+                                                    </label>
+                                                    <input
+                                                        type="number"
+                                                        className="combobox-input"
+                                                        min="1"
+                                                        max="24"
+                                                        value={pallets}
+                                                        onChange={(e) => setPallets(Math.min(Math.max(parseInt(e.target.value) || 1, 1), 24))}
+                                                    />
+                                                </div>
+                                            )}
+                                        </>
+                                    )}
+
+                                    {/* Sea Transport Options */}
+                                    {transportMode === 'Sea' && (
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-sm font-medium mb-2 text-gray-600">
+                                                    Container Type
+                                                </label>
+                                                <select
+                                                    className="combobox-input"
+                                                    value={containerType}
+                                                    onChange={(e) => setContainerType(e.target.value)}
+                                                >
+                                                    <option value="">Select Container Type</option>
+                                                    <option value="20ft">20ft</option>
+                                                    <option value="40ft">40ft</option>
+                                                    <option value="40ft-hc">40ft HC</option>
+                                                    <option value="lcl">LCL</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium mb-2 text-gray-600">
+                                                    Volume (CBM)
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    className="combobox-input"
+                                                    value={volume}
+                                                    onChange={(e) => setVolume(e.target.value)}
+                                                    placeholder="Enter volume"
+                                                />
+                                            </div>
                                         </div>
                                     )}
-                                    <div>
-                                        <label className="block text-sm font-medium mb-2 text-gray-600">
-                                            Delivery Type
+
+                                    {/* Air Transport Options */}
+                                    {transportMode === 'Air' && (
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-sm font-medium mb-2 text-gray-600">
+                                                    Weight (Kg)
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    className="combobox-input"
+                                                    value={airWeight}
+                                                    onChange={(e) => setAirWeight(e.target.value)}
+                                                    placeholder="Enter weight"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium mb-2 text-gray-600">
+                                                    Volume (CBM)
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    className="combobox-input"
+                                                    value={volume}
+                                                    onChange={(e) => setVolume(e.target.value)}
+                                                    placeholder="Enter volume"
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Common Advanced Options */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-medium mb-2 text-gray-600">
+                                                Delivery Type
+                                            </label>
+                                            <select
+                                                className="combobox-input"
+                                                value={deliveryType}
+                                                onChange={(e) => setDeliveryType(e.target.value)}
+                                            >
+                                                <option value="STD">Standard</option>
+                                                <option value="ADR">ADR (Hazardous)</option>
+                                                <option value="TEMP">Climate-Controlled</option>
+                                                <option value="BULK">Bulk</option>
+                                            </select>
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium mb-2 text-gray-600">
+                                                Currency
+                                            </label>
+                                            <select
+                                                className="combobox-input"
+                                                value={currency}
+                                                onChange={(e) => setCurrency(e.target.value)}
+                                            >
+                                                <option value="GBP">GBP (£)</option>
+                                                <option value="EUR">EUR (€)</option>
+                                                <option value="USD">USD ($)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center space-x-2">
+                                        <input
+                                            type="checkbox"
+                                            id="hideDocuments"
+                                            checked={hideDocuments}
+                                            onChange={(e) => setHideDocuments(e.target.checked)}
+                                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                        />
+                                        <label htmlFor="hideDocuments" className="text-sm text-gray-700">
+                                            Hide Documents from Customer
                                         </label>
-                                        <select
-                                            className="combobox-input"
-                                            value={deliveryType}
-                                            onChange={(e) => setDeliveryType(e.target.value)}
-                                        >
-                                            <option value="STD">Standard</option>
-                                            <option value="ADR">ADR</option>
-                                            <option value="TEMP">Temperature Controlled</option>
-                                            {/* Add more delivery types as needed */}
-                                        </select>
                                     </div>
                                 </div>
-
-                                <div className="flex items-center space-x-2">
-                                    <input
-                                        type="checkbox"
-                                        id="hideDocuments"
-                                        checked={hideDocuments}
-                                        onChange={(e) => setHideDocuments(e.target.checked)}
-                                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                    />
-                                    <label htmlFor="hideDocuments" className="text-sm text-gray-700">
-                                        Hide Documents from Customer
-                                    </label>
-                                </div>
                             </div>
-                        </div>
+                        )}
 
                         {/* Calculate Button */}
                         <button
@@ -919,12 +1124,31 @@
                                                     <p className="text-sm text-gray-600">
                                                         Delivery: {exactMatchRate.deliveryPostcode}, {COUNTRY_NAMES.find(name => COUNTRY_MAPPING[name] === exactMatchRate.deliveryCountry)}
                                                     </p>
+                                                    <p className="text-sm text-gray-600">
+                                                        Transport: {exactMatchRate.transportMode} ({exactMatchRate.weightBucket})
+                                                    </p>
+                                                    <p className="text-sm text-gray-600">
+                                                        Incoterms: {exactMatchRate.incoterms}
+                                                    </p>
+                                                    {exactMatchRate.containerType && (
+                                                        <p className="text-sm text-gray-600">
+                                                            Container: {exactMatchRate.containerType}
+                                                        </p>
+                                                    )}
+                                                    {exactMatchRate.airWeight && (
+                                                        <p className="text-sm text-gray-600">
+                                                            Air: {exactMatchRate.airWeight}kg / {exactMatchRate.volume}CBM
+                                                        </p>
+                                                    )}
+                                                    <p className="text-sm text-gray-600">
+                                                        Currency: {exactMatchRate.currency}
+                                                    </p>
                                                 </div>
                                                 <div className="text-right">
                                                     <p className="text-lg font-semibold text-green-700">
-                                                        {isFullTruckLoad 
-                                                            ? `£${exactMatchRate.fullTruckLoadPrice || 'N/A'}`
-                                                            : `£${exactMatchRate.prices ? exactMatchRate.prices[pallets] || 'N/A' : 'N/A'}`
+                                                        {exactMatchRate.currency} {isFullTruckLoad 
+                                                            ? exactMatchRate.fullTruckLoadPrice?.toFixed(2) || 'N/A'
+                                                            : exactMatchRate.prices ? exactMatchRate.prices[pallets]?.toFixed(2) || 'N/A' : 'N/A'
                                                         }
                                                     </p>
                                                 </div>
@@ -947,12 +1171,31 @@
                                                             <p className="text-sm text-gray-600">
                                                                 Delivery: {route.deliveryPostcode}, {COUNTRY_NAMES.find(name => COUNTRY_MAPPING[name] === route.deliveryCountry)}
                                                             </p>
+                                                            <p className="text-sm text-gray-600">
+                                                                Transport: {route.transportMode} ({route.weightBucket})
+                                                            </p>
+                                                            <p className="text-sm text-gray-600">
+                                                                Incoterms: {route.incoterms}
+                                                            </p>
+                                                            {route.containerType && (
+                                                                <p className="text-sm text-gray-600">
+                                                                    Container: {route.containerType}
+                                                                </p>
+                                                            )}
+                                                            {route.airWeight && (
+                                                                <p className="text-sm text-gray-600">
+                                                                    Air: {route.airWeight}kg / {route.volume}CBM
+                                                                </p>
+                                                            )}
+                                                            <p className="text-sm text-gray-600">
+                                                                Currency: {route.currency}
+                                                            </p>
                                                         </div>
                                                         <div className="text-right">
                                                             <p className="font-semibold">
-                                                                {isFullTruckLoad 
-                                                                    ? `£${route.fullTruckLoadPrice || 'N/A'}`
-                                                                    : `£${route.prices ? route.prices[pallets] || 'N/A' : 'N/A'}`
+                                                                {route.currency} {isFullTruckLoad 
+                                                                    ? route.fullTruckLoadPrice?.toFixed(2) || 'N/A'
+                                                                    : route.prices ? route.prices[pallets]?.toFixed(2) || 'N/A' : 'N/A'
                                                                 }
                                                             </p>
                                                         </div>
@@ -980,60 +1223,86 @@
                                 )}
                             </div>
                         )}
-                    </div>
 
-                    {/* Postcode Selection Modals */}
-                    <PostcodeSelector
-                        isOpen={showCollectionPostcode}
-                        onClose={() => setShowCollectionPostcode(false)}
-                        onSelect={(postcode) => setCollection({...collection, postcode})}
-                        savedPostcodes={savedPostcodes.collection[collection.country] || []}
-                        country={collection.country}
-                        type="collection"
-                    />
-                    <PostcodeSelector
-                        isOpen={showDeliveryPostcode}
-                        onClose={() => setShowDeliveryPostcode(false)}
-                        onSelect={(postcode) => setDelivery({...delivery, postcode})}
-                        savedPostcodes={savedPostcodes.delivery[delivery.country] || []}
-                        country={delivery.country}
-                        type="delivery"
-                    />
+                        {/* Postcode Selection Modals */}
+                        <PostcodeSelector
+                            isOpen={showCollectionPostcode}
+                            onClose={() => setShowCollectionPostcode(false)}
+                            onSelect={(postcode) => setCollection({...collection, postcode})}
+                            savedPostcodes={savedPostcodes.collection[collection.country] || []}
+                            country={collection.country}
+                            type="collection"
+                        />
+                        <PostcodeSelector
+                            isOpen={showDeliveryPostcode}
+                            onClose={() => setShowDeliveryPostcode(false)}
+                            onSelect={(postcode) => setDelivery({...delivery, postcode})}
+                            savedPostcodes={savedPostcodes.delivery[delivery.country] || []}
+                            country={delivery.country}
+                            type="delivery"
+                        />
 
-                    {/* Quote Request Modal */}
-                    {showTenderForm && (
-                        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-                            <div className="bg-white rounded-lg p-6 max-w-md w-full">
-                                <h3 className="text-lg font-semibold mb-4">Request Quote for Route</h3>
-                                <p className="text-sm text-gray-600 mb-4">
-                                    An email will be sent to request quotes from our approved carriers.
-                                </p>
-                                <div className="space-y-2 text-sm mb-4">
-                                    <p><strong>Collection:</strong> {collection.postcode}, {COUNTRY_NAMES.find(name => COUNTRY_MAPPING[name] === collection.country)}</p>
-                                    <p><strong>Delivery:</strong> {delivery.postcode}, {COUNTRY_NAMES.find(name => COUNTRY_MAPPING[name] === delivery.country)}</p>
-                                    <p><strong>Type:</strong> {isFullTruckLoad ? 'Full Truck Load' : `${pallets} Pallets`}</p>
-                                    <p><strong>Delivery Type:</strong> {deliveryType}</p>
-                                    <p><strong>Hide Documents:</strong> {hideDocuments ? 'Yes' : 'No'}</p>
-                                </div>
-                                <div className="flex gap-2">
-                                    <button 
-                                        onClick={sendQuoteRequest}
-                                        disabled={sending}
-                                        className={`flex-1 azelis-blue text-white p-2 rounded hover:bg-blue-700 disabled:opacity-50 transition-colors`}
-                                    >
-                                        {sending ? "Sending..." : "Send Request"}
-                                    </button>
-                                    <button 
-                                        onClick={() => setShowTenderForm(false)}
-                                        disabled={sending}
-                                        className="flex-1 bg-gray-200 text-gray-700 p-2 rounded hover:bg-gray-300 transition-colors"
-                                    >
-                                        Cancel
-                                    </button>
+                        {/* Quote Request Modal */}
+                        {showTenderForm && (
+                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                                <div className="bg-white rounded-lg p-6 max-w-md w-full">
+                                    <h3 className="text-lg font-semibold mb-4">Request Quote for Route</h3>
+                                    <div className="space-y-2 text-sm mb-4">
+                                        {/* Basic Details */}
+                                        <p><strong>Transport Mode:</strong> {transportMode}</p>
+                                        <p><strong>Weight Bucket:</strong> {weightBucket}</p>
+                                        <p><strong>Incoterms:</strong> {incoterms}</p>
+
+                                        {/* Route Details */}
+                                        <p><strong>Collection:</strong> {collection.postcode}, {COUNTRY_NAMES.find(name => COUNTRY_MAPPING[name] === collection.country)}</p>
+                                        {collection.location && <p><strong>Collection Location:</strong> {collection.location}</p>}
+                                        
+                                        <p><strong>Delivery:</strong> {delivery.postcode}, {COUNTRY_NAMES.find(name => COUNTRY_MAPPING[name] === delivery.country)}</p>
+                                        {delivery.location && <p><strong>Delivery Location:</strong> {delivery.location}</p>}
+                                        
+                                        {/* Transport Details */}
+                                        <p><strong>Delivery Type:</strong> {deliveryType}</p>
+                                        <p><strong>Transport Mode:</strong> {transportMode}</p>
+                                        <p><strong>Weight Bucket:</strong> {weightBucket}</p>
+                                        <p><strong>Incoterms:</strong> {incoterms}</p>
+                                        {transportMode === 'Road' && (
+                                            <p><strong>Load Type:</strong> {isFullTruckLoad ? 'Full Truck Load' : `${pallets} Pallets`}</p>
+                                        )}
+                                        {transportMode === 'Sea' && (
+                                            <>
+                                                {containerType && <p><strong>Container Type:</strong> {containerType}</p>}
+                                                {volume && <p><strong>Volume:</strong> {volume} CBM</p>}
+                                            </>
+                                        )}
+                                        {transportMode === 'Air' && (
+                                            <>
+                                                {airWeight && <p><strong>Air Weight:</strong> {airWeight} Kg</p>}
+                                                {volume && <p><strong>Volume:</strong> {volume} CBM</p>}
+                                            </>
+                                        )}
+                                        <p><strong>Currency:</strong> {currency}</p>
+                                        <p><strong>Hide Documents:</strong> {hideDocuments ? 'Yes' : 'No'}</p>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <button 
+                                            onClick={sendQuoteRequest}
+                                            disabled={sending}
+                                            className={`flex-1 azelis-blue text-white p-2 rounded hover:bg-blue-700 disabled:opacity-50 transition-colors`}
+                                        >
+                                            {sending ? "Sending..." : "Send Request"}
+                                        </button>
+                                        <button 
+                                            onClick={() => setShowTenderForm(false)}
+                                            disabled={sending}
+                                            className="flex-1 bg-gray-200 text-gray-700 p-2 rounded hover:bg-gray-300 transition-colors"
+                                        >
+                                            Cancel
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    )}
+                        )}
+                    </div>
                 </div>
             );
         };
