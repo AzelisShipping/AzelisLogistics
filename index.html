@@ -388,47 +388,75 @@
             );
         };
 
-        // PostcodeSelector component
+          // PostcodeSelector component
         const PostcodeSelector = ({ isOpen, onClose, onSelect, savedPostcodes, country, type }) => {
             const [searchTerm, setSearchTerm] = useState('');
             const [newPostcode, setNewPostcode] = useState('');
-
+        
             useEffect(() => {
                 if (isOpen) {
                     setSearchTerm('');
                     setNewPostcode('');
                 }
             }, [isOpen]);
-
+        
             if (!isOpen) return null;
-
+        
             const filteredPostcodes = (savedPostcodes || [])
                 .map(postcode => postcode.toString())
                 .filter(postcode =>
                     postcode.toLowerCase().includes(searchTerm.toLowerCase())
                 );
-
+        
+            const handlePostcodeSelect = (postcode) => {
+                onSelect(postcode);
+                onClose();
+            };
+        
+            const handleAddNewPostcode = () => {
+                if (newPostcode.trim()) {
+                    onSelect(newPostcode.trim());
+                    onClose();
+                }
+            };
+        
+            const stopPropagation = (e) => {
+                e.stopPropagation();
+            };
+        
             return (
-                <div className="postcode-modal">
-                    <div className="bg-white rounded-lg p-6 w-full max-w-md">
-                        <h3 className="text-lg font-semibold mb-4">Select or Add Postcode</h3>
+                <div className="postcode-modal" onClick={onClose}>
+                    <div 
+                        className="bg-white rounded-lg p-6 w-full max-w-md"
+                        onClick={stopPropagation}
+                        style={{ zIndex: 1100 }}
+                    >
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-lg font-semibold">Select or Add Postcode</h3>
+                            <button 
+                                onClick={onClose}
+                                className="text-gray-400 hover:text-gray-600"
+                            >
+                                ×
+                            </button>
+                        </div>
+        
                         <input
                             type="text"
                             className="combobox-input mb-4"
                             placeholder="Search existing postcodes"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
+                            autoFocus
                         />
+        
                         <div className="max-h-60 overflow-y-auto mb-4">
                             {filteredPostcodes.length > 0 ? (
                                 filteredPostcodes.map(postcode => (
                                     <div
                                         key={postcode}
                                         className="p-2 hover:bg-gray-100 cursor-pointer rounded"
-                                        onClick={() => {
-                                            onSelect(postcode);
-                                            onClose();
-                                        }}
+                                        onClick={() => handlePostcodeSelect(postcode)}
                                     >
                                         {postcode}
                                     </div>
@@ -437,6 +465,7 @@
                                 <div className="p-2 text-gray-500">No postcodes found.</div>
                             )}
                         </div>
+        
                         <div className="border-t pt-4">
                             <p className="text-sm text-gray-600 mb-2">Add new postcode:</p>
                             <input
@@ -445,6 +474,11 @@
                                 placeholder="Enter new postcode"
                                 value={newPostcode}
                                 onChange={(e) => setNewPostcode(e.target.value)}
+                                onKeyPress={(e) => {
+                                    if (e.key === 'Enter') {
+                                        handleAddNewPostcode();
+                                    }
+                                }}
                             />
                             <div className="flex justify-end space-x-2">
                                 <button
@@ -454,12 +488,7 @@
                                     Cancel
                                 </button>
                                 <button
-                                    onClick={() => {
-                                        if (newPostcode.trim()) {
-                                            onSelect(newPostcode.trim());
-                                            onClose();
-                                        }
-                                    }}
+                                    onClick={handleAddNewPostcode}
                                     className="px-4 py-2 azelis-blue text-white rounded hover:bg-blue-700"
                                 >
                                     Add & Select
