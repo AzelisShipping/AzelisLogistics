@@ -862,12 +862,13 @@ const sendQuoteRequest = async () => {
 
         const quoteId = quoteRef.id;
 
-        // Get country names first (add this part)
+        // Get country names first
         const collectionCountryName = COUNTRY_REVERSE_MAPPING[collection.country] || collection.country;
         const deliveryCountryName = COUNTRY_REVERSE_MAPPING[delivery.country] || delivery.country;
         
-        // Format waypoints for email template
-        const formattedWaypoints = waypoints.map(wp => ({
+        // Format waypoints for email template with numbering
+        const formattedWaypoints = waypoints.map((wp, index) => ({
+            number: index + 1, // Start numbering at 1
             country: COUNTRY_REVERSE_MAPPING[wp.country] || wp.country,
             postcode: wp.postcode
         }));
@@ -881,6 +882,7 @@ const sendQuoteRequest = async () => {
                 subject: `Quote Request: ${collectionCountryName} to ${deliveryCountryName}`,
                 transportMode: transportMode,
                 weightBucket: weightBucket,
+                weightType: weightType === 'perPallet' ? 'Per Pallet' : 'Total Load',
                 incoterms: incoterms,
                 collectionCountry: collectionCountryName,
                 collectionPostcode: collection.postcode,
@@ -890,7 +892,6 @@ const sendQuoteRequest = async () => {
                 deliveryLocation: delivery.location || 'N/A',
                 deliveryType: deliveryType,
                 loadType: loadType,
-                weightType: weightType === 'perPallet' ? 'Per Pallet' : 'Total Load',
                 pallets: pallets || 'N/A',
                 palletType: palletType || 'N/A',
                 containerType: containerType || 'N/A',
@@ -901,7 +902,7 @@ const sendQuoteRequest = async () => {
                 peakSeasonDetails: isPeakSeason ? peakSeasonDetails : 'N/A',
                 urgency: urgency || 'N/A',
                 preferredDeliveryDate: preferredDeliveryDate || 'N/A',
-                waypoints: JSON.stringify(formattedWaypoints),
+                waypoints: formattedWaypoints, // Send as an array with 'number' property
                 hideDocuments: hideDocuments ? 'Yes' : 'No',
                 tenderLink: tenderLink,
                 quoteId: quoteId,
