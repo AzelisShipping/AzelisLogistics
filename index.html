@@ -862,51 +862,51 @@ const sendQuoteRequest = async () => {
 
         const quoteId = quoteRef.id;
 
+        // Get country names first (add this part)
+        const collectionCountryName = COUNTRY_REVERSE_MAPPING[collection.country] || collection.country;
+        const deliveryCountryName = COUNTRY_REVERSE_MAPPING[delivery.country] || delivery.country;
+        
         // Format waypoints for email template
         const formattedWaypoints = waypoints.map(wp => ({
             country: COUNTRY_REVERSE_MAPPING[wp.country] || wp.country,
             postcode: wp.postcode
         }));
-
+        
         // Send emails to each relevant haulier
         const emailPromises = relevantHauliers.map(haulier => {
             const tenderLink = `https://azelisshipping.github.io/AzelisLogistics/tender.html?quoteId=${quoteId}&haulierId=${haulier.id}`;
-
-        const templateParams = {
-            to_email: haulier.email,
-            subject: `Quote Request: ${collectionCountryName} to ${deliveryCountryName}`,
-            transportMode: transportMode,
-            weightBucket: weightBucket,
-            incoterms: incoterms,
-            collectionCountry: collectionCountryName,
-            collectionPostcode: collection.postcode,
-            collectionLocation: collection.location || 'N/A',
-            deliveryCountry: deliveryCountryName,
-            deliveryPostcode: delivery.postcode,
-            deliveryLocation: delivery.location || 'N/A',
-            deliveryType: deliveryType,
-            loadType: loadType,
-            weightType: weightType === 'perPallet' ? 'Per Pallet' : 'Total Load',
-            pallets: pallets || 'N/A',
-            palletType: palletType || 'N/A',
-            containerType: containerType || 'N/A',
-            airWeight: airWeight ? `${airWeight} kg` : 'N/A',
-            volume: volume ? `${volume} CBM` : 'N/A',
-            currency: currency,
-            isPeakSeason: isPeakSeason ? 'Yes' : 'No',
-            peakSeasonDetails: isPeakSeason ? peakSeasonDetails : 'N/A',
-            urgency: urgency || 'N/A',
-            preferredDeliveryDate: preferredDeliveryDate || 'N/A',
-            waypoints: JSON.stringify(waypoints.map(wp => ({
-                country: COUNTRY_REVERSE_MAPPING[wp.country] || wp.country,
-                postcode: wp.postcode
-            }))),
-            hideDocuments: hideDocuments ? 'Yes' : 'No',
-            tenderLink: tenderLink,
-            quoteId: quoteId,
-            reply_to: userEmail
-        };
-
+        
+            const templateParams = {
+                to_email: haulier.email,
+                subject: `Quote Request: ${collectionCountryName} to ${deliveryCountryName}`,
+                transportMode: transportMode,
+                weightBucket: weightBucket,
+                incoterms: incoterms,
+                collectionCountry: collectionCountryName,
+                collectionPostcode: collection.postcode,
+                collectionLocation: collection.location || 'N/A',
+                deliveryCountry: deliveryCountryName,
+                deliveryPostcode: delivery.postcode,
+                deliveryLocation: delivery.location || 'N/A',
+                deliveryType: deliveryType,
+                loadType: loadType,
+                weightType: weightType === 'perPallet' ? 'Per Pallet' : 'Total Load',
+                pallets: pallets || 'N/A',
+                palletType: palletType || 'N/A',
+                containerType: containerType || 'N/A',
+                airWeight: airWeight ? `${airWeight} kg` : 'N/A',
+                volume: volume ? `${volume} CBM` : 'N/A',
+                currency: currency,
+                isPeakSeason: isPeakSeason ? 'Yes' : 'No',
+                peakSeasonDetails: isPeakSeason ? peakSeasonDetails : 'N/A',
+                urgency: urgency || 'N/A',
+                preferredDeliveryDate: preferredDeliveryDate || 'N/A',
+                waypoints: JSON.stringify(formattedWaypoints),
+                hideDocuments: hideDocuments ? 'Yes' : 'No',
+                tenderLink: tenderLink,
+                quoteId: quoteId,
+                reply_to: userEmail
+            };
             return emailjs.send('Azelis_Logistics', 'template_hho0c06', templateParams);
         });
 
