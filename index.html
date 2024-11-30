@@ -862,17 +862,16 @@ const sendQuoteRequest = async () => {
 
         const quoteId = quoteRef.id;
 
-        // Get country names first
+        // Get country names
         const collectionCountryName = COUNTRY_REVERSE_MAPPING[collection.country] || collection.country;
         const deliveryCountryName = COUNTRY_REVERSE_MAPPING[delivery.country] || delivery.country;
         
-        // Format waypoints for email template with numbering
-        const formattedWaypoints = waypoints.map((wp, index) => ({
-            number: index + 1, // Start numbering at 1
-            country: COUNTRY_REVERSE_MAPPING[wp.country] || wp.country,
-            postcode: wp.postcode
-        }));
-        
+        // Format waypoints as a single string
+        let waypointsString = '';
+        if (waypoints.length > 0) {
+            waypointsString = waypoints.map((wp, index) => `Waypoint ${index + 1}: ${COUNTRY_REVERSE_MAPPING[wp.country] || wp.country} - ${wp.postcode}`).join('\n');
+        }
+
         // Send emails to each relevant haulier
         const emailPromises = relevantHauliers.map(haulier => {
             const tenderLink = `https://azelisshipping.github.io/AzelisLogistics/tender.html?quoteId=${quoteId}&haulierId=${haulier.id}`;
@@ -902,7 +901,7 @@ const sendQuoteRequest = async () => {
                 peakSeasonDetails: isPeakSeason ? peakSeasonDetails : 'N/A',
                 urgency: urgency || 'N/A',
                 preferredDeliveryDate: preferredDeliveryDate || 'N/A',
-                waypoints: formattedWaypoints, // Send as an array with 'number' property
+                waypoints: waypointsString, // Send as a single string
                 hideDocuments: hideDocuments ? 'Yes' : 'No',
                 tenderLink: tenderLink,
                 quoteId: quoteId,
