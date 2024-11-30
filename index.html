@@ -869,34 +869,10 @@ const sendQuoteRequest = async () => {
         
             const templateParams = {
                 to_email: haulier.email,
-                subject: `Quote Request: ${collectionCountryName} to ${deliveryCountryName}`,
-                transportMode: transportMode,
-                weightBucket: weightBucket,
-                weightType: weightType === 'perPallet' ? 'Per Pallet' : 'Total Load',
-                incoterms: incoterms,
-                collectionCountry: collectionCountryName,
-                collectionPostcode: collection.postcode,
-                collectionLocation: collection.location || 'N/A',
-                deliveryCountry: deliveryCountryName,
-                deliveryPostcode: delivery.postcode,
-                deliveryLocation: delivery.location || 'N/A',
-                deliveryType: deliveryType,
-                loadType: loadType,
-                pallets: pallets || 'N/A',
-                palletType: palletType || 'N/A',
-                containerType: containerType || 'N/A',
-                airWeight: airWeight ? `${airWeight} kg` : 'N/A',
-                volume: volume ? `${volume} CBM` : 'N/A',
-                currency: currency,
-                isPeakSeason: isPeakSeason ? 'Yes' : 'No',
-                peakSeasonDetails: isPeakSeason ? peakSeasonDetails : 'N/A',
-                urgency: urgency || 'N/A',
-                preferredDeliveryDate: preferredDeliveryDate || 'N/A',
-                hideDocuments: hideDocuments ? 'Yes' : 'No',
-                tenderLink: tenderLink,
-                quoteId: quoteId,
+                subject: `New Quote Request: ${collectionCountryName} to ${deliveryCountryName}`,
+                // Only essential static data
                 reply_to: userEmail
-                // Removed waypoints from templateParams
+                // No waypoints or other dynamic variables
             };
             return emailjs.send('Azelis_Logistics', 'template_hho0c06', templateParams);
         });
@@ -911,6 +887,7 @@ const sendQuoteRequest = async () => {
         setSending(false);
     }
 };
+
 
 
         // Handle Adding Waypoints with Unique IDs
