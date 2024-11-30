@@ -853,8 +853,11 @@ const sendQuoteRequest = async () => {
             preferredDeliveryDate: preferredDeliveryDate || null,
             status: 'pending',
             createdAt: new Date(),
-            responses: []
-            // Removed waypoints from the quote document
+            responses: [],
+            waypoints: waypoints.map(wp => ({
+                country: wp.country,
+                postcode: wp.postcode
+            }))
         });
 
         const quoteId = quoteRef.id;
@@ -863,16 +866,54 @@ const sendQuoteRequest = async () => {
         const collectionCountryName = COUNTRY_REVERSE_MAPPING[collection.country] || collection.country;
         const deliveryCountryName = COUNTRY_REVERSE_MAPPING[delivery.country] || delivery.country;
         
+        // Assign up to 5 waypoints to waypoint1 - waypoint5
+        const waypointSlots = ['waypoint1', 'waypoint2', 'waypoint3', 'waypoint4', 'waypoint5'];
+        const waypointsData = {};
+        for (let i = 0; i < waypointSlots.length; i++) {
+            if (i < waypoints.length) {
+                const wp = waypoints[i];
+                const countryName = COUNTRY_REVERSE_MAPPING[wp.country] || wp.country;
+                waypointsData[waypointSlots[i]] = `Country: ${countryName}, Postcode: ${wp.postcode}`;
+            } else {
+                waypointsData[waypointSlots[i]] = 'N/A';
+            }
+        }
+
         // Send emails to each relevant haulier
         const emailPromises = relevantHauliers.map(haulier => {
             const tenderLink = `https://azelisshipping.github.io/AzelisLogistics/tender.html?quoteId=${quoteId}&haulierId=${haulier.id}`;
         
             const templateParams = {
                 to_email: haulier.email,
-                subject: `New Quote Request: ${collectionCountryName} to ${deliveryCountryName}`,
-                // Only essential static data
+                subject: `Quote Request: ${collectionCountryName} to ${deliveryCountryName}`,
+                transportMode: transportMode,
+                weightBucket: weightBucket,
+                weightType: weightType === 'perPallet' ? 'Per Pallet' : 'Total Load',
+                incoterms: incoterms,
+                collectionCountry: collectionCountryName,
+                collectionPostcode: collection.postcode,
+                collectionLocation: collection.location || 'N/A',
+                deliveryCountry: deliveryCountryName,
+                deliveryPostcode: delivery.postcode,
+                deliveryLocation: delivery.location || 'N/A',
+                deliveryType: deliveryType,
+                loadType: loadType,
+                pallets: pallets || 'N/A',
+                palletType: palletType || 'N/A',
+                containerType: containerType || 'N/A',
+                airWeight: airWeight ? `${airWeight} kg` : 'N/A',
+                volume: volume ? `${volume} CBM` : 'N/A',
+                currency: currency,
+                isPeakSeason: isPeakSeason ? 'Yes' : 'No',
+                peakSeasonDetails: isPeakSeason ? peakSeasonDetails : 'N/A',
+                urgency: urgency || 'N/A',
+                preferredDeliveryDate: preferredDeliveryDate || 'N/A',
+                // Add waypoint1 - waypoint5
+                ...waypointsData,
+                hideDocuments: hideDocuments ? 'Yes' : 'No',
+                tenderLink: tenderLink,
+                quoteId: quoteId,
                 reply_to: userEmail
-                // No waypoints or other dynamic variables
             };
             return emailjs.send('Azelis_Logistics', 'template_hho0c06', templateParams);
         });
