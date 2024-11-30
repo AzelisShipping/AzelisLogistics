@@ -853,11 +853,8 @@ const sendQuoteRequest = async () => {
             preferredDeliveryDate: preferredDeliveryDate || null,
             status: 'pending',
             createdAt: new Date(),
-            responses: [],
-            waypoints: waypoints.map(wp => ({
-                country: wp.country,
-                postcode: wp.postcode
-            }))
+            responses: []
+            // Removed waypoints from the quote document
         });
 
         const quoteId = quoteRef.id;
@@ -866,19 +863,6 @@ const sendQuoteRequest = async () => {
         const collectionCountryName = COUNTRY_REVERSE_MAPPING[collection.country] || collection.country;
         const deliveryCountryName = COUNTRY_REVERSE_MAPPING[delivery.country] || delivery.country;
         
-        // Assign up to 5 waypoints to waypoint1 - waypoint5
-        const waypointSlots = ['waypoint1', 'waypoint2', 'waypoint3', 'waypoint4', 'waypoint5'];
-        const waypointsData = {};
-        for (let i = 0; i < waypointSlots.length; i++) {
-            if (i < waypoints.length) {
-                const wp = waypoints[i];
-                const countryName = COUNTRY_REVERSE_MAPPING[wp.country] || wp.country;
-                waypointsData[waypointSlots[i]] = `Country: ${countryName}, Postcode: ${wp.postcode}`;
-            } else {
-                waypointsData[waypointSlots[i]] = 'N/A';
-            }
-        }
-
         // Send emails to each relevant haulier
         const emailPromises = relevantHauliers.map(haulier => {
             const tenderLink = `https://azelisshipping.github.io/AzelisLogistics/tender.html?quoteId=${quoteId}&haulierId=${haulier.id}`;
@@ -908,12 +892,11 @@ const sendQuoteRequest = async () => {
                 peakSeasonDetails: isPeakSeason ? peakSeasonDetails : 'N/A',
                 urgency: urgency || 'N/A',
                 preferredDeliveryDate: preferredDeliveryDate || 'N/A',
-                // Add waypoint1 - waypoint5
-                ...waypointsData,
                 hideDocuments: hideDocuments ? 'Yes' : 'No',
                 tenderLink: tenderLink,
                 quoteId: quoteId,
                 reply_to: userEmail
+                // Removed waypoints from templateParams
             };
             return emailjs.send('Azelis_Logistics', 'template_hho0c06', templateParams);
         });
