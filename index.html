@@ -1019,19 +1019,17 @@ const sendQuoteRequest = async () => {
                                     onChange={(e) => setWeightBucket(e.target.value)}
                                     required
                                 >
-                                    <option value="0-500kg">0 - 500 Kg</option>
-                                    <option value="501-1000kg">501 - 1000 Kg</option>
+                                    <option value="0-200kg">0 - 200 Kg</option>
+                                    <option value="201-400kg">201 - 400 Kg</option>
+                                    <option value="401-600kg">401 - 600 Kg</option>
+                                    <option value="601-800kg">601 - 800 Kg</option>
+                                    <option value="801-1000kg">801 - 1000 Kg</option>
                                     <option value="1001-1500kg">1001 - 1500 Kg</option>
                                     <option value="1501-2000kg">1501 - 2000 Kg</option>
-                                    <option value="2001-2500kg">2001 - 2500 Kg</option>
-                                    <option value="2501-3000kg">2501 - 3000 Kg</option>
-                                    <option value="3001-3500kg">3001 - 3500 Kg</option>
-                                    <option value="3501-4000kg">3501 - 4000 Kg</option>
-                                    <option value="4001-4500kg">4001 - 4500 Kg</option>
-                                    <option value="4501-5000kg">4501 - 5000 Kg</option>
+                                    <option value="2001-3000kg">2001 - 3000 Kg</option>
                                 </select>
                                 <p className="text-sm text-gray-500 mt-1">
-                                    Select weight {weightType === 'perPallet' ? 'per pallet' : 'in total'} in 500kg increments up to 5000 Kg
+                                    Select weight {weightType === 'perPallet' ? 'per pallet' : 'in total'} Per Pallet Weight KG
                                 </p>
                             </div>
 
