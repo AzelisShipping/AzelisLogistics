@@ -22,30 +22,50 @@
         <!-- Tender Overview -->
         <div id="tenderOverview" class="mb-8">
             <h3 class="text-2xl font-semibold mb-4">Tender Details</h3>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <!-- Column 1 -->
-                <div>
-                    <table class="w-full table-auto">
-                        <tbody id="tenderDetailsTable1">
-                            <!-- Tender details will be populated here -->
-                        </tbody>
-                    </table>
+                <div class="border p-4 rounded shadow-sm">
+                    <h4 class="font-semibold mb-2">Basic Information</h4>
+                    <p><strong>Tender ID:</strong> <span id="tenderId"></span></p>
+                    <p><strong>Transport Mode:</strong> <span id="transportMode"></span></p>
+                    <p><strong>Weight Bucket:</strong> <span id="weightBucket"></span></p>
                 </div>
                 <!-- Column 2 -->
-                <div>
-                    <table class="w-full table-auto">
-                        <tbody id="tenderDetailsTable2">
-                            <!-- Tender details will be populated here -->
-                        </tbody>
-                    </table>
+                <div class="border p-4 rounded shadow-sm">
+                    <h4 class="font-semibold mb-2">Delivery Details</h4>
+                    <p><strong>Delivery Type:</strong> <span id="deliveryType"></span></p>
+                    <p><strong>Load Type:</strong> <span id="loadType"></span></p>
+                    <p><strong>Pallets:</strong> <span id="pallets"></span></p>
                 </div>
                 <!-- Column 3 -->
-                <div>
-                    <table class="w-full table-auto">
-                        <tbody id="tenderDetailsTable3">
-                            <!-- Tender details will be populated here -->
-                        </tbody>
-                    </table>
+                <div class="border p-4 rounded shadow-sm">
+                    <h4 class="font-semibold mb-2">Additional Information</h4>
+                    <p><strong>Pallet Type:</strong> <span id="palletType"></span></p>
+                    <p><strong>Container Type:</strong> <span id="containerType"></span></p>
+                    <p><strong>Air Weight (KG):</strong> <span id="airWeight"></span></p>
+                </div>
+                <!-- Collection Details -->
+                <div class="border p-4 rounded shadow-sm">
+                    <h4 class="font-semibold mb-2">Collection Details</h4>
+                    <p><strong>Country:</strong> <span id="collectionCountry"></span></p>
+                    <p><strong>Postcode:</strong> <span id="collectionPostcode"></span></p>
+                    <p><strong>Location:</strong> <span id="collectionLocation"></span></p>
+                </div>
+                <!-- Delivery Details -->
+                <div class="border p-4 rounded shadow-sm">
+                    <h4 class="font-semibold mb-2">Delivery Location</h4>
+                    <p><strong>Country:</strong> <span id="deliveryCountry"></span></p>
+                    <p><strong>Postcode:</strong> <span id="deliveryPostcode"></span></p>
+                    <p><strong>Location:</strong> <span id="deliveryLocation"></span></p>
+                </div>
+                <!-- Route Details -->
+                <div class="border p-4 rounded shadow-sm">
+                    <h4 class="font-semibold mb-2">Route Details</h4>
+                    <p><strong>Waypoint 1:</strong> <span id="waypoint1"></span></p>
+                    <p><strong>Waypoint 2:</strong> <span id="waypoint2"></span></p>
+                    <p><strong>Waypoint 3:</strong> <span id="waypoint3"></span></p>
+                    <p><strong>Waypoint 4:</strong> <span id="waypoint4"></span></p>
+                    <p><strong>Waypoint 5:</strong> <span id="waypoint5"></span></p>
                 </div>
             </div>
         </div>
@@ -103,8 +123,8 @@
             <div>
                 <h3 class="text-xl font-semibold mb-2">Additional Services</h3>
                 <div class="flex items-center mt-2">
-                    <input type="checkbox" name="hideDocuments" value="Yes" class="mr-2">
-                    <span>Acknowledge Hide Commercial Documents</span>
+                    <input type="checkbox" name="hideDocuments" value="Yes" id="hideDocuments" class="mr-2">
+                    <label for="hideDocuments" class="text-sm">Acknowledge Hide Commercial Documents</label>
                 </div>
             </div>
             
@@ -116,7 +136,7 @@
                         <thead>
                             <tr class="bg-gray-200">
                                 <th class="px-4 py-2 border">Pallet Quantity</th>
-                                <th class="px-4 py-2 border">Rate</th>
+                                <th class="px-4 py-2 border">Rate ({{currency}})</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -178,7 +198,7 @@
             return emailjs.send('Azelis_Logistics', 'template_12utb0n', emailParams);
         }
 
-        // Function to populate tender details in three columns
+        // Function to populate tender details in a condensed format
         async function populateTenderDetails() {
             if (!quoteId) {
                 displayMessage('Missing quoteId in URL parameters.');
@@ -191,54 +211,38 @@
                     return;
                 }
                 const quoteData = quoteDoc.data();
-                const tenderDetails1 = document.getElementById('tenderDetailsTable1');
-                const tenderDetails2 = document.getElementById('tenderDetailsTable2');
-                const tenderDetails3 = document.getElementById('tenderDetailsTable3');
+                
+                // Populate the tender overview
+                document.getElementById('tenderId').textContent = quoteData.tenderId || 'N/A';
+                document.getElementById('transportMode').textContent = quoteData.transportMode || 'N/A';
+                document.getElementById('weightBucket').textContent = quoteData.weightBucket || 'N/A';
+                document.getElementById('deliveryType').textContent = quoteData.deliveryType || 'N/A';
+                document.getElementById('loadType').textContent = quoteData.loadType || 'N/A';
+                document.getElementById('pallets').textContent = quoteData.pallets || 'N/A';
+                document.getElementById('palletType').textContent = quoteData.palletType || 'N/A';
+                document.getElementById('containerType').textContent = quoteData.containerType || 'N/A';
+                document.getElementById('airWeight').textContent = quoteData.airWeight || 'N/A';
 
-                let count = 0;
-                for (const [key, value] of Object.entries(quoteData)) {
-                    // Skip non-display fields
-                    if (['haulierId', 'status', 'respondedAt', 'responseBy'].includes(key)) continue;
-                    
-                    // Handle nested objects like collection and delivery
-                    if (typeof value === 'object' && value !== null) {
-                        for (const [subKey, subValue] of Object.entries(value)) {
-                            addRow(tenderDetails1, formatKey(key + ' ' + subKey), subValue);
-                            count++;
-                            if (count % 3 === 0) {
-                                continue;
-                            }
-                        }
-                    } else {
-                        addRow(tenderDetails1, formatKey(key), value);
-                        count++;
-                        if (count % 3 === 0) {
-                            continue;
-                        }
-                    }
-                }
+                // Collection Details
+                document.getElementById('collectionCountry').textContent = quoteData.collection?.country || 'N/A';
+                document.getElementById('collectionPostcode').textContent = quoteData.collection?.postcode || 'N/A';
+                document.getElementById('collectionLocation').textContent = quoteData.collection?.location || 'N/A';
 
-                // Optionally distribute rows to other columns if needed
-                // For simplicity, all rows are added to the first column
+                // Delivery Details
+                document.getElementById('deliveryCountry').textContent = quoteData.delivery?.country || 'N/A';
+                document.getElementById('deliveryPostcode').textContent = quoteData.delivery?.postcode || 'N/A';
+                document.getElementById('deliveryLocation').textContent = quoteData.delivery?.location || 'N/A';
+
+                // Route Details
+                document.getElementById('waypoint1').textContent = quoteData.waypoint1 || 'N/A';
+                document.getElementById('waypoint2').textContent = quoteData.waypoint2 || 'N/A';
+                document.getElementById('waypoint3').textContent = quoteData.waypoint3 || 'N/A';
+                document.getElementById('waypoint4').textContent = quoteData.waypoint4 || 'N/A';
+                document.getElementById('waypoint5').textContent = quoteData.waypoint5 || 'N/A';
             } catch (error) {
                 console.error('Error fetching quote details:', error);
                 displayMessage('Error fetching quote details. Please try again.');
             }
-        }
-
-        // Function to add a row to a table
-        function addRow(table, key, value) {
-            table.innerHTML += `
-                <tr>
-                    <td class="px-4 py-2 font-semibold">${key}:</td>
-                    <td class="px-4 py-2">${value}</td>
-                </tr>
-            `;
-        }
-
-        // Function to format keys to a more readable format
-        function formatKey(key) {
-            return key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
         }
 
         // Call the function to populate tender details on page load
@@ -257,6 +261,12 @@
         document.querySelector('input[name="price"]').addEventListener('input', calculateTotal);
         document.querySelector('input[name="fixedRateSurcharges"]').addEventListener('input', calculateTotal);
         document.querySelector('input[name="percentSurcharge"]').addEventListener('input', calculateTotal);
+
+        // Show or hide "Acknowledge Hide Commercial Documents" based on checkbox
+        document.getElementById('hideDocuments').addEventListener('change', function() {
+            // Currently, the field is just a checkbox. If additional fields are needed when checked, implement here.
+            // For now, it acknowledges via the checkbox itself.
+        });
 
         document.getElementById('submitQuoteForm').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -341,7 +351,7 @@
                     percentSurcharge: percentSurcharge.toFixed(2),
                     total: total.toFixed(2),
                     hideDocuments: hideDocuments,
-                    // Include route and tender details
+                    // Include transport and route details
                     transportMode: quoteData.transportMode || "N/A",
                     weightBucket: quoteData.weightBucket || "N/A",
                     incoterms: quoteData.incoterms || "N/A",
@@ -356,18 +366,18 @@
                     peakSeasonDetails: quoteData.peakSeasonDetails || "N/A",
                     urgency: quoteData.urgency || "N/A",
                     preferredDeliveryDate: quoteData.preferredDeliveryDate || "N/A",
-                    collectionCountry: quoteData.collectionCountry || "N/A",
-                    collectionPostcode: quoteData.collectionPostcode || "N/A",
-                    collectionLocation: quoteData.collectionLocation || "N/A",
-                    deliveryCountry: quoteData.deliveryCountry || "N/A",
-                    deliveryPostcode: quoteData.deliveryPostcode || "N/A",
-                    deliveryLocation: quoteData.deliveryLocation || "N/A",
+                    collectionCountry: quoteData.collection?.country || "N/A",
+                    collectionPostcode: quoteData.collection?.postcode || "N/A",
+                    collectionLocation: quoteData.collection?.location || "N/A",
+                    deliveryCountry: quoteData.delivery?.country || "N/A",
+                    deliveryPostcode: quoteData.delivery?.postcode || "N/A",
+                    deliveryLocation: quoteData.delivery?.location || "N/A",
                     waypoint1: quoteData.waypoint1 || "N/A",
                     waypoint2: quoteData.waypoint2 || "N/A",
                     waypoint3: quoteData.waypoint3 || "N/A",
                     waypoint4: quoteData.waypoint4 || "N/A",
                     waypoint5: quoteData.waypoint5 || "N/A",
-                    // Include pallet rates
+                    // Include pallet rates as a JSON string for readability
                     palletRates: JSON.stringify(palletRates, null, 2)
                 };
 
