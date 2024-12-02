@@ -33,8 +33,9 @@
                 <div>
                     <label class="block text-sm font-medium mb-1">Price *</label>
                     <div class="flex gap-4">
-                        <input type="number" name="price" required class="flex-1 p-2 border rounded" step="0.01">
+                        <input type="number" name="price" required class="flex-1 p-2 border rounded" step="0.01" placeholder="Enter your price">
                         <select name="currency" required class="w-32 p-2 border rounded">
+                            <option value="">Select Currency</option>
                             <option value="GBP">GBP (£)</option>
                             <option value="EUR">EUR (€)</option>
                             <option value="USD">USD ($)</option>
@@ -49,22 +50,22 @@
 
                 <div>
                     <label class="block text-sm font-medium mb-1">Estimated Transit Time (Days)</label>
-                    <input type="number" name="transitTime" class="w-full p-2 border rounded" min="1">
+                    <input type="number" name="transitTime" class="w-full p-2 border rounded" min="1" placeholder="e.g., 5">
                 </div>
 
                 <div>
                     <label class="block text-sm font-medium mb-1">Additional Services Available</label>
                     <div class="space-y-2">
                         <label class="flex items-center">
-                            <input type="checkbox" name="services" value="tracking" class="mr-2">
+                            <input type="checkbox" name="services" value="Tracking" class="mr-2">
                             Real-time Tracking
                         </label>
                         <label class="flex items-center">
-                            <input type="checkbox" name="services" value="insurance" class="mr-2">
+                            <input type="checkbox" name="services" value="Insurance" class="mr-2">
                             Insurance Available
                         </label>
                         <label class="flex items-center">
-                            <input type="checkbox" name="services" value="customs" class="mr-2">
+                            <input type="checkbox" name="services" value="Customs" class="mr-2">
                             Customs Clearance
                         </label>
                     </div>
@@ -149,6 +150,27 @@
             }
         }
 
+        // Function to fetch haulier data
+        async function getHaulierData() {
+            if (!haulierId) {
+                alert('Missing haulierId in URL parameters.');
+                return null;
+            }
+            try {
+                const haulierDoc = await db.collection('hauliers').doc(haulierId).get();
+                if (!haulierDoc.exists) {
+                    alert('Haulier not found.');
+                    return null;
+                }
+                const haulierData = haulierDoc.data();
+                return haulierData;
+            } catch (error) {
+                console.error('Error fetching haulier data:', error);
+                alert('Error fetching haulier data. Please try again.');
+                return null;
+            }
+        }
+
         // Function to send email via EmailJS
         function sendNotificationEmail(emailParams) {
             return emailjs.send('Azelis_Logistics', 'template_12utb0n', emailParams);
@@ -158,8 +180,9 @@
             e.preventDefault();
             const formData = new FormData(e.target);
             const quoteData = await getQuoteData();
+            const haulierData = await getHaulierData();
 
-            if (!quoteData || !haulierId) {
+            if (!quoteData || !haulierData) {
                 alert('Invalid submission. Please check the URL and try again.');
                 return;
             }
@@ -208,10 +231,11 @@
                 // Prepare email parameters for internal notification
                 const emailParams = {
                     subject: "New Tender Quote Submission Received",
+                    to_email: quoteData.contactEmail, // The internal user's email
                     internalUserName: quoteData.internalUserName || "Team", // Replace with actual internal user name if available
                     tenderId: quoteId,
-                    haulierName: quoteData.haulierName || "Haulier Company", // Replace with actual haulier name if available
-                    haulierEmail: quoteData.haulierEmail || "haulier@example.com", // Replace with actual haulier email if available
+                    haulierName: haulierData.name || "Haulier Company", // Haulier's name
+                    haulierEmail: haulierData.email || "haulier@example.com", // Haulier's email
                     transportMode: rateData.transportMode,
                     weightBucket: rateData.weightBucket,
                     incoterms: rateData.incoterms,
@@ -248,6 +272,7 @@
                     .catch((error) => {
                         console.error('Failed to send notification email:', error);
                         // Optionally, notify the user about the email failure
+                        alert('Rate submitted, but failed to send notification email.');
                     });
 
                 alert('Rate submitted successfully!');
