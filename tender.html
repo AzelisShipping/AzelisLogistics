@@ -16,7 +16,7 @@
     </script>
 </head>
 <body class="bg-gray-50">
-    <div class="max-w-md mx-auto p-4 mt-10 bg-white rounded shadow">
+    <div class="max-w-xl mx-auto p-6 mt-10 bg-white rounded shadow">
         <h2 class="text-2xl font-bold mb-6 text-center">Submit Your Quote</h2>
         <form id="submitQuoteForm" class="space-y-4">
             <div>
@@ -40,7 +40,7 @@
                 <label class="block text-sm font-medium">Estimated Transit Time (Days)</label>
                 <input type="number" name="transitTime" class="w-full p-2 border rounded" min="1" placeholder="e.g., 5">
             </div>
-            <button type="submit" class="w-full bg-blue-600 text-white p-2 rounded">Submit Quote</button>
+            <button type="submit" class="w-full bg-blue-600 text-white p-3 rounded">Submit Quote</button>
         </form>
         <div id="message" class="mt-4 text-center"></div>
     </div>
@@ -138,8 +138,33 @@
                     price: price,
                     currency: currency,
                     validUntil: validUntil,
-                    transitTime: transitTime
-                    // Add other necessary fields if needed
+                    transitTime: transitTime,
+                    transportMode: quoteData.transportMode || "N/A",
+                    weightBucket: quoteData.weightBucket || "N/A",
+                    incoterms: quoteData.incoterms || "N/A",
+                    deliveryType: quoteData.deliveryType || "N/A",
+                    pallets: quoteData.pallets || "N/A",
+                    palletType: quoteData.palletType || "N/A",
+                    containerType: quoteData.containerType || "N/A",
+                    airWeight: quoteData.airWeight || "N/A",
+                    volume: quoteData.volume || "N/A",
+                    isPeakSeason: quoteData.isPeakSeason ? "Yes" : "No",
+                    peakSeasonDetails: quoteData.peakSeasonDetails || "N/A",
+                    urgency: quoteData.urgency || "N/A",
+                    preferredDeliveryDate: quoteData.preferredDeliveryDate || "N/A",
+                    hideDocuments: quoteData.hideDocuments ? "Yes" : "No",
+                    collectionCountry: quoteData.collection?.country || "N/A",
+                    collectionPostcode: quoteData.collection?.postcode || "N/A",
+                    collectionLocation: quoteData.collection?.location || "N/A",
+                    deliveryCountry: quoteData.delivery?.country || "N/A",
+                    deliveryPostcode: quoteData.delivery?.postcode || "N/A",
+                    deliveryLocation: quoteData.delivery?.location || "N/A",
+                    waypoint1: quoteData.waypoint1 || "N/A",
+                    waypoint2: quoteData.waypoint2 || "N/A",
+                    waypoint3: quoteData.waypoint3 || "N/A",
+                    waypoint4: quoteData.waypoint4 || "N/A",
+                    waypoint5: quoteData.waypoint5 || "N/A",
+                    quoteId: quoteId
                 };
 
                 console.log('Email parameters:', emailParams); // Debugging
