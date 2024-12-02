@@ -7,6 +7,13 @@
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
+    <!-- EmailJS SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+    <script>
+        (function(){
+            emailjs.init("YOUR_PUBLIC_KEY"); // Replace with your EmailJS public key
+        })();
+    </script>
 </head>
 <body class="bg-gray-50">
     <div class="max-w-md mx-auto p-4 mt-10 bg-white rounded shadow">
@@ -35,7 +42,7 @@
             </div>
             <button type="submit" class="w-full bg-blue-600 text-white p-2 rounded">Submit Quote</button>
         </form>
-        <div id="message" class="mt-4 text-center text-red-500"></div>
+        <div id="message" class="mt-4 text-center"></div>
     </div>
 
     <script>
@@ -62,6 +69,11 @@
             const messageDiv = document.getElementById('message');
             messageDiv.textContent = msg;
             messageDiv.className = isError ? 'mt-4 text-center text-red-500' : 'mt-4 text-center text-green-500';
+        }
+
+        // Function to send email via EmailJS
+        function sendNotificationEmail(emailParams) {
+            return emailjs.send('YOUR_SERVICE_ID', 'YOUR_TEMPLATE_ID', emailParams);
         }
 
         document.getElementById('submitQuoteForm').addEventListener('submit', async (e) => {
@@ -107,13 +119,41 @@
                 });
                 console.log('Quote status updated.'); // Debugging
 
+                // Fetch additional data if necessary (e.g., haulier details)
+                const haulierDoc = await db.collection('hauliers').doc(haulierId).get();
+                const haulierData = haulierDoc.exists ? haulierDoc.data() : {};
+
+                const quoteDoc = await db.collection('quotes').doc(quoteId).get();
+                const quoteData = quoteDoc.exists ? quoteDoc.data() : {};
+
+                // Prepare email parameters
+                const emailParams = {
+                    to_email: quoteData.userEmail, // Ensure this field exists in the 'quotes' document
+                    subject: "New Tender Quote Submission Received",
+                    internalUserName: "Team", // Replace with dynamic data if available
+                    tenderId: quoteId,
+                    haulierName: haulierData.name || "Haulier Company",
+                    haulierEmail: haulierData.email || "haulier@example.com",
+                    price: price,
+                    currency: currency,
+                    validUntil: validUntil,
+                    transitTime: transitTime
+                    // Add other necessary fields
+                };
+
+                console.log('Email parameters:', emailParams); // Debugging
+
+                // Send notification email
+                await sendNotificationEmail(emailParams);
+                console.log('Notification email sent successfully!');
+
                 displayMessage('Rate submitted successfully!', false);
-                // Optionally, redirect after a short delay
+                // Redirect after a short delay
                 setTimeout(() => {
                     window.location.href = 'https://azelisshipping.github.io/AzelisLogistics/success.html';
                 }, 2000);
             } catch (error) {
-                console.error('Error submitting rate:', error);
+                console.error('Error submitting rate or sending email:', error);
                 displayMessage('Failed to submit rate. Please try again.');
             }
         });
