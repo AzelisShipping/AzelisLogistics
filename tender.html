@@ -171,6 +171,15 @@
             }
         }
 
+        // Function to format prices map into a readable string
+        function formatPrices(pricesMap, currency) {
+            let formattedPrices = "";
+            for (const [pallet, price] of Object.entries(pricesMap)) {
+                formattedPrices += `${pallet} Pallet${pallet > 1 ? 's' : ''}: ${price} ${currency}<br>`;
+            }
+            return formattedPrices;
+        }
+
         // Function to send email via EmailJS
         function sendNotificationEmail(emailParams) {
             return emailjs.send('Azelis_Logistics', 'template_12utb0n', emailParams);
@@ -235,8 +244,8 @@
                 // Prepare email parameters for internal notification
                 const emailParams = {
                     subject: "New Tender Quote Submission Received",
-                    to_email: quoteData.userEmail, // Updated to match Firestore field
-                    internalUserName: quoteData.internalUserName || "Team", // Ensure 'internalUserName' exists in Firestore
+                    to_email: quoteData.userEmail, // The internal user's email
+                    internalUserName: quoteData.internalUserName || "Team", // Ensure 'internalUserName' exists in Firestore or set default
                     tenderId: quoteId,
                     haulierName: haulierData.name || "Haulier Company", // Haulier's name
                     haulierEmail: haulierData.email || "haulier@example.com", // Haulier's email
@@ -263,7 +272,7 @@
                     deliveryLocation: quoteData.delivery.location || "N/A", // Ensure 'delivery.location' exists
                     isFullTruckLoad: rateData.isFullTruckLoad,
                     fullTruckLoadPrice: rateData.fullTruckLoadPrice ? rateData.fullTruckLoadPrice.toFixed(2) : "N/A",
-                    prices: JSON.stringify(rateData.prices), // Convert prices map to JSON string
+                    prices: rateData.isFullTruckLoad ? "N/A" : formatPrices(rateData.prices, rateData.currency),
                     submittedAt: rateData.submittedAt.toLocaleString(),
                     reviewLink: `https://yourdomain.com/review.html?rateId=${rateRef.id}` // Replace with your actual review page URL
                 };
