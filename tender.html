@@ -1,10 +1,47 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <!-- Previous head content remains the same -->
+    <meta charset="UTF-8">
+    <title>Submit Your Quote - Azelis Logistics</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+    <script>emailjs.init("ZU_ZvcimnTfLR22wF");</script>
+    <style>
+        .azelis-blue { background-color: #003087; }
+        .azelis-blue-hover:hover { background-color: #002670; }
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+        .tooltip .tooltip-text {
+            visibility: hidden;
+            background-color: #333;
+            color: white;
+            text-align: center;
+            padding: 5px;
+            border-radius: 6px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            white-space: nowrap;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .tooltip:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+    </style>
 </head>
 <body class="bg-gray-50">
     <div class="max-w-7xl mx-auto p-4 mt-10 bg-white rounded shadow">
+        <div class="flex items-center justify-center mb-6">
+            <img src="https://www.azelis.com/themes/custom/azelis_theme/logo.svg" alt="Azelis Logo" class="h-12">
+        </div>
         <h2 class="text-3xl font-bold mb-6 text-center">Submit Your Quote</h2>
         
         <!-- Tender Overview -->
@@ -19,6 +56,7 @@
                     <p><strong>Weight Bucket:</strong> <span id="weightBucket"></span></p>
                     <p><strong>Weight Type:</strong> <span id="weightType"></span></p>
                     <p><strong>Incoterms:</strong> <span id="incoterms"></span></p>
+                    <p><strong>Currency:</strong> <span id="displayCurrency"></span></p>
                 </div>
                 
                 <!-- Delivery Details -->
@@ -73,91 +111,352 @@
                 </div>
             </div>
         </div>
+<!-- Quote Submission Form -->
+        <form id="submitQuoteForm" class="space-y-6">
+            <!-- Basic Quote Details -->
+            <div>
+                <h3 class="text-xl font-semibold mb-2">Your Quote</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Base Price *</label>
+                        <div class="tooltip">
+                            <input type="number" name="price" required class="w-full p-2 border rounded" step="0.01">
+                            <span class="tooltip-text">Enter your base price without surcharges</span>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Currency *</label>
+                        <select name="currency" required class="w-full p-2 border rounded">
+                            <option value="GBP">GBP (£)</option>
+                            <option value="EUR">EUR (€)</option>
+                            <option value="USD">USD ($)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Valid Until *</label>
+                        <input type="date" name="validUntil" required class="w-full p-2 border rounded">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Transit Time (Days) *</label>
+                        <input type="number" name="transitTime" required class="w-full p-2 border rounded" min="1">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Surcharges -->
+            <div>
+                <h3 class="text-xl font-semibold mb-2">Surcharges</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Fixed Rate Surcharges</label>
+                        <div class="tooltip">
+                            <input type="number" name="fixedRateSurcharges" class="w-full p-2 border rounded" step="0.01" value="0">
+                            <span class="tooltip-text">Additional fixed costs (e.g., fuel surcharge)</span>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">% Surcharge</label>
+                        <div class="tooltip">
+                            <input type="number" name="percentSurcharge" class="w-full p-2 border rounded" step="0.01" value="0">
+                            <span class="tooltip-text">Percentage-based surcharges</span>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Total</label>
+                        <input type="number" name="total" readonly class="w-full p-2 border rounded bg-gray-100">
+                    </div>
+                </div>
+            </div>
 
-        <!-- Previous form content remains the same -->
+            <!-- Per-Pallet Rates -->
+            <div id="palletRatesSection">
+                <h3 class="text-xl font-semibold mb-2">Per-Pallet Rates</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full table-auto border">
+                        <thead>
+                            <tr class="bg-gray-200">
+                                <th class="px-4 py-2 border">Pallet Quantity</th>
+                                <th class="px-4 py-2 border">Rate</th>
+                            </tr>
+                        </thead>
+                        <tbody id="palletRatesBody">
+                            <!-- Pallet rates will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Hide Documents Option -->
+            <div>
+                <label class="flex items-center">
+                    <input type="checkbox" name="hideDocuments" class="mr-2">
+                    <span>Hide Commercial Documents</span>
+                </label>
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" class="w-full azelis-blue text-white p-3 rounded hover:bg-blue-700">
+                Submit Quote
+            </button>
+        </form>
+        
+        <div id="message" class="mt-4 text-center"></div>
     </div>
+<script>
+    // Firebase configuration
+    const firebaseConfig = {
+        apiKey: "AIzaSyDiIRLwLeMAf1VZbZ7ygvGDu-gZH6sA424",
+        authDomain: "azelislogistics.firebaseapp.com",
+        projectId: "azelislogistics",
+        storageBucket: "azelislogistics.appspot.com",
+        messagingSenderId: "13102382958",
+        appId: "1:13102382958:web:82a3324843432519cb8b7f"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
 
-    <script>
-        // Previous Firebase config remains the same
+    // Get URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const quoteId = urlParams.get('quoteId');
+    const haulierId = urlParams.get('haulierId');
 
-        async function populateTenderDetails() {
-            if (!quoteId) {
-                displayMessage('Missing quoteId parameter');
-                return;
-            }
+    let quoteData = null;
 
-            try {
-                const quoteDoc = await db.collection('quotes').doc(quoteId).get();
-                const quoteData = quoteDoc.data();
-                
-                // Basic Information
-                document.getElementById('tenderId').textContent = quoteId;
-                document.getElementById('transportMode').textContent = quoteData.transportMode || 'N/A';
-                document.getElementById('weightBucket').textContent = quoteData.weightBucket || 'N/A';
-                document.getElementById('weightType').textContent = quoteData.weightType === 'perPallet' ? 'Per Pallet' : 'Total Load';
-                document.getElementById('incoterms').textContent = quoteData.incoterms || 'N/A';
-                
-                // Delivery Details
-                document.getElementById('deliveryType').textContent = quoteData.deliveryType || 'N/A';
-                document.getElementById('loadType').textContent = quoteData.loadType || 'N/A';
-                document.getElementById('pallets').textContent = quoteData.pallets || 'N/A';
-                document.getElementById('volume').textContent = quoteData.volume ? `${quoteData.volume} CBM` : 'N/A';
-                
-                // Additional Information
-                document.getElementById('palletType').textContent = quoteData.palletType || 'N/A';
-                document.getElementById('containerType').textContent = quoteData.containerType || 'N/A';
-                document.getElementById('airWeight').textContent = quoteData.airWeight ? `${quoteData.airWeight} kg` : 'N/A';
-                document.getElementById('peakSeason').textContent = quoteData.isPeakSeason ? 'Yes' : 'No';
-                document.getElementById('peakDetails').textContent = quoteData.peakSeasonDetails || 'N/A';
-                
-                // Collection details
-                document.getElementById('collectionCountry').textContent = quoteData.collection?.country || 'N/A';
-                document.getElementById('collectionPostcode').textContent = quoteData.collection?.postcode || 'N/A';
-                document.getElementById('collectionLocation').textContent = quoteData.collection?.location || 'N/A';
-                
-                // Delivery details
-                document.getElementById('deliveryCountry').textContent = quoteData.delivery?.country || 'N/A';
-                document.getElementById('deliveryPostcode').textContent = quoteData.delivery?.postcode || 'N/A';
-                document.getElementById('deliveryLocation').textContent = quoteData.delivery?.location || 'N/A';
+    function displayMessage(message, isError = false) {
+        const messageDiv = document.getElementById('message');
+        messageDiv.className = `mt-4 p-4 rounded ${isError ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`;
+        messageDiv.textContent = message;
+    }
 
-                // Service Requirements
-                document.getElementById('urgency').textContent = quoteData.urgency || 'N/A';
-                document.getElementById('preferredDelivery').textContent = quoteData.preferredDeliveryDate || 'N/A';
-                document.getElementById('hideDocuments').textContent = quoteData.hideDocuments ? 'Yes' : 'No';
-                
-                // Waypoints
-                const waypointsContainer = document.getElementById('waypointsContainer');
-                waypointsContainer.innerHTML = ''; // Clear existing content
-                
-                if (quoteData.waypoints && quoteData.waypoints.length > 0) {
-                    quoteData.waypoints.forEach((waypoint, index) => {
-                        waypointsContainer.innerHTML += `
-                            <div class="p-2 bg-gray-50 rounded">
-                                <p class="font-medium">Waypoint ${index + 1}</p>
-                                <p>Country: ${waypoint.country}</p>
-                                <p>Postcode: ${waypoint.postcode}</p>
-                            </div>
-                        `;
-                    });
-                } else {
-                    waypointsContainer.innerHTML = '<p class="text-gray-500">No waypoints specified</p>';
-                }
+    function formatCurrency(amount, currency) {
+        return new Intl.NumberFormat('en-GB', {
+            style: 'currency',
+            currency: currency
+        }).format(amount);
+    }
 
-                // Initialize form with currency from quote
-                if (quoteData.currency) {
-                    document.querySelector('select[name="currency"]').value = quoteData.currency;
-                }
+    function calculateTotal() {
+        const basePrice = parseFloat(document.querySelector('[name="price"]').value) || 0;
+        const fixedSurcharges = parseFloat(document.querySelector('[name="fixedRateSurcharges"]').value) || 0;
+        const percentSurcharge = parseFloat(document.querySelector('[name="percentSurcharge"]').value) || 0;
+        
+        const percentAmount = basePrice * (percentSurcharge / 100);
+        const total = basePrice + fixedSurcharges + percentAmount;
+        
+        document.querySelector('[name="total"]').value = total.toFixed(2);
+    }
 
-            } catch (error) {
-                console.error('Error fetching quote:', error);
-                displayMessage('Error loading quote details');
-            }
+    // Set up event listeners for price calculations
+    document.querySelector('[name="price"]').addEventListener('input', calculateTotal);
+    document.querySelector('[name="fixedRateSurcharges"]').addEventListener('input', calculateTotal);
+    document.querySelector('[name="percentSurcharge"]').addEventListener('input', calculateTotal);
+
+    async function populateTenderDetails() {
+        if (!quoteId) {
+            displayMessage('Missing quoteId parameter', true);
+            return;
         }
 
-        // Call the populate function when page loads
-        window.addEventListener('DOMContentLoaded', populateTenderDetails);
+        try {
+            const quoteDoc = await db.collection('quotes').doc(quoteId).get();
+            quoteData = quoteDoc.data();
 
-        // Previous form submission code remains the same
-    </script>
+            // Populate all the tender details
+            document.getElementById('tenderId').textContent = quoteId;
+            document.getElementById('transportMode').textContent = quoteData.transportMode || 'N/A';
+            document.getElementById('weightBucket').textContent = quoteData.weightBucket || 'N/A';
+            document.getElementById('weightType').textContent = quoteData.weightType === 'perPallet' ? 'Per Pallet' : 'Total Load';
+            document.getElementById('incoterms').textContent = quoteData.incoterms || 'N/A';
+            document.getElementById('displayCurrency').textContent = quoteData.currency || 'N/A';
+            
+            document.getElementById('deliveryType').textContent = quoteData.deliveryType || 'N/A';
+            document.getElementById('loadType').textContent = quoteData.loadType || 'N/A';
+            document.getElementById('pallets').textContent = quoteData.pallets || 'N/A';
+            document.getElementById('volume').textContent = quoteData.volume ? `${quoteData.volume} CBM` : 'N/A';
+            
+            document.getElementById('palletType').textContent = quoteData.palletType || 'N/A';
+            document.getElementById('containerType').textContent = quoteData.containerType || 'N/A';
+            document.getElementById('airWeight').textContent = quoteData.airWeight ? `${quoteData.airWeight} kg` : 'N/A';
+            document.getElementById('peakSeason').textContent = quoteData.isPeakSeason ? 'Yes' : 'No';
+            document.getElementById('peakDetails').textContent = quoteData.peakSeasonDetails || 'N/A';
+
+            document.getElementById('collectionCountry').textContent = quoteData.collection?.country || 'N/A';
+            document.getElementById('collectionPostcode').textContent = quoteData.collection?.postcode || 'N/A';
+            document.getElementById('collectionLocation').textContent = quoteData.collection?.location || 'N/A';
+
+            document.getElementById('deliveryCountry').textContent = quoteData.delivery?.country || 'N/A';
+            document.getElementById('deliveryPostcode').textContent = quoteData.delivery?.postcode || 'N/A';
+            document.getElementById('deliveryLocation').textContent = quoteData.delivery?.location || 'N/A';
+
+            document.getElementById('urgency').textContent = quoteData.urgency || 'N/A';
+            document.getElementById('preferredDelivery').textContent = quoteData.preferredDeliveryDate || 'N/A';
+            document.getElementById('hideDocuments').textContent = quoteData.hideDocuments ? 'Yes' : 'No';
+
+            // Populate waypoints
+            const waypointsContainer = document.getElementById('waypointsContainer');
+            if (quoteData.waypoints && quoteData.waypoints.length > 0) {
+                waypointsContainer.innerHTML = quoteData.waypoints.map((waypoint, index) => `
+                    <div class="p-2 bg-gray-50 rounded">
+                        <p class="font-medium">Waypoint ${index + 1}</p>
+                        <p>Country: ${waypoint.country}</p>
+                        <p>Postcode: ${waypoint.postcode}</p>
+                    </div>
+                `).join('');
+            } else {
+                waypointsContainer.innerHTML = '<p class="text-gray-500">No waypoints specified</p>';
+            }
+
+            // Populate pallet rates table
+            const palletRatesBody = document.getElementById('palletRatesBody');
+            palletRatesBody.innerHTML = Array.from({ length: 24 }, (_, i) => `
+                <tr>
+                    <td class="px-4 py-2 border text-center">${i + 1}</td>
+                    <td class="px-4 py-2 border">
+                        <input type="number" 
+                               name="palletRate_${i + 1}" 
+                               class="w-full p-2 border rounded" 
+                               step="0.01" 
+                               placeholder="Rate for ${i + 1} pallet${i > 0 ? 's' : ''}">
+                    </td>
+                </tr>
+            `).join('');
+
+            // Set form currency to match quote currency
+            if (quoteData.currency) {
+                document.querySelector('select[name="currency"]').value = quoteData.currency;
+            }
+
+            // Show/hide pallet rates section based on load type
+            const palletRatesSection = document.getElementById('palletRatesSection');
+            palletRatesSection.style.display = quoteData.loadType === 'Full Truck Load' ? 'none' : 'block';
+
+        } catch (error) {
+            console.error('Error fetching quote:', error);
+            displayMessage('Error loading quote details', true);
+        }
+    }
+
+    // Handle form submission
+    document.getElementById('submitQuoteForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+
+        try {
+            if (!quoteData) throw new Error('Quote data not loaded');
+
+            // Get all pallet rates
+            const palletRates = {};
+            if (quoteData.loadType !== 'Full Truck Load') {
+                for (let i = 1; i <= 24; i++) {
+                    const rate = parseFloat(formData.get(`palletRate_${i}`));
+                    if (!isNaN(rate)) {
+                        palletRates[i] = rate;
+                    }
+                }
+            }
+
+            // Generate pallet rates HTML for email
+            let palletRatesHTML = '<table style="width:100%; border-collapse:collapse;">';
+            palletRatesHTML += '<tr><th style="border:1px solid #ddd;padding:8px;">Pallets</th><th style="border:1px solid #ddd;padding:8px;">Rate</th></tr>';
+            Object.entries(palletRates).forEach(([qty, rate]) => {
+                palletRatesHTML += `
+                    <tr>
+                        <td style="border:1px solid #ddd;padding:8px;">${qty}</td>
+                        <td style="border:1px solid #ddd;padding:8px;">${formatCurrency(rate, formData.get('currency'))}</td>
+                    </tr>
+                `;
+            });
+            palletRatesHTML += '</table>';
+
+            // Get haulier details
+            const haulierDoc = await db.collection('hauliers').doc(haulierId).get();
+            const haulierData = haulierDoc.data();
+
+            // Email parameters for internal notification
+            const emailParams = {
+                to_email: quoteData.userEmail,
+                subject: `Quote Response Received - ${quoteId}`,
+                quoteId: quoteId,
+                haulierName: haulierData.name,
+                haulierEmail: haulierData.email,
+                price: formData.get('price'),
+                currency: formData.get('currency'),
+                validUntil: formData.get('validUntil'),
+                transitTime: formData.get('transitTime'),
+                fixedRateSurcharges: formData.get('fixedRateSurcharges') || '0',
+                percentSurcharge: formData.get('percentSurcharge') || '0',
+                total: formData.get('total'),
+                hideDocuments: formData.get('hideDocuments') ? 'Yes' : 'No',
+                palletRatesHTML: palletRatesHTML,
+                
+                // Route details
+                collectionCountry: quoteData.collection?.country || 'N/A',
+                collectionPostcode: quoteData.collection?.postcode || 'N/A',
+                deliveryCountry: quoteData.delivery?.country || 'N/A',
+                deliveryPostcode: quoteData.delivery?.postcode || 'N/A',
+                deliveryLocation: quoteData.delivery?.location || 'N/A',
+                
+                // Transport details
+                transportMode: quoteData.transportMode,
+                weightBucket: quoteData.weightBucket,
+                deliveryType: quoteData.deliveryType,
+                loadType: quoteData.loadType,
+                containerType: quoteData.containerType || 'N/A',
+                airWeight: quoteData.airWeight || 'N/A',
+                volume: quoteData.volume || 'N/A',
+                
+                // Additional details
+                isPeakSeason: quoteData.isPeakSeason ? 'Yes' : 'No',
+                peakSeasonDetails: quoteData.peakSeasonDetails || 'N/A',
+                urgency: quoteData.urgency || 'N/A',
+                preferredDeliveryDate: quoteData.preferredDeliveryDate || 'N/A'
+            };
+
+            // Add waypoints to email parameters
+            for (let i = 1; i <= 5; i++) {
+                const waypoint = quoteData.waypoints?.[i - 1];
+                emailParams[`waypoint${i}`] = waypoint ? 
+                    `${waypoint.country} - ${waypoint.postcode}` : 
+                    'N/A';
+            }
+
+            // Send email notification
+            await emailjs.send('Azelis_Logistics', 'template_12utb0n', emailParams);
+
+            // Update quote in Firestore
+            const quoteUpdate = {
+                responses: firebase.firestore.FieldValue.arrayUnion({
+                    haulierId: haulierId,
+                    haulierName: haulierData.name,
+                    price: parseFloat(formData.get('price')),
+                    currency: formData.get('currency'),
+                    validUntil: formData.get('validUntil'),
+                    transitTime: parseInt(formData.get('transitTime')),
+                    fixedRateSurcharges: parseFloat(formData.get('fixedRateSurcharges')) || 0,
+                    percentSurcharge: parseFloat(formData.get('percentSurcharge')) || 0,
+                    total: parseFloat(formData.get('total')),
+                    hideDocuments: formData.get('hideDocuments') === 'on',
+                    palletRates: palletRates,
+                    submittedAt: new Date()
+                })
+            };
+
+            await db.collection('quotes').doc(quoteId).update(quoteUpdate);
+
+            displayMessage('Quote submitted successfully!');
+            
+            // Disable form after successful submission
+            document.getElementById('submitQuoteForm').style.opacity = '0.5';
+            document.getElementById('submitQuoteForm').style.pointerEvents = 'none';
+
+        } catch (error) {
+            console.error('Error submitting quote:', error);
+            displayMessage('Error submitting quote. Please try again.', true);
+        }
+    });
+
+    // Initialize page
+    window.addEventListener('DOMContentLoaded', populateTenderDetails);
+</script>
 </body>
 </html>
