@@ -16,13 +16,13 @@
     </script>
 </head>
 <body class="bg-gray-50">
-    <div class="max-w-6xl mx-auto p-6 mt-10 bg-white rounded shadow">
+    <div class="max-w-7xl mx-auto p-6 mt-10 bg-white rounded shadow">
         <h2 class="text-3xl font-bold mb-6 text-center">Submit Your Quote</h2>
         
         <!-- Tender Overview -->
         <div id="tenderOverview" class="mb-8">
             <h3 class="text-2xl font-semibold mb-4">Tender Details</h3>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <!-- Column 1 -->
                 <div>
                     <table class="w-full table-auto">
@@ -108,6 +108,36 @@
                 </div>
             </div>
             
+            <!-- Per-Pallet Rates -->
+            <div>
+                <h3 class="text-xl font-semibold mb-2">Per-Pallet Rates</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full table-auto border">
+                        <thead>
+                            <tr class="bg-gray-200">
+                                <th class="px-4 py-2 border">Pallet Quantity</th>
+                                <th class="px-4 py-2 border">Rate</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Generate rows for pallet quantities 0 to 24 -->
+                            <script>
+                                for (let i = 0; i <= 24; i++) {
+                                    document.write(`
+                                        <tr>
+                                            <td class="px-4 py-2 border text-center">${i}</td>
+                                            <td class="px-4 py-2 border">
+                                                <input type="number" name="palletRate_${i}" class="w-full p-2 border rounded" step="0.01" placeholder="Rate for ${i} pallets">
+                                            </td>
+                                        </tr>
+                                    `);
+                                }
+                            </script>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
             <!-- Submit Button -->
             <div>
                 <button type="submit" class="w-full bg-blue-600 text-white p-3 rounded hover:bg-blue-700">Submit Quote</button>
@@ -175,12 +205,16 @@
                         for (const [subKey, subValue] of Object.entries(value)) {
                             addRow(tenderDetails1, formatKey(key + ' ' + subKey), subValue);
                             count++;
-                            if (count % 3 === 0) continue;
+                            if (count % 3 === 0) {
+                                continue;
+                            }
                         }
                     } else {
                         addRow(tenderDetails1, formatKey(key), value);
                         count++;
-                        if (count % 3 === 0) continue;
+                        if (count % 3 === 0) {
+                            continue;
+                        }
                     }
                 }
 
@@ -196,8 +230,8 @@
         function addRow(table, key, value) {
             table.innerHTML += `
                 <tr>
-                    <td>${key}:</td>
-                    <td>${value}</td>
+                    <td class="px-4 py-2 font-semibold">${key}:</td>
+                    <td class="px-4 py-2">${value}</td>
                 </tr>
             `;
         }
@@ -245,6 +279,13 @@
             const total = parseFloat(formData.get('total')) || 0;
             const hideDocuments = formData.get('hideDocuments') === 'Yes' ? 'Yes' : 'No';
 
+            // Gather per-pallet rates
+            const palletRates = {};
+            for (let i = 0; i <= 24; i++) {
+                const rate = parseFloat(formData.get(`palletRate_${i}`)) || 0;
+                palletRates[i] = rate;
+            }
+
             // Prepare rate data
             const rateData = {
                 price: price,
@@ -255,6 +296,7 @@
                 percentSurcharge: percentSurcharge,
                 total: total,
                 hideDocuments: hideDocuments,
+                palletRates: palletRates,
                 haulierId: haulierId,
                 quoteId: quoteId,
                 submittedAt: new Date()
@@ -324,7 +366,9 @@
                     waypoint2: quoteData.waypoint2 || "N/A",
                     waypoint3: quoteData.waypoint3 || "N/A",
                     waypoint4: quoteData.waypoint4 || "N/A",
-                    waypoint5: quoteData.waypoint5 || "N/A"
+                    waypoint5: quoteData.waypoint5 || "N/A",
+                    // Include pallet rates
+                    palletRates: JSON.stringify(palletRates, null, 2)
                 };
 
                 console.log('Email parameters:', emailParams); // Debugging
