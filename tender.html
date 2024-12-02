@@ -2,204 +2,24 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Submit Your Quote - Azelis Shipping</title>
+    <title>Submit Your Quote - Azelis Logistics</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
-    <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
-    <!-- EmailJS SDK -->
     <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
-    <script>
-        (function(){
-            emailjs.init("ZU_ZvcimnTfLR22wF"); // Initialize EmailJS with your public key
-        })();
-    </script>
+    <script src="https://unpkg.com/react@17/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
     <style>
-        /* Custom Styles for Better Readability */
-        .details-section {
-            margin-top: 20px;
-        }
-        .details-table th {
-            background-color: #f9f9f9;
-            text-align: left;
-            width: 30%;
-        }
-        .footer {
-            font-size: 0.8em;
-            color: #666666;
-            text-align: center;
-            padding: 10px;
-            border-top: 1px solid #eeeeee;
-            margin-top: 20px;
-            border-radius: 0 0 8px 8px;
-        }
+        .azelis-blue { background-color: #003087; }
+        .azelis-blue-hover:hover { background-color: #002670; }
     </style>
 </head>
 <body class="bg-gray-50">
-    <div class="max-w-7xl mx-auto p-6 mt-10 bg-white rounded shadow">
-        <h2 class="text-3xl font-bold mb-6 text-center">Submit Your Quote</h2>
-        
-        <!-- Tender Overview -->
-        <div id="tenderOverview" class="mb-8">
-            <h3 class="text-2xl font-semibold mb-4">Tender Details</h3>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <!-- Basic Information -->
-                <div class="border p-4 rounded shadow-sm">
-                    <h4 class="font-semibold mb-2">Basic Information</h4>
-                    <p><strong>Tender ID:</strong> <span id="tenderId"></span></p>
-                    <p><strong>Transport Mode:</strong> <span id="transportMode"></span></p>
-                    <p><strong>Weight Bucket:</strong> <span id="weightBucket"></span></p>
-                </div>
-                <!-- Delivery Details -->
-                <div class="border p-4 rounded shadow-sm">
-                    <h4 class="font-semibold mb-2">Delivery Details</h4>
-                    <p><strong>Delivery Type:</strong> <span id="deliveryType"></span></p>
-                    <p><strong>Load Type:</strong> <span id="loadType"></span></p>
-                    <p><strong>Pallets:</strong> <span id="pallets"></span></p>
-                </div>
-                <!-- Additional Information -->
-                <div class="border p-4 rounded shadow-sm">
-                    <h4 class="font-semibold mb-2">Additional Information</h4>
-                    <p><strong>Pallet Type:</strong> <span id="palletType"></span></p>
-                    <p><strong>Container Type:</strong> <span id="containerType"></span></p>
-                    <p><strong>Air Weight (KG):</strong> <span id="airWeight"></span></p>
-                </div>
-                <!-- Collection Details -->
-                <div class="border p-4 rounded shadow-sm">
-                    <h4 class="font-semibold mb-2">Collection Details</h4>
-                    <p><strong>Country:</strong> <span id="collectionCountry"></span></p>
-                    <p><strong>Postcode:</strong> <span id="collectionPostcode"></span></p>
-                    <p><strong>Location:</strong> <span id="collectionLocation"></span></p>
-                </div>
-                <!-- Delivery Location -->
-                <div class="border p-4 rounded shadow-sm">
-                    <h4 class="font-semibold mb-2">Delivery Location</h4>
-                    <p><strong>Country:</strong> <span id="deliveryCountry"></span></p>
-                    <p><strong>Postcode:</strong> <span id="deliveryPostcode"></span></p>
-                    <p><strong>Location:</strong> <span id="deliveryLocation"></span></p>
-                </div>
-                <!-- Route Details -->
-                <div class="border p-4 rounded shadow-sm">
-                    <h4 class="font-semibold mb-2">Route Details</h4>
-                    <p><strong>Waypoint 1:</strong> <span id="waypoint1"></span></p>
-                    <p><strong>Waypoint 2:</strong> <span id="waypoint2"></span></p>
-                    <p><strong>Waypoint 3:</strong> <span id="waypoint3"></span></p>
-                    <p><strong>Waypoint 4:</strong> <span id="waypoint4"></span></p>
-                    <p><strong>Waypoint 5:</strong> <span id="waypoint5"></span></p>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Quote Submission Form -->
-        <form id="submitQuoteForm" class="space-y-6">
-            <!-- Basic Quote Details -->
-            <div>
-                <h3 class="text-xl font-semibold mb-2">Your Quote</h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium">Price *</label>
-                        <input type="number" name="price" required class="w-full p-2 border rounded" step="0.01" placeholder="Enter your price">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium">Currency *</label>
-                        <select name="currency" required class="w-full p-2 border rounded">
-                            <option value="">Select Currency</option>
-                            <option value="GBP">GBP (£)</option>
-                            <option value="EUR">EUR (€)</option>
-                            <option value="USD">USD ($)</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium">Valid Until *</label>
-                        <input type="date" name="validUntil" required class="w-full p-2 border rounded">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium">Estimated Transit Time (Days)</label>
-                        <input type="number" name="transitTime" class="w-full p-2 border rounded" min="1" placeholder="e.g., 5">
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Surcharges -->
-            <div>
-                <h3 class="text-xl font-semibold mb-2">Surcharges</h3>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium">Fixed Rate Surcharges</label>
-                        <input type="number" name="fixedRateSurcharges" class="w-full p-2 border rounded" step="0.01" placeholder="Enter fixed surcharges">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium">% Surcharge Based on Initial Rate</label>
-                        <input type="number" name="percentSurcharge" class="w-full p-2 border rounded" step="0.01" placeholder="Enter percentage surcharge">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium">Total</label>
-                        <input type="number" name="total" readonly class="w-full p-2 border rounded bg-gray-100" placeholder="Total will be calculated">
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Additional Services -->
-            <div>
-                <h3 class="text-xl font-semibold mb-2">Additional Services</h3>
-                <div class="flex items-center mt-2">
-                    <input type="checkbox" name="hideDocuments" value="Yes" id="hideDocuments" class="mr-2">
-                    <label for="hideDocuments" class="text-sm">Acknowledge Hide Commercial Documents</label>
-                </div>
-            </div>
-            
-            <!-- Per-Pallet Rates -->
-            <div>
-                <h3 class="text-xl font-semibold mb-2">Per-Pallet Rates</h3>
-                <div class="overflow-x-auto">
-                    <table class="w-full table-auto border">
-                        <thead>
-                            <tr class="bg-gray-200">
-                                <th class="px-4 py-2 border">Pallet Quantity</th>
-                                <th class="px-4 py-2 border">Rate ({{currency}})</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <!-- Generate rows for pallet quantities 0 to 24 -->
-                            <script>
-                                const currencyElement = document.querySelector('select[name="currency"]');
-                                function updatePalletRatesHeader() {
-                                    const currency = currencyElement.value || 'GBP';
-                                    const headers = document.querySelectorAll('.details-table th');
-                                    if(headers.length >= 2){
-                                        headers[1].textContent = `Rate (${currency})`;
-                                    }
-                                }
-                                currencyElement.addEventListener('change', updatePalletRatesHeader);
-                                updatePalletRatesHeader();
-                                
-                                for (let i = 0; i <= 24; i++) {
-                                    document.write(`
-                                        <tr>
-                                            <td class="px-4 py-2 border text-center">${i}</td>
-                                            <td class="px-4 py-2 border">
-                                                <input type="number" name="palletRate_${i}" class="w-full p-2 border rounded" step="0.01" placeholder="Rate for ${i} pallets">
-                                            </td>
-                                        </tr>
-                                    `);
-                                }
-                            </script>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            
-            <!-- Submit Button -->
-            <div>
-                <button type="submit" class="w-full bg-blue-600 text-white p-3 rounded hover:bg-blue-700">Submit Quote</button>
-            </div>
-        </form>
-        
-        <div id="message" class="mt-4 text-center"></div>
-    </div>
+    <div id="root"></div>
 
     <script>
-        // Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyDiIRLwLeMAf1VZbZ7ygvGDu-gZH6sA424",
             authDomain: "azelislogistics.firebaseapp.com",
@@ -210,234 +30,246 @@
             measurementId: "G-Q6JNN8DHJQ"
         };
         firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
+        emailjs.init("ZU_ZvcimnTfLR22wF");
+    </script>
 
-        // Retrieve URL parameters
-        const urlParams = new URLSearchParams(window.location.search);
-        const quoteId = urlParams.get('quoteId');
-        const haulierId = urlParams.get('haulierId');
+    <script type="text/babel">
+        const TenderForm = () => {
+            const [quoteData, setQuoteData] = React.useState(null);
+            const [sending, setSending] = React.useState(false);
+            const [error, setError] = React.useState(null);
 
-        // Function to display a message to the user
-        function displayMessage(msg, isError = true) {
-            const messageDiv = document.getElementById('message');
-            messageDiv.textContent = msg;
-            messageDiv.className = isError ? 'mt-4 text-center text-red-500' : 'mt-4 text-center text-green-500';
-        }
+            React.useEffect(() => {
+                const urlParams = new URLSearchParams(window.location.search);
+                const quoteId = urlParams.get('quoteId');
+                const haulierId = urlParams.get('haulierId');
 
-        // Function to send email via EmailJS
-        function sendNotificationEmail(emailParams) {
-            return emailjs.send('Azelis_Logistics', 'template_hho0c06', emailParams);
-        }
-
-        // Function to populate tender details in a condensed format
-        async function populateTenderDetails() {
-            if (!quoteId) {
-                displayMessage('Missing quoteId in URL parameters.');
-                return;
-            }
-            try {
-                const quoteDoc = await db.collection('quotes').doc(quoteId).get();
-                if (!quoteDoc.exists) {
-                    displayMessage('Quote not found.');
+                if (!quoteId || !haulierId) {
+                    setError('Missing required parameters');
                     return;
                 }
-                const quoteData = quoteDoc.data();
-                
-                // Populate the tender overview
-                document.getElementById('tenderId').textContent = quoteData.tenderId || 'N/A';
-                document.getElementById('transportMode').textContent = quoteData.transportMode || 'N/A';
-                document.getElementById('weightBucket').textContent = quoteData.weightBucket || 'N/A';
-                document.getElementById('deliveryType').textContent = quoteData.deliveryType || 'N/A';
-                document.getElementById('loadType').textContent = quoteData.loadType || 'N/A';
-                document.getElementById('pallets').textContent = quoteData.pallets || 'N/A';
-                document.getElementById('palletType').textContent = quoteData.palletType || 'N/A';
-                document.getElementById('containerType').textContent = quoteData.containerType || 'N/A';
-                document.getElementById('airWeight').textContent = quoteData.airWeight || 'N/A';
-                
-                // Collection Details
-                document.getElementById('collectionCountry').textContent = quoteData.collection?.country ? getCountryName(quoteData.collection.country) : 'N/A';
-                document.getElementById('collectionPostcode').textContent = quoteData.collection?.postcode || 'N/A';
-                document.getElementById('collectionLocation').textContent = quoteData.collection?.location || 'N/A';
-                
-                // Delivery Details
-                document.getElementById('deliveryCountry').textContent = quoteData.delivery?.country ? getCountryName(quoteData.delivery.country) : 'N/A';
-                document.getElementById('deliveryPostcode').textContent = quoteData.delivery?.postcode || 'N/A';
-                document.getElementById('deliveryLocation').textContent = quoteData.delivery?.location || 'N/A';
-                
-                // Route Details
-                document.getElementById('waypoint1').textContent = quoteData.waypoints && quoteData.waypoints[0] ? `${getCountryName(quoteData.waypoints[0].country)}, ${quoteData.waypoints[0].postcode}` : 'N/A';
-                document.getElementById('waypoint2').textContent = quoteData.waypoints && quoteData.waypoints[1] ? `${getCountryName(quoteData.waypoints[1].country)}, ${quoteData.waypoints[1].postcode}` : 'N/A';
-                document.getElementById('waypoint3').textContent = quoteData.waypoints && quoteData.waypoints[2] ? `${getCountryName(quoteData.waypoints[2].country)}, ${quoteData.waypoints[2].postcode}` : 'N/A';
-                document.getElementById('waypoint4').textContent = quoteData.waypoints && quoteData.waypoints[3] ? `${getCountryName(quoteData.waypoints[3].country)}, ${quoteData.waypoints[3].postcode}` : 'N/A';
-                document.getElementById('waypoint5').textContent = quoteData.waypoints && quoteData.waypoints[4] ? `${getCountryName(quoteData.waypoints[4].country)}, ${quoteData.waypoints[4].postcode}` : 'N/A';
-            } catch (error) {
-                console.error('Error fetching quote details:', error);
-                displayMessage('Error fetching quote details. Please try again.');
-            }
-        }
 
-        // Helper function to get country name from code
-        function getCountryName(code) {
-            // Assuming you have a COUNTRY_REVERSE_MAPPING available
-            return COUNTRY_REVERSE_MAPPING[code] || code;
-        }
+                const db = firebase.firestore();
+                db.collection('quotes').doc(quoteId).get()
+                    .then(doc => {
+                        if (!doc.exists) {
+                            setError('Quote not found');
+                            return;
+                        }
+                        setQuoteData({
+                            id: doc.id,
+                            haulierId,
+                            ...doc.data()
+                        });
+                    })
+                    .catch(err => {
+                        console.error('Error fetching quote:', err);
+                        setError('Failed to load quote details');
+                    });
+            }, []);
 
-        // Call the function to populate tender details on page load
-        window.onload = populateTenderDetails;
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                setSending(true);
+                setError(null);
 
-        // Calculate Total
-        function calculateTotal() {
-            const price = parseFloat(document.querySelector('input[name="price"]').value) || 0;
-            const fixedSurcharge = parseFloat(document.querySelector('input[name="fixedRateSurcharges"]').value) || 0;
-            const percentSurcharge = parseFloat(document.querySelector('input[name="percentSurcharge"]').value) || 0;
-            const total = price + fixedSurcharge + (price * (percentSurcharge / 100));
-            document.querySelector('input[name="total"]').value = total.toFixed(2);
-        }
-
-        // Add event listeners for surcharge fields to calculate total
-        document.querySelector('input[name="price"]').addEventListener('input', calculateTotal);
-        document.querySelector('input[name="fixedRateSurcharges"]').addEventListener('input', calculateTotal);
-        document.querySelector('input[name="percentSurcharge"]').addEventListener('input', calculateTotal);
-
-        // Handle form submission
-        document.getElementById('submitQuoteForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            displayMessage(''); // Clear any previous messages
-
-            // Basic validation for URL parameters
-            if (!quoteId || !haulierId) {
-                displayMessage('Missing quoteId or haulierId in URL parameters.');
-                return;
-            }
-
-            // Gather form data
-            const formData = new FormData(e.target);
-            const price = parseFloat(formData.get('price')) || 0;
-            const currency = formData.get('currency') || 'GBP';
-            const validUntil = formData.get('validUntil') || 'N/A';
-            const transitTime = formData.get('transitTime') ? parseInt(formData.get('transitTime')) : 'N/A';
-            const fixedRateSurcharges = parseFloat(formData.get('fixedRateSurcharges')) || 0;
-            const percentSurcharge = parseFloat(formData.get('percentSurcharge')) || 0;
-            const total = parseFloat(formData.get('total')) || 0;
-            const hideDocuments = formData.get('hideDocuments') === 'Yes' ? 'Yes' : 'No';
-            
-            // Gather per-pallet rates
-            const palletRates = {};
-            for (let i = 0; i <= 24; i++) {
-                const rate = parseFloat(formData.get(`palletRate_${i}`)) || 0;
-                palletRates[i] = rate;
-            }
-
-            // Prepare rate data
-            const rateData = {
-                price: price,
-                currency: currency,
-                validUntil: validUntil,
-                transitTime: transitTime,
-                fixedRateSurcharges: fixedRateSurcharges,
-                percentSurcharge: percentSurcharge,
-                total: total,
-                hideDocuments: hideDocuments,
-                palletRates: palletRates,
-                haulierId: haulierId,
-                quoteId: quoteId,
-                submittedAt: new Date()
-            };
-
-            console.log('Submitting rate:', rateData); // Debugging
-
-            try {
-                // Add rate to 'rates' collection
-                const rateRef = await db.collection('rates').add(rateData);
-                console.log('Rate added with ID:', rateRef.id); // Debugging
-
-                // Update quote status
-                await db.collection('quotes').doc(quoteId).update({
-                    status: 'responded',
-                    respondedAt: new Date(),
-                    responseBy: haulierId
-                });
-                console.log('Quote status updated.'); // Debugging
-
-                // Fetch haulier data
-                const haulierDoc = await db.collection('hauliers').doc(haulierId).get();
-                const haulierData = haulierDoc.exists ? haulierDoc.data() : {};
-
-                // Fetch quote data
-                const quoteDoc = await db.collection('quotes').doc(quoteId).get();
-                const quoteData = quoteDoc.exists ? quoteDoc.data() : {};
-
-                // Generate palletRatesHTML
-                let palletRatesHTML = '<table style="width:100%; border-collapse: collapse;">';
-                palletRatesHTML += '<tr><th style="border: 1px solid #dddddd; padding: 8px;">Pallet Quantity</th><th style="border: 1px solid #dddddd; padding: 8px;">Rate (' + currency + ')</th></tr>';
-                for (const [qty, rate] of Object.entries(palletRates)) {
-                    palletRatesHTML += `<tr><td style="border: 1px solid #dddddd; padding: 8px; text-align: center;">${qty}</td><td style="border: 1px solid #dddddd; padding: 8px; text-align: center;">${rate.toFixed(2)}</td></tr>`;
-                }
-                palletRatesHTML += '</table>';
-
-                // Prepare email parameters
-                const emailParams = {
-                    to_email: quoteData.userEmail, // Internal user's email from Firestore
-                    subject: "New Tender Quote Submission Received",
-                    internalUserName: quoteData.internalUserName || "Team",
-                    tenderId: quoteData.tenderId || "N/A",
-                    haulierName: haulierData.name || "Haulier Company",
-                    haulierEmail: haulierData.email || "haulier@example.com",
-                    price: price.toFixed(2),
-                    currency: currency,
-                    validUntil: validUntil,
-                    transitTime: transitTime,
-                    fixedRateSurcharges: fixedRateSurcharges.toFixed(2),
-                    percentSurcharge: percentSurcharge.toFixed(2),
-                    total: total.toFixed(2),
-                    hideDocuments: hideDocuments,
-                    // Include transport and route details as nested fields
-                    transportMode: quoteData.transportMode || "N/A",
-                    weightBucket: quoteData.weightBucket || "N/A",
-                    incoterms: quoteData.incoterms || "N/A",
-                    deliveryType: quoteData.deliveryType || "N/A",
-                    loadType: quoteData.loadType || "N/A",
-                    pallets: quoteData.pallets || "N/A",
-                    palletType: quoteData.palletType || "N/A",
-                    containerType: quoteData.containerType || "N/A",
-                    airWeight: quoteData.airWeight || "N/A",
-                    volume: quoteData.volume || "N/A",
-                    isPeakSeason: quoteData.isPeakSeason ? "Yes" : "No",
-                    peakSeasonDetails: quoteData.peakSeasonDetails || "N/A",
-                    urgency: quoteData.urgency || "N/A",
-                    preferredDeliveryDate: quoteData.preferredDeliveryDate || "N/A",
-                    collectionCountry: quoteData.collection?.country ? getCountryName(quoteData.collection.country) : "N/A",
-                    collectionPostcode: quoteData.collection?.postcode || "N/A",
-                    collectionLocation: quoteData.collection?.location || "N/A",
-                    deliveryCountry: quoteData.delivery?.country ? getCountryName(quoteData.delivery.country) : "N/A",
-                    deliveryPostcode: quoteData.delivery?.postcode || "N/A",
-                    deliveryLocation: quoteData.delivery?.location || "N/A",
-                    waypoint1: quoteData.waypoints && quoteData.waypoints[0] ? `${getCountryName(quoteData.waypoints[0].country)}, ${quoteData.waypoints[0].postcode}` : "N/A",
-                    waypoint2: quoteData.waypoints && quoteData.waypoints[1] ? `${getCountryName(quoteData.waypoints[1].country)}, ${quoteData.waypoints[1].postcode}` : "N/A",
-                    waypoint3: quoteData.waypoints && quoteData.waypoints[2] ? `${getCountryName(quoteData.waypoints[2].country)}, ${quoteData.waypoints[2].postcode}` : "N/A",
-                    waypoint4: quoteData.waypoints && quoteData.waypoints[3] ? `${getCountryName(quoteData.waypoints[3].country)}, ${quoteData.waypoints[3].postcode}` : "N/A",
-                    waypoint5: quoteData.waypoints && quoteData.waypoints[4] ? `${getCountryName(quoteData.waypoints[4].country)}, ${quoteData.waypoints[4].postcode}` : "N/A",
-                    // Include pallet rates as pre-rendered HTML
-                    palletRatesHTML: palletRatesHTML
+                const formData = new FormData(e.target);
+                const rateData = {
+                    price: parseFloat(formData.get('price')),
+                    currency: formData.get('currency'),
+                    validUntil: formData.get('validUntil'),
+                    transitTime: parseInt(formData.get('transitTime')),
+                    fixedRateSurcharges: parseFloat(formData.get('fixedRateSurcharges')) || 0,
+                    percentSurcharge: parseFloat(formData.get('percentSurcharge')) || 0,
+                    total: parseFloat(formData.get('total')),
+                    hideDocuments: formData.get('hideDocuments') === 'on',
+                    palletRates: {},
+                    haulierId: quoteData.haulierId,
+                    quoteId: quoteData.id,
+                    submittedAt: new Date()
                 };
 
-                console.log('Email parameters:', emailParams); // Debugging
+                // Collect pallet rates
+                for (let i = 1; i <= 24; i++) {
+                    const rate = formData.get(`palletRate_${i}`);
+                    if (rate) {
+                        rateData.palletRates[i] = parseFloat(rate);
+                    }
+                }
 
-                // Send notification email
-                await sendNotificationEmail(emailParams);
-                console.log('Notification email sent successfully!');
+                try {
+                    const db = firebase.firestore();
+                    
+                    // Add rate
+                    await db.collection('rates').add(rateData);
+                    
+                    // Update quote status
+                    await db.collection('quotes').doc(quoteData.id).update({
+                        status: 'responded',
+                        respondedAt: new Date(),
+                        responseBy: quoteData.haulierId
+                    });
 
-                displayMessage('Rate submitted successfully!', false);
-                // Redirect after a short delay
-                setTimeout(() => {
-                    window.location.href = 'https://azelisshipping.github.io/AzelisLogistics/success.html';
-                }, 2000);
-            } catch (error) {
-                console.error('Error submitting rate or sending email:', error);
-                displayMessage('Failed to submit rate. Please try again.');
+                    // Send email notification
+                    await emailjs.send('Azelis_Logistics', 'template_12utb0n', {
+                        to_email: quoteData.userEmail,
+                        subject: 'Quote Response Received',
+                        quoteDetails: JSON.stringify({
+                            ...rateData,
+                            quoteReference: quoteData.id
+                        })
+                    });
+
+                    window.location.href = 'success.html';
+                } catch (error) {
+                    console.error('Error submitting quote:', error);
+                    setError('Failed to submit quote');
+                    setSending(false);
+                }
+            };
+
+            if (error) {
+                return <div className="text-red-600 text-center p-4">{error}</div>;
             }
-        });
 
+            if (!quoteData) {
+                return <div className="text-center p-4">Loading...</div>;
+            }
+
+            return (
+                <div className="max-w-7xl mx-auto p-6">
+                    <h1 className="text-3xl font-bold mb-8 text-center">Submit Your Quote</h1>
+                    
+                    {/* Quote Details Section */}
+                    <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
+                        <h2 className="text-xl font-semibold mb-4">Quote Details</h2>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div>
+                                <h3 className="font-semibold mb-2">Transport Details</h3>
+                                <p>Mode: {quoteData.transportMode}</p>
+                                <p>Weight: {quoteData.weightBucket}</p>
+                                <p>Type: {quoteData.loadType}</p>
+                                <p>Incoterms: {quoteData.incoterms}</p>
+                            </div>
+                            <div>
+                                <h3 className="font-semibold mb-2">Collection</h3>
+                                <p>Country: {quoteData.collection?.country}</p>
+                                <p>Postcode: {quoteData.collection?.postcode}</p>
+                                <p>Location: {quoteData.collection?.location || 'N/A'}</p>
+                            </div>
+                            <div>
+                                <h3 className="font-semibold mb-2">Delivery</h3>
+                                <p>Country: {quoteData.delivery?.country}</p>
+                                <p>Postcode: {quoteData.delivery?.postcode}</p>
+                                <p>Location: {quoteData.delivery?.location || 'N/A'}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Quote Submission Form */}
+                    <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-lg p-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                            <div>
+                                <label className="block text-sm font-medium mb-2">Base Price *</label>
+                                <input
+                                    type="number"
+                                    name="price"
+                                    required
+                                    step="0.01"
+                                    className="w-full p-2 border rounded"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-2">Currency *</label>
+                                <select name="currency" required className="w-full p-2 border rounded">
+                                    <option value="GBP">GBP (£)</option>
+                                    <option value="EUR">EUR (€)</option>
+                                    <option value="USD">USD ($)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-2">Valid Until *</label>
+                                <input
+                                    type="date"
+                                    name="validUntil"
+                                    required
+                                    className="w-full p-2 border rounded"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-2">Transit Time (Days)</label>
+                                <input
+                                    type="number"
+                                    name="transitTime"
+                                    min="1"
+                                    className="w-full p-2 border rounded"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="mb-6">
+                            <h3 className="text-lg font-semibold mb-4">Surcharges</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium mb-2">Fixed Rate Surcharges</label>
+                                    <input
+                                        type="number"
+                                        name="fixedRateSurcharges"
+                                        step="0.01"
+                                        className="w-full p-2 border rounded"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium mb-2">Percentage Surcharge</label>
+                                    <input
+                                        type="number"
+                                        name="percentSurcharge"
+                                        step="0.01"
+                                        className="w-full p-2 border rounded"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="mb-6">
+                            <h3 className="text-lg font-semibold mb-4">Per-Pallet Rates</h3>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                                {Array.from({ length: 24 }, (_, i) => (
+                                    <div key={i + 1}>
+                                        <label className="block text-sm font-medium mb-2">
+                                            {i + 1} Pallet{i > 0 ? 's' : ''}
+                                        </label>
+                                        <input
+                                            type="number"
+                                            name={`palletRate_${i + 1}`}
+                                            step="0.01"
+                                            className="w-full p-2 border rounded"
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="mb-6">
+                            <label className="flex items-center">
+                                <input type="checkbox" name="hideDocuments" className="mr-2" />
+                                <span>Hide Commercial Documents</span>
+                            </label>
+                        </div>
+
+                        <button
+                            type="submit"
+                            disabled={sending}
+                            className="w-full azelis-blue text-white p-3 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50"
+                        >
+                            {sending ? 'Submitting...' : 'Submit Quote'}
+                        </button>
+                    </form>
+                </div>
+            );
+        };
+
+        ReactDOM.render(<TenderForm />, document.getElementById('root'));
     </script>
 </body>
 </html>
