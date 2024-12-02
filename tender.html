@@ -218,8 +218,11 @@
                     submittedAt: new Date()
                 };
 
+                console.log('Submitting rate:', rateData); // Debugging
+
                 // Add rate to 'rates' collection
                 const rateRef = await db.collection('rates').add(rateData);
+                console.log('Rate added with ID:', rateRef.id); // Debugging
 
                 // Update quote status
                 await db.collection('quotes').doc(quoteId).update({
@@ -227,12 +230,13 @@
                     respondedAt: new Date(),
                     responseBy: haulierId
                 });
+                console.log('Quote status updated.'); // Debugging
 
                 // Prepare email parameters for internal notification
                 const emailParams = {
                     subject: "New Tender Quote Submission Received",
-                    to_email: quoteData.contactEmail, // The internal user's email
-                    internalUserName: quoteData.internalUserName || "Team", // Replace with actual internal user name if available
+                    to_email: quoteData.userEmail, // Updated to match Firestore field
+                    internalUserName: quoteData.internalUserName || "Team", // Ensure 'internalUserName' exists in Firestore
                     tenderId: quoteId,
                     haulierName: haulierData.name || "Haulier Company", // Haulier's name
                     haulierEmail: haulierData.email || "haulier@example.com", // Haulier's email
@@ -243,7 +247,7 @@
                     loadType: rateData.isFullTruckLoad ? "Full Truck Load" : "Partial Load",
                     deliveryType: rateData.deliveryType,
                     pallets: rateData.isFullTruckLoad ? "N/A" : rateData.pallets,
-                    palletType: quoteData.palletType || "Standard", // Replace with actual pallet type if available
+                    palletType: quoteData.palletType || "Standard", // Haulier's pallet type
                     containerType: rateData.containerType || "N/A",
                     airWeight: rateData.airWeight || "N/A",
                     volume: rateData.volume || "N/A",
@@ -253,16 +257,18 @@
                     notes: rateData.notes || "None",
                     collectionCountry: rateData.collectionCountry,
                     collectionPostcode: rateData.collectionPostcode,
-                    collectionLocation: quoteData.collectionLocation || "N/A", // Replace with actual collection location if available
+                    collectionLocation: quoteData.collection.location || "N/A", // Ensure 'collection.location' exists
                     deliveryCountry: rateData.deliveryCountry,
                     deliveryPostcode: rateData.deliveryPostcode,
-                    deliveryLocation: quoteData.deliveryLocation || "N/A", // Replace with actual delivery location if available
+                    deliveryLocation: quoteData.delivery.location || "N/A", // Ensure 'delivery.location' exists
                     isFullTruckLoad: rateData.isFullTruckLoad,
                     fullTruckLoadPrice: rateData.fullTruckLoadPrice ? rateData.fullTruckLoadPrice.toFixed(2) : "N/A",
-                    prices: rateData.prices,
+                    prices: JSON.stringify(rateData.prices), // Convert prices map to JSON string
                     submittedAt: rateData.submittedAt.toLocaleString(),
                     reviewLink: `https://yourdomain.com/review.html?rateId=${rateRef.id}` // Replace with your actual review page URL
                 };
+
+                console.log('Email parameters:', emailParams); // Debugging
 
                 // Send notification email to internal user
                 sendNotificationEmail(emailParams)
