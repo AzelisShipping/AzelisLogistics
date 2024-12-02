@@ -22,7 +22,7 @@
         <!-- Tender Overview -->
         <div id="tenderOverview" class="mb-8">
             <h3 class="text-2xl font-semibold mb-4">Tender Details</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <!-- Column 1 -->
                 <div class="border p-4 rounded shadow-sm">
                     <h4 class="font-semibold mb-2">Basic Information</h4>
@@ -136,7 +136,7 @@
                         <thead>
                             <tr class="bg-gray-200">
                                 <th class="px-4 py-2 border">Pallet Quantity</th>
-                                <th class="px-4 py-2 border">Rate ({{currency}})</th>
+                                <th class="px-4 py-2 border">Rate</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -222,17 +222,17 @@
                 document.getElementById('palletType').textContent = quoteData.palletType || 'N/A';
                 document.getElementById('containerType').textContent = quoteData.containerType || 'N/A';
                 document.getElementById('airWeight').textContent = quoteData.airWeight || 'N/A';
-
+                
                 // Collection Details
-                document.getElementById('collectionCountry').textContent = quoteData.collection?.country || 'N/A';
-                document.getElementById('collectionPostcode').textContent = quoteData.collection?.postcode || 'N/A';
-                document.getElementById('collectionLocation').textContent = quoteData.collection?.location || 'N/A';
-
+                document.getElementById('collectionCountry').textContent = quoteData.collectionCountry || 'N/A';
+                document.getElementById('collectionPostcode').textContent = quoteData.collectionPostcode || 'N/A';
+                document.getElementById('collectionLocation').textContent = quoteData.collectionLocation || 'N/A';
+                
                 // Delivery Details
-                document.getElementById('deliveryCountry').textContent = quoteData.delivery?.country || 'N/A';
-                document.getElementById('deliveryPostcode').textContent = quoteData.delivery?.postcode || 'N/A';
-                document.getElementById('deliveryLocation').textContent = quoteData.delivery?.location || 'N/A';
-
+                document.getElementById('deliveryCountry').textContent = quoteData.deliveryCountry || 'N/A';
+                document.getElementById('deliveryPostcode').textContent = quoteData.deliveryPostcode || 'N/A';
+                document.getElementById('deliveryLocation').textContent = quoteData.deliveryLocation || 'N/A';
+                
                 // Route Details
                 document.getElementById('waypoint1').textContent = quoteData.waypoint1 || 'N/A';
                 document.getElementById('waypoint2').textContent = quoteData.waypoint2 || 'N/A';
@@ -262,12 +262,7 @@
         document.querySelector('input[name="fixedRateSurcharges"]').addEventListener('input', calculateTotal);
         document.querySelector('input[name="percentSurcharge"]').addEventListener('input', calculateTotal);
 
-        // Show or hide "Acknowledge Hide Commercial Documents" based on checkbox
-        document.getElementById('hideDocuments').addEventListener('change', function() {
-            // Currently, the field is just a checkbox. If additional fields are needed when checked, implement here.
-            // For now, it acknowledges via the checkbox itself.
-        });
-
+        // Handle form submission
         document.getElementById('submitQuoteForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             displayMessage(''); // Clear any previous messages
@@ -288,7 +283,7 @@
             const percentSurcharge = parseFloat(formData.get('percentSurcharge')) || 0;
             const total = parseFloat(formData.get('total')) || 0;
             const hideDocuments = formData.get('hideDocuments') === 'Yes' ? 'Yes' : 'No';
-
+            
             // Gather per-pallet rates
             const palletRates = {};
             for (let i = 0; i <= 24; i++) {
@@ -335,12 +330,20 @@
                 const quoteDoc = await db.collection('quotes').doc(quoteId).get();
                 const quoteData = quoteDoc.exists ? quoteDoc.data() : {};
 
+                // Generate palletRatesHTML
+                let palletRatesHTML = '<table style="width:100%; border-collapse: collapse;">';
+                palletRatesHTML += '<tr><th style="border: 1px solid #dddddd; padding: 8px;">Pallet Quantity</th><th style="border: 1px solid #dddddd; padding: 8px;">Rate (' + currency + ')</th></tr>';
+                for (const [qty, rate] of Object.entries(palletRates)) {
+                    palletRatesHTML += `<tr><td style="border: 1px solid #dddddd; padding: 8px; text-align: center;">${qty}</td><td style="border: 1px solid #dddddd; padding: 8px; text-align: center;">${rate.toFixed(2)}</td></tr>`;
+                }
+                palletRatesHTML += '</table>';
+
                 // Prepare email parameters
                 const emailParams = {
                     to_email: quoteData.userEmail, // Internal user's email from Firestore
                     subject: "New Tender Quote Submission Received",
                     internalUserName: quoteData.internalUserName || "Team",
-                    tenderId: quoteId,
+                    tenderId: quoteData.tenderId || "N/A",
                     haulierName: haulierData.name || "Haulier Company",
                     haulierEmail: haulierData.email || "haulier@example.com",
                     price: price.toFixed(2),
@@ -351,7 +354,7 @@
                     percentSurcharge: percentSurcharge.toFixed(2),
                     total: total.toFixed(2),
                     hideDocuments: hideDocuments,
-                    // Include transport and route details
+                    // Include transport and route details as flat fields
                     transportMode: quoteData.transportMode || "N/A",
                     weightBucket: quoteData.weightBucket || "N/A",
                     incoterms: quoteData.incoterms || "N/A",
@@ -366,19 +369,19 @@
                     peakSeasonDetails: quoteData.peakSeasonDetails || "N/A",
                     urgency: quoteData.urgency || "N/A",
                     preferredDeliveryDate: quoteData.preferredDeliveryDate || "N/A",
-                    collectionCountry: quoteData.collection?.country || "N/A",
-                    collectionPostcode: quoteData.collection?.postcode || "N/A",
-                    collectionLocation: quoteData.collection?.location || "N/A",
-                    deliveryCountry: quoteData.delivery?.country || "N/A",
-                    deliveryPostcode: quoteData.delivery?.postcode || "N/A",
-                    deliveryLocation: quoteData.delivery?.location || "N/A",
+                    collectionCountry: quoteData.collectionCountry || "N/A",
+                    collectionPostcode: quoteData.collectionPostcode || "N/A",
+                    collectionLocation: quoteData.collectionLocation || "N/A",
+                    deliveryCountry: quoteData.deliveryCountry || "N/A",
+                    deliveryPostcode: quoteData.deliveryPostcode || "N/A",
+                    deliveryLocation: quoteData.deliveryLocation || "N/A",
                     waypoint1: quoteData.waypoint1 || "N/A",
                     waypoint2: quoteData.waypoint2 || "N/A",
                     waypoint3: quoteData.waypoint3 || "N/A",
                     waypoint4: quoteData.waypoint4 || "N/A",
                     waypoint5: quoteData.waypoint5 || "N/A",
-                    // Include pallet rates as a JSON string for readability
-                    palletRates: JSON.stringify(palletRates, null, 2)
+                    // Include pallet rates as pre-rendered HTML
+                    palletRatesHTML: palletRatesHTML
                 };
 
                 console.log('Email parameters:', emailParams); // Debugging
