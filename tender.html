@@ -11,7 +11,7 @@
     <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
     <script>
         (function(){
-            emailjs.init("YOUR_PUBLIC_KEY"); // Replace with your EmailJS public key
+            emailjs.init("ZU_ZvcimnTfLR22wF"); // Initialize EmailJS with your public key
         })();
     </script>
 </head>
@@ -73,7 +73,7 @@
 
         // Function to send email via EmailJS
         function sendNotificationEmail(emailParams) {
-            return emailjs.send('YOUR_SERVICE_ID', 'YOUR_TEMPLATE_ID', emailParams);
+            return emailjs.send('Azelis_Logistics', 'template_12utb0n', emailParams);
         }
 
         document.getElementById('submitQuoteForm').addEventListener('submit', async (e) => {
@@ -111,7 +111,7 @@
                 const rateRef = await db.collection('rates').add(rateData);
                 console.log('Rate added with ID:', rateRef.id); // Debugging
 
-                // Optionally, update the quote's status
+                // Update quote status
                 await db.collection('quotes').doc(quoteId).update({
                     status: 'responded',
                     respondedAt: new Date(),
@@ -119,18 +119,19 @@
                 });
                 console.log('Quote status updated.'); // Debugging
 
-                // Fetch additional data if necessary (e.g., haulier details)
+                // Fetch haulier data
                 const haulierDoc = await db.collection('hauliers').doc(haulierId).get();
                 const haulierData = haulierDoc.exists ? haulierDoc.data() : {};
 
+                // Fetch quote data
                 const quoteDoc = await db.collection('quotes').doc(quoteId).get();
                 const quoteData = quoteDoc.exists ? quoteDoc.data() : {};
 
                 // Prepare email parameters
                 const emailParams = {
-                    to_email: quoteData.userEmail, // Ensure this field exists in the 'quotes' document
+                    to_email: quoteData.userEmail, // Internal user's email from Firestore
                     subject: "New Tender Quote Submission Received",
-                    internalUserName: "Team", // Replace with dynamic data if available
+                    internalUserName: quoteData.internalUserName || "Team",
                     tenderId: quoteId,
                     haulierName: haulierData.name || "Haulier Company",
                     haulierEmail: haulierData.email || "haulier@example.com",
@@ -138,7 +139,7 @@
                     currency: currency,
                     validUntil: validUntil,
                     transitTime: transitTime
-                    // Add other necessary fields
+                    // Add other necessary fields if needed
                 };
 
                 console.log('Email parameters:', emailParams); // Debugging
