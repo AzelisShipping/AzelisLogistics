@@ -16,35 +16,52 @@
     </script>
 </head>
 <body class="bg-gray-50">
-    <div class="max-w-4xl mx-auto p-6 mt-10 bg-white rounded shadow">
+    <div class="max-w-5xl mx-auto p-6 mt-10 bg-white rounded shadow">
         <h2 class="text-3xl font-bold mb-6 text-center">Submit Your Quote</h2>
+        
+        <!-- Tender Overview -->
+        <div id="tenderOverview" class="mb-8">
+            <h3 class="text-2xl font-semibold mb-4">Tender Details</h3>
+            <div class="overflow-x-auto">
+                <table class="w-full table-auto border-collapse">
+                    <tbody id="tenderDetailsTable">
+                        <!-- Tender details will be populated here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Quote Submission Form -->
         <form id="submitQuoteForm" class="space-y-6">
-            <!-- Basic Details -->
+            <!-- Basic Quote Details -->
             <div>
-                <label class="block text-sm font-medium">Price *</label>
-                <input type="number" name="price" required class="w-full p-2 border rounded" step="0.01" placeholder="Enter your price">
+                <h3 class="text-xl font-semibold mb-2">Your Quote</h3>
+                <div>
+                    <label class="block text-sm font-medium">Price *</label>
+                    <input type="number" name="price" required class="w-full p-2 border rounded" step="0.01" placeholder="Enter your price">
+                </div>
+                <div class="mt-2">
+                    <label class="block text-sm font-medium">Currency *</label>
+                    <select name="currency" required class="w-full p-2 border rounded">
+                        <option value="">Select Currency</option>
+                        <option value="GBP">GBP (£)</option>
+                        <option value="EUR">EUR (€)</option>
+                        <option value="USD">USD ($)</option>
+                    </select>
+                </div>
+                <div class="mt-2">
+                    <label class="block text-sm font-medium">Valid Until *</label>
+                    <input type="date" name="validUntil" required class="w-full p-2 border rounded">
+                </div>
+                <div class="mt-2">
+                    <label class="block text-sm font-medium">Estimated Transit Time (Days)</label>
+                    <input type="number" name="transitTime" class="w-full p-2 border rounded" min="1" placeholder="e.g., 5">
+                </div>
             </div>
-            <div>
-                <label class="block text-sm font-medium">Currency *</label>
-                <select name="currency" required class="w-full p-2 border rounded">
-                    <option value="">Select Currency</option>
-                    <option value="GBP">GBP (£)</option>
-                    <option value="EUR">EUR (€)</option>
-                    <option value="USD">USD ($)</option>
-                </select>
-            </div>
-            <div>
-                <label class="block text-sm font-medium">Valid Until *</label>
-                <input type="date" name="validUntil" required class="w-full p-2 border rounded">
-            </div>
-            <div>
-                <label class="block text-sm font-medium">Estimated Transit Time (Days)</label>
-                <input type="number" name="transitTime" class="w-full p-2 border rounded" min="1" placeholder="e.g., 5">
-            </div>
-
+            
             <!-- Additional Services -->
             <div>
-                <label class="block text-sm font-medium">Additional Services</label>
+                <h3 class="text-xl font-semibold mb-2">Additional Services</h3>
                 <div class="flex items-center mt-2">
                     <input type="checkbox" name="isPeakSeason" value="Yes" class="mr-2">
                     <span>Is Peak Season?</span>
@@ -68,7 +85,7 @@
                     </label>
                 </div>
             </div>
-
+            
             <!-- Transport Details -->
             <div>
                 <h3 class="text-xl font-semibold mb-2">Transport Details</h3>
@@ -89,7 +106,7 @@
                     <input type="text" name="deliveryType" class="w-full p-2 border rounded" placeholder="e.g., Express, Standard">
                 </div>
             </div>
-
+            
             <!-- Load Details -->
             <div>
                 <h3 class="text-xl font-semibold mb-2">Load Details</h3>
@@ -118,7 +135,7 @@
                     <input type="number" name="volume" class="w-full p-2 border rounded" min="0" step="0.01" placeholder="Enter volume">
                 </div>
             </div>
-
+            
             <!-- Route Details -->
             <div>
                 <h3 class="text-xl font-semibold mb-2">Route Details</h3>
@@ -147,7 +164,7 @@
                     <input type="text" name="deliveryLocation" class="w-full p-2 border rounded" placeholder="e.g., N/A">
                 </div>
             </div>
-
+            
             <!-- Waypoints -->
             <div>
                 <h3 class="text-xl font-semibold mb-2">Waypoints</h3>
@@ -172,12 +189,13 @@
                     <input type="text" name="waypoint5" class="w-full p-2 border rounded" placeholder="e.g., Location 5">
                 </div>
             </div>
-
+            
             <!-- Submit Button -->
             <div>
                 <button type="submit" class="w-full bg-blue-600 text-white p-3 rounded hover:bg-blue-700">Submit Quote</button>
             </div>
         </form>
+        
         <div id="message" class="mt-4 text-center"></div>
     </div>
 
@@ -211,6 +229,56 @@
         function sendNotificationEmail(emailParams) {
             return emailjs.send('Azelis_Logistics', 'template_12utb0n', emailParams);
         }
+
+        // Function to populate tender details
+        async function populateTenderDetails() {
+            if (!quoteId) {
+                displayMessage('Missing quoteId in URL parameters.');
+                return;
+            }
+            try {
+                const quoteDoc = await db.collection('quotes').doc(quoteId).get();
+                if (!quoteDoc.exists) {
+                    displayMessage('Quote not found.');
+                    return;
+                }
+                const quoteData = quoteDoc.data();
+                const tenderDetailsTable = document.getElementById('tenderDetailsTable');
+                for (const [key, value] of Object.entries(quoteData)) {
+                    // Skip haulierId and other non-display fields if necessary
+                    if (key === 'haulierId' || key === 'status' || key === 'respondedAt' || key === 'responseBy') continue;
+                    // Handle nested objects like collection and delivery
+                    if (typeof value === 'object' && value !== null) {
+                        for (const [subKey, subValue] of Object.entries(value)) {
+                            tenderDetailsTable.innerHTML += `
+                                <tr>
+                                    <td>${formatKey(key + ' ' + subKey)}</td>
+                                    <td>${subValue}</td>
+                                </tr>
+                            `;
+                        }
+                    } else {
+                        tenderDetailsTable.innerHTML += `
+                            <tr>
+                                <td>${formatKey(key)}</td>
+                                <td>${value}</td>
+                            </tr>
+                        `;
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching quote details:', error);
+                displayMessage('Error fetching quote details. Please try again.');
+            }
+        }
+
+        // Function to format keys to a more readable format
+        function formatKey(key) {
+            return key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+        }
+
+        // Call the function to populate tender details on page load
+        window.onload = populateTenderDetails;
 
         document.getElementById('submitQuoteForm').addEventListener('submit', async (e) => {
             e.preventDefault();
