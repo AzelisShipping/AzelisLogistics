@@ -16,9 +16,10 @@
     </script>
 </head>
 <body class="bg-gray-50">
-    <div class="max-w-xl mx-auto p-6 mt-10 bg-white rounded shadow">
-        <h2 class="text-2xl font-bold mb-6 text-center">Submit Your Quote</h2>
-        <form id="submitQuoteForm" class="space-y-4">
+    <div class="max-w-4xl mx-auto p-6 mt-10 bg-white rounded shadow">
+        <h2 class="text-3xl font-bold mb-6 text-center">Submit Your Quote</h2>
+        <form id="submitQuoteForm" class="space-y-6">
+            <!-- Basic Details -->
             <div>
                 <label class="block text-sm font-medium">Price *</label>
                 <input type="number" name="price" required class="w-full p-2 border rounded" step="0.01" placeholder="Enter your price">
@@ -40,7 +41,142 @@
                 <label class="block text-sm font-medium">Estimated Transit Time (Days)</label>
                 <input type="number" name="transitTime" class="w-full p-2 border rounded" min="1" placeholder="e.g., 5">
             </div>
-            <button type="submit" class="w-full bg-blue-600 text-white p-3 rounded">Submit Quote</button>
+
+            <!-- Additional Services -->
+            <div>
+                <label class="block text-sm font-medium">Additional Services</label>
+                <div class="flex items-center mt-2">
+                    <input type="checkbox" name="isPeakSeason" value="Yes" class="mr-2">
+                    <span>Is Peak Season?</span>
+                </div>
+                <div class="mt-2">
+                    <label class="block text-sm font-medium">Peak Season Details</label>
+                    <input type="text" name="peakSeasonDetails" class="w-full p-2 border rounded" placeholder="Provide details if applicable">
+                </div>
+                <div class="mt-2">
+                    <label class="block text-sm font-medium">Urgency</label>
+                    <input type="text" name="urgency" class="w-full p-2 border rounded" placeholder="e.g., High, Medium, Low">
+                </div>
+                <div class="mt-2">
+                    <label class="block text-sm font-medium">Preferred Delivery Date</label>
+                    <input type="date" name="preferredDeliveryDate" class="w-full p-2 border rounded">
+                </div>
+                <div class="mt-2">
+                    <label class="flex items-center">
+                        <input type="checkbox" name="hideDocuments" value="Yes" class="mr-2">
+                        Hide Documents
+                    </label>
+                </div>
+            </div>
+
+            <!-- Transport Details -->
+            <div>
+                <h3 class="text-xl font-semibold mb-2">Transport Details</h3>
+                <div>
+                    <label class="block text-sm font-medium">Transport Mode</label>
+                    <input type="text" name="transportMode" class="w-full p-2 border rounded" placeholder="e.g., Road, Air, Sea">
+                </div>
+                <div class="mt-2">
+                    <label class="block text-sm font-medium">Weight Bucket</label>
+                    <input type="text" name="weightBucket" class="w-full p-2 border rounded" placeholder="e.g., 1ton-5tons">
+                </div>
+                <div class="mt-2">
+                    <label class="block text-sm font-medium">Incoterms</label>
+                    <input type="text" name="incoterms" class="w-full p-2 border rounded" placeholder="e.g., FOB, CIF">
+                </div>
+                <div class="mt-2">
+                    <label class="block text-sm font-medium">Delivery Type</label>
+                    <input type="text" name="deliveryType" class="w-full p-2 border rounded" placeholder="e.g., Express, Standard">
+                </div>
+            </div>
+
+            <!-- Load Details -->
+            <div>
+                <h3 class="text-xl font-semibold mb-2">Load Details</h3>
+                <div>
+                    <label class="block text-sm font-medium">Load Type</label>
+                    <input type="text" name="loadType" class="w-full p-2 border rounded" placeholder="e.g., Full Truck Load, Partial Load">
+                </div>
+                <div class="mt-2">
+                    <label class="block text-sm font-medium">Pallets</label>
+                    <input type="number" name="pallets" class="w-full p-2 border rounded" min="0" placeholder="Number of pallets">
+                </div>
+                <div class="mt-2">
+                    <label class="block text-sm font-medium">Pallet Type</label>
+                    <input type="text" name="palletType" class="w-full p-2 border rounded" placeholder="e.g., Standard, Euro">
+                </div>
+                <div class="mt-2">
+                    <label class="block text-sm font-medium">Container Type</label>
+                    <input type="text" name="containerType" class="w-full p-2 border rounded" placeholder="e.g., 20ft, 40ft">
+                </div>
+                <div class="mt-2">
+                    <label class="block text-sm font-medium">Air Weight (KG)</label>
+                    <input type="number" name="airWeight" class="w-full p-2 border rounded" min="0" step="0.01" placeholder="Enter air weight">
+                </div>
+                <div class="mt-2">
+                    <label class="block text-sm font-medium">Volume (CBM)</label>
+                    <input type="number" name="volume" class="w-full p-2 border rounded" min="0" step="0.01" placeholder="Enter volume">
+                </div>
+            </div>
+
+            <!-- Route Details -->
+            <div>
+                <h3 class="text-xl font-semibold mb-2">Route Details</h3>
+                <div>
+                    <label class="block text-sm font-medium">Collection Country</label>
+                    <input type="text" name="collectionCountry" class="w-full p-2 border rounded" placeholder="e.g., GBR">
+                </div>
+                <div class="mt-2">
+                    <label class="block text-sm font-medium">Collection Postcode</label>
+                    <input type="text" name="collectionPostcode" class="w-full p-2 border rounded" placeholder="e.g., 22222">
+                </div>
+                <div class="mt-2">
+                    <label class="block text-sm font-medium">Collection Location</label>
+                    <input type="text" name="collectionLocation" class="w-full p-2 border rounded" placeholder="e.g., N/A">
+                </div>
+                <div class="mt-2">
+                    <label class="block text-sm font-medium">Delivery Country</label>
+                    <input type="text" name="deliveryCountry" class="w-full p-2 border rounded" placeholder="e.g., GBR">
+                </div>
+                <div class="mt-2">
+                    <label class="block text-sm font-medium">Delivery Postcode</label>
+                    <input type="text" name="deliveryPostcode" class="w-full p-2 border rounded" placeholder="e.g., CH66 1PF">
+                </div>
+                <div class="mt-2">
+                    <label class="block text-sm font-medium">Delivery Location</label>
+                    <input type="text" name="deliveryLocation" class="w-full p-2 border rounded" placeholder="e.g., N/A">
+                </div>
+            </div>
+
+            <!-- Waypoints -->
+            <div>
+                <h3 class="text-xl font-semibold mb-2">Waypoints</h3>
+                <div>
+                    <label class="block text-sm font-medium">Waypoint 1</label>
+                    <input type="text" name="waypoint1" class="w-full p-2 border rounded" placeholder="e.g., Location 1">
+                </div>
+                <div class="mt-2">
+                    <label class="block text-sm font-medium">Waypoint 2</label>
+                    <input type="text" name="waypoint2" class="w-full p-2 border rounded" placeholder="e.g., Location 2">
+                </div>
+                <div class="mt-2">
+                    <label class="block text-sm font-medium">Waypoint 3</label>
+                    <input type="text" name="waypoint3" class="w-full p-2 border rounded" placeholder="e.g., Location 3">
+                </div>
+                <div class="mt-2">
+                    <label class="block text-sm font-medium">Waypoint 4</label>
+                    <input type="text" name="waypoint4" class="w-full p-2 border rounded" placeholder="e.g., Location 4">
+                </div>
+                <div class="mt-2">
+                    <label class="block text-sm font-medium">Waypoint 5</label>
+                    <input type="text" name="waypoint5" class="w-full p-2 border rounded" placeholder="e.g., Location 5">
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <div>
+                <button type="submit" class="w-full bg-blue-600 text-white p-3 rounded hover:bg-blue-700">Submit Quote</button>
+            </div>
         </form>
         <div id="message" class="mt-4 text-center"></div>
     </div>
@@ -92,6 +228,32 @@
             const currency = formData.get('currency');
             const validUntil = formData.get('validUntil');
             const transitTime = formData.get('transitTime') ? parseInt(formData.get('transitTime')) : null;
+            const isPeakSeason = formData.get('isPeakSeason') === 'Yes' ? 'Yes' : 'No';
+            const peakSeasonDetails = formData.get('peakSeasonDetails') || 'N/A';
+            const urgency = formData.get('urgency') || 'N/A';
+            const preferredDeliveryDate = formData.get('preferredDeliveryDate') || 'N/A';
+            const hideDocuments = formData.get('hideDocuments') === 'Yes' ? 'Yes' : 'No';
+            const transportMode = formData.get('transportMode') || 'N/A';
+            const weightBucket = formData.get('weightBucket') || 'N/A';
+            const incoterms = formData.get('incoterms') || 'N/A';
+            const deliveryType = formData.get('deliveryType') || 'N/A';
+            const loadType = formData.get('loadType') || 'N/A';
+            const pallets = formData.get('pallets') || 'N/A';
+            const palletType = formData.get('palletType') || 'N/A';
+            const containerType = formData.get('containerType') || 'N/A';
+            const airWeight = formData.get('airWeight') || 'N/A';
+            const volume = formData.get('volume') || 'N/A';
+            const collectionCountry = formData.get('collectionCountry') || 'N/A';
+            const collectionPostcode = formData.get('collectionPostcode') || 'N/A';
+            const collectionLocation = formData.get('collectionLocation') || 'N/A';
+            const deliveryCountry = formData.get('deliveryCountry') || 'N/A';
+            const deliveryPostcode = formData.get('deliveryPostcode') || 'N/A';
+            const deliveryLocation = formData.get('deliveryLocation') || 'N/A';
+            const waypoint1 = formData.get('waypoint1') || 'N/A';
+            const waypoint2 = formData.get('waypoint2') || 'N/A';
+            const waypoint3 = formData.get('waypoint3') || 'N/A';
+            const waypoint4 = formData.get('waypoint4') || 'N/A';
+            const waypoint5 = formData.get('waypoint5') || 'N/A';
 
             // Prepare rate data
             const rateData = {
@@ -99,6 +261,32 @@
                 currency: currency,
                 validUntil: validUntil,
                 transitTime: transitTime,
+                isPeakSeason: isPeakSeason,
+                peakSeasonDetails: peakSeasonDetails,
+                urgency: urgency,
+                preferredDeliveryDate: preferredDeliveryDate,
+                hideDocuments: hideDocuments,
+                transportMode: transportMode,
+                weightBucket: weightBucket,
+                incoterms: incoterms,
+                deliveryType: deliveryType,
+                loadType: loadType,
+                pallets: pallets,
+                palletType: palletType,
+                containerType: containerType,
+                airWeight: airWeight,
+                volume: volume,
+                collectionCountry: collectionCountry,
+                collectionPostcode: collectionPostcode,
+                collectionLocation: collectionLocation,
+                deliveryCountry: deliveryCountry,
+                deliveryPostcode: deliveryPostcode,
+                deliveryLocation: deliveryLocation,
+                waypoint1: waypoint1,
+                waypoint2: waypoint2,
+                waypoint3: waypoint3,
+                waypoint4: waypoint4,
+                waypoint5: waypoint5,
                 haulierId: haulierId,
                 quoteId: quoteId,
                 submittedAt: new Date()
@@ -139,31 +327,32 @@
                     currency: currency,
                     validUntil: validUntil,
                     transitTime: transitTime,
-                    transportMode: quoteData.transportMode || "N/A",
-                    weightBucket: quoteData.weightBucket || "N/A",
-                    incoterms: quoteData.incoterms || "N/A",
-                    deliveryType: quoteData.deliveryType || "N/A",
-                    pallets: quoteData.pallets || "N/A",
-                    palletType: quoteData.palletType || "N/A",
-                    containerType: quoteData.containerType || "N/A",
-                    airWeight: quoteData.airWeight || "N/A",
-                    volume: quoteData.volume || "N/A",
-                    isPeakSeason: quoteData.isPeakSeason ? "Yes" : "No",
-                    peakSeasonDetails: quoteData.peakSeasonDetails || "N/A",
-                    urgency: quoteData.urgency || "N/A",
-                    preferredDeliveryDate: quoteData.preferredDeliveryDate || "N/A",
-                    hideDocuments: quoteData.hideDocuments ? "Yes" : "No",
-                    collectionCountry: quoteData.collection?.country || "N/A",
-                    collectionPostcode: quoteData.collection?.postcode || "N/A",
-                    collectionLocation: quoteData.collection?.location || "N/A",
-                    deliveryCountry: quoteData.delivery?.country || "N/A",
-                    deliveryPostcode: quoteData.delivery?.postcode || "N/A",
-                    deliveryLocation: quoteData.delivery?.location || "N/A",
-                    waypoint1: quoteData.waypoint1 || "N/A",
-                    waypoint2: quoteData.waypoint2 || "N/A",
-                    waypoint3: quoteData.waypoint3 || "N/A",
-                    waypoint4: quoteData.waypoint4 || "N/A",
-                    waypoint5: quoteData.waypoint5 || "N/A",
+                    transportMode: transportMode,
+                    weightBucket: weightBucket,
+                    incoterms: incoterms,
+                    deliveryType: deliveryType,
+                    loadType: loadType,
+                    pallets: pallets,
+                    palletType: palletType,
+                    containerType: containerType,
+                    airWeight: airWeight,
+                    volume: volume,
+                    isPeakSeason: isPeakSeason,
+                    peakSeasonDetails: peakSeasonDetails,
+                    urgency: urgency,
+                    preferredDeliveryDate: preferredDeliveryDate,
+                    hideDocuments: hideDocuments,
+                    collectionCountry: collectionCountry,
+                    collectionPostcode: collectionPostcode,
+                    collectionLocation: collectionLocation,
+                    deliveryCountry: deliveryCountry,
+                    deliveryPostcode: deliveryPostcode,
+                    deliveryLocation: deliveryLocation,
+                    waypoint1: waypoint1,
+                    waypoint2: waypoint2,
+                    waypoint3: waypoint3,
+                    waypoint4: waypoint4,
+                    waypoint5: waypoint5,
                     quoteId: quoteId
                 };
 
