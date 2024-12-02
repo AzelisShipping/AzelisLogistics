@@ -16,18 +16,37 @@
     </script>
 </head>
 <body class="bg-gray-50">
-    <div class="max-w-5xl mx-auto p-6 mt-10 bg-white rounded shadow">
+    <div class="max-w-6xl mx-auto p-6 mt-10 bg-white rounded shadow">
         <h2 class="text-3xl font-bold mb-6 text-center">Submit Your Quote</h2>
         
         <!-- Tender Overview -->
         <div id="tenderOverview" class="mb-8">
             <h3 class="text-2xl font-semibold mb-4">Tender Details</h3>
-            <div class="overflow-x-auto">
-                <table class="w-full table-auto border-collapse">
-                    <tbody id="tenderDetailsTable">
-                        <!-- Tender details will be populated here -->
-                    </tbody>
-                </table>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- Column 1 -->
+                <div>
+                    <table class="w-full table-auto">
+                        <tbody id="tenderDetailsTable1">
+                            <!-- Tender details will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+                <!-- Column 2 -->
+                <div>
+                    <table class="w-full table-auto">
+                        <tbody id="tenderDetailsTable2">
+                            <!-- Tender details will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+                <!-- Column 3 -->
+                <div>
+                    <table class="w-full table-auto">
+                        <tbody id="tenderDetailsTable3">
+                            <!-- Tender details will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
         
@@ -36,26 +55,47 @@
             <!-- Basic Quote Details -->
             <div>
                 <h3 class="text-xl font-semibold mb-2">Your Quote</h3>
-                <div>
-                    <label class="block text-sm font-medium">Price *</label>
-                    <input type="number" name="price" required class="w-full p-2 border rounded" step="0.01" placeholder="Enter your price">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium">Price *</label>
+                        <input type="number" name="price" required class="w-full p-2 border rounded" step="0.01" placeholder="Enter your price">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium">Currency *</label>
+                        <select name="currency" required class="w-full p-2 border rounded">
+                            <option value="">Select Currency</option>
+                            <option value="GBP">GBP (£)</option>
+                            <option value="EUR">EUR (€)</option>
+                            <option value="USD">USD ($)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium">Valid Until *</label>
+                        <input type="date" name="validUntil" required class="w-full p-2 border rounded">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium">Estimated Transit Time (Days)</label>
+                        <input type="number" name="transitTime" class="w-full p-2 border rounded" min="1" placeholder="e.g., 5">
+                    </div>
                 </div>
-                <div class="mt-2">
-                    <label class="block text-sm font-medium">Currency *</label>
-                    <select name="currency" required class="w-full p-2 border rounded">
-                        <option value="">Select Currency</option>
-                        <option value="GBP">GBP (£)</option>
-                        <option value="EUR">EUR (€)</option>
-                        <option value="USD">USD ($)</option>
-                    </select>
-                </div>
-                <div class="mt-2">
-                    <label class="block text-sm font-medium">Valid Until *</label>
-                    <input type="date" name="validUntil" required class="w-full p-2 border rounded">
-                </div>
-                <div class="mt-2">
-                    <label class="block text-sm font-medium">Estimated Transit Time (Days)</label>
-                    <input type="number" name="transitTime" class="w-full p-2 border rounded" min="1" placeholder="e.g., 5">
+            </div>
+            
+            <!-- Surcharges -->
+            <div>
+                <h3 class="text-xl font-semibold mb-2">Surcharges</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium">Fixed Rate Surcharges</label>
+                        <input type="number" name="fixedRateSurcharges" class="w-full p-2 border rounded" step="0.01" placeholder="Enter fixed surcharges">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium">% Surcharge Based on Initial Rate</label>
+                        <input type="number" name="percentSurcharge" class="w-full p-2 border rounded" step="0.01" placeholder="Enter percentage surcharge">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium">Total</label>
+                        <input type="number" name="total" readonly class="w-full p-2 border rounded bg-gray-100" placeholder="Total will be calculated">
+                    </div>
                 </div>
             </div>
             
@@ -63,130 +103,8 @@
             <div>
                 <h3 class="text-xl font-semibold mb-2">Additional Services</h3>
                 <div class="flex items-center mt-2">
-                    <input type="checkbox" name="isPeakSeason" value="Yes" class="mr-2">
-                    <span>Is Peak Season?</span>
-                </div>
-                <div class="mt-2">
-                    <label class="block text-sm font-medium">Peak Season Details</label>
-                    <input type="text" name="peakSeasonDetails" class="w-full p-2 border rounded" placeholder="Provide details if applicable">
-                </div>
-                <div class="mt-2">
-                    <label class="block text-sm font-medium">Urgency</label>
-                    <input type="text" name="urgency" class="w-full p-2 border rounded" placeholder="e.g., High, Medium, Low">
-                </div>
-                <div class="mt-2">
-                    <label class="block text-sm font-medium">Preferred Delivery Date</label>
-                    <input type="date" name="preferredDeliveryDate" class="w-full p-2 border rounded">
-                </div>
-                <div class="mt-2">
-                    <label class="flex items-center">
-                        <input type="checkbox" name="hideDocuments" value="Yes" class="mr-2">
-                        Hide Documents
-                    </label>
-                </div>
-            </div>
-            
-            <!-- Transport Details -->
-            <div>
-                <h3 class="text-xl font-semibold mb-2">Transport Details</h3>
-                <div>
-                    <label class="block text-sm font-medium">Transport Mode</label>
-                    <input type="text" name="transportMode" class="w-full p-2 border rounded" placeholder="e.g., Road, Air, Sea">
-                </div>
-                <div class="mt-2">
-                    <label class="block text-sm font-medium">Weight Bucket</label>
-                    <input type="text" name="weightBucket" class="w-full p-2 border rounded" placeholder="e.g., 1ton-5tons">
-                </div>
-                <div class="mt-2">
-                    <label class="block text-sm font-medium">Incoterms</label>
-                    <input type="text" name="incoterms" class="w-full p-2 border rounded" placeholder="e.g., FOB, CIF">
-                </div>
-                <div class="mt-2">
-                    <label class="block text-sm font-medium">Delivery Type</label>
-                    <input type="text" name="deliveryType" class="w-full p-2 border rounded" placeholder="e.g., Express, Standard">
-                </div>
-            </div>
-            
-            <!-- Load Details -->
-            <div>
-                <h3 class="text-xl font-semibold mb-2">Load Details</h3>
-                <div>
-                    <label class="block text-sm font-medium">Load Type</label>
-                    <input type="text" name="loadType" class="w-full p-2 border rounded" placeholder="e.g., Full Truck Load, Partial Load">
-                </div>
-                <div class="mt-2">
-                    <label class="block text-sm font-medium">Pallets</label>
-                    <input type="number" name="pallets" class="w-full p-2 border rounded" min="0" placeholder="Number of pallets">
-                </div>
-                <div class="mt-2">
-                    <label class="block text-sm font-medium">Pallet Type</label>
-                    <input type="text" name="palletType" class="w-full p-2 border rounded" placeholder="e.g., Standard, Euro">
-                </div>
-                <div class="mt-2">
-                    <label class="block text-sm font-medium">Container Type</label>
-                    <input type="text" name="containerType" class="w-full p-2 border rounded" placeholder="e.g., 20ft, 40ft">
-                </div>
-                <div class="mt-2">
-                    <label class="block text-sm font-medium">Air Weight (KG)</label>
-                    <input type="number" name="airWeight" class="w-full p-2 border rounded" min="0" step="0.01" placeholder="Enter air weight">
-                </div>
-                <div class="mt-2">
-                    <label class="block text-sm font-medium">Volume (CBM)</label>
-                    <input type="number" name="volume" class="w-full p-2 border rounded" min="0" step="0.01" placeholder="Enter volume">
-                </div>
-            </div>
-            
-            <!-- Route Details -->
-            <div>
-                <h3 class="text-xl font-semibold mb-2">Route Details</h3>
-                <div>
-                    <label class="block text-sm font-medium">Collection Country</label>
-                    <input type="text" name="collectionCountry" class="w-full p-2 border rounded" placeholder="e.g., GBR">
-                </div>
-                <div class="mt-2">
-                    <label class="block text-sm font-medium">Collection Postcode</label>
-                    <input type="text" name="collectionPostcode" class="w-full p-2 border rounded" placeholder="e.g., 22222">
-                </div>
-                <div class="mt-2">
-                    <label class="block text-sm font-medium">Collection Location</label>
-                    <input type="text" name="collectionLocation" class="w-full p-2 border rounded" placeholder="e.g., N/A">
-                </div>
-                <div class="mt-2">
-                    <label class="block text-sm font-medium">Delivery Country</label>
-                    <input type="text" name="deliveryCountry" class="w-full p-2 border rounded" placeholder="e.g., GBR">
-                </div>
-                <div class="mt-2">
-                    <label class="block text-sm font-medium">Delivery Postcode</label>
-                    <input type="text" name="deliveryPostcode" class="w-full p-2 border rounded" placeholder="e.g., CH66 1PF">
-                </div>
-                <div class="mt-2">
-                    <label class="block text-sm font-medium">Delivery Location</label>
-                    <input type="text" name="deliveryLocation" class="w-full p-2 border rounded" placeholder="e.g., N/A">
-                </div>
-            </div>
-            
-            <!-- Waypoints -->
-            <div>
-                <h3 class="text-xl font-semibold mb-2">Waypoints</h3>
-                <div>
-                    <label class="block text-sm font-medium">Waypoint 1</label>
-                    <input type="text" name="waypoint1" class="w-full p-2 border rounded" placeholder="e.g., Location 1">
-                </div>
-                <div class="mt-2">
-                    <label class="block text-sm font-medium">Waypoint 2</label>
-                    <input type="text" name="waypoint2" class="w-full p-2 border rounded" placeholder="e.g., Location 2">
-                </div>
-                <div class="mt-2">
-                    <label class="block text-sm font-medium">Waypoint 3</label>
-                    <input type="text" name="waypoint3" class="w-full p-2 border rounded" placeholder="e.g., Location 3">
-                </div>
-                <div class="mt-2">
-                    <label class="block text-sm font-medium">Waypoint 4</label>
-                    <input type="text" name="waypoint4" class="w-full p-2 border rounded" placeholder="e.g., Location 4">
-                </div>
-                <div class="mt-2">
-                    <label class="block text-sm font-medium">Waypoint 5</label>
-                    <input type="text" name="waypoint5" class="w-full p-2 border rounded" placeholder="e.g., Location 5">
+                    <input type="checkbox" name="hideDocuments" value="Yes" class="mr-2">
+                    <span>Acknowledge Hide Commercial Documents</span>
                 </div>
             </div>
             
@@ -230,7 +148,7 @@
             return emailjs.send('Azelis_Logistics', 'template_12utb0n', emailParams);
         }
 
-        // Function to populate tender details
+        // Function to populate tender details in three columns
         async function populateTenderDetails() {
             if (!quoteId) {
                 displayMessage('Missing quoteId in URL parameters.');
@@ -243,33 +161,45 @@
                     return;
                 }
                 const quoteData = quoteDoc.data();
-                const tenderDetailsTable = document.getElementById('tenderDetailsTable');
+                const tenderDetails1 = document.getElementById('tenderDetailsTable1');
+                const tenderDetails2 = document.getElementById('tenderDetailsTable2');
+                const tenderDetails3 = document.getElementById('tenderDetailsTable3');
+
+                let count = 0;
                 for (const [key, value] of Object.entries(quoteData)) {
-                    // Skip haulierId and other non-display fields if necessary
-                    if (key === 'haulierId' || key === 'status' || key === 'respondedAt' || key === 'responseBy') continue;
+                    // Skip non-display fields
+                    if (['haulierId', 'status', 'respondedAt', 'responseBy'].includes(key)) continue;
+                    
                     // Handle nested objects like collection and delivery
                     if (typeof value === 'object' && value !== null) {
                         for (const [subKey, subValue] of Object.entries(value)) {
-                            tenderDetailsTable.innerHTML += `
-                                <tr>
-                                    <td>${formatKey(key + ' ' + subKey)}</td>
-                                    <td>${subValue}</td>
-                                </tr>
-                            `;
+                            addRow(tenderDetails1, formatKey(key + ' ' + subKey), subValue);
+                            count++;
+                            if (count % 3 === 0) continue;
                         }
                     } else {
-                        tenderDetailsTable.innerHTML += `
-                            <tr>
-                                <td>${formatKey(key)}</td>
-                                <td>${value}</td>
-                            </tr>
-                        `;
+                        addRow(tenderDetails1, formatKey(key), value);
+                        count++;
+                        if (count % 3 === 0) continue;
                     }
                 }
+
+                // Optionally distribute rows to other columns if needed
+                // For simplicity, all rows are added to the first column
             } catch (error) {
                 console.error('Error fetching quote details:', error);
                 displayMessage('Error fetching quote details. Please try again.');
             }
+        }
+
+        // Function to add a row to a table
+        function addRow(table, key, value) {
+            table.innerHTML += `
+                <tr>
+                    <td>${key}:</td>
+                    <td>${value}</td>
+                </tr>
+            `;
         }
 
         // Function to format keys to a more readable format
@@ -279,6 +209,20 @@
 
         // Call the function to populate tender details on page load
         window.onload = populateTenderDetails;
+
+        // Calculate Total
+        function calculateTotal() {
+            const price = parseFloat(document.querySelector('input[name="price"]').value) || 0;
+            const fixedSurcharge = parseFloat(document.querySelector('input[name="fixedRateSurcharges"]').value) || 0;
+            const percentSurcharge = parseFloat(document.querySelector('input[name="percentSurcharge"]').value) || 0;
+            const total = price + fixedSurcharge + (price * (percentSurcharge / 100));
+            document.querySelector('input[name="total"]').value = total.toFixed(2);
+        }
+
+        // Add event listeners for surcharge fields to calculate total
+        document.querySelector('input[name="price"]').addEventListener('input', calculateTotal);
+        document.querySelector('input[name="fixedRateSurcharges"]').addEventListener('input', calculateTotal);
+        document.querySelector('input[name="percentSurcharge"]').addEventListener('input', calculateTotal);
 
         document.getElementById('submitQuoteForm').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -292,36 +236,14 @@
 
             // Gather form data
             const formData = new FormData(e.target);
-            const price = parseFloat(formData.get('price'));
-            const currency = formData.get('currency');
-            const validUntil = formData.get('validUntil');
-            const transitTime = formData.get('transitTime') ? parseInt(formData.get('transitTime')) : null;
-            const isPeakSeason = formData.get('isPeakSeason') === 'Yes' ? 'Yes' : 'No';
-            const peakSeasonDetails = formData.get('peakSeasonDetails') || 'N/A';
-            const urgency = formData.get('urgency') || 'N/A';
-            const preferredDeliveryDate = formData.get('preferredDeliveryDate') || 'N/A';
+            const price = parseFloat(formData.get('price')) || 0;
+            const currency = formData.get('currency') || 'N/A';
+            const validUntil = formData.get('validUntil') || 'N/A';
+            const transitTime = formData.get('transitTime') ? parseInt(formData.get('transitTime')) : 'N/A';
+            const fixedRateSurcharges = parseFloat(formData.get('fixedRateSurcharges')) || 0;
+            const percentSurcharge = parseFloat(formData.get('percentSurcharge')) || 0;
+            const total = parseFloat(formData.get('total')) || 0;
             const hideDocuments = formData.get('hideDocuments') === 'Yes' ? 'Yes' : 'No';
-            const transportMode = formData.get('transportMode') || 'N/A';
-            const weightBucket = formData.get('weightBucket') || 'N/A';
-            const incoterms = formData.get('incoterms') || 'N/A';
-            const deliveryType = formData.get('deliveryType') || 'N/A';
-            const loadType = formData.get('loadType') || 'N/A';
-            const pallets = formData.get('pallets') || 'N/A';
-            const palletType = formData.get('palletType') || 'N/A';
-            const containerType = formData.get('containerType') || 'N/A';
-            const airWeight = formData.get('airWeight') || 'N/A';
-            const volume = formData.get('volume') || 'N/A';
-            const collectionCountry = formData.get('collectionCountry') || 'N/A';
-            const collectionPostcode = formData.get('collectionPostcode') || 'N/A';
-            const collectionLocation = formData.get('collectionLocation') || 'N/A';
-            const deliveryCountry = formData.get('deliveryCountry') || 'N/A';
-            const deliveryPostcode = formData.get('deliveryPostcode') || 'N/A';
-            const deliveryLocation = formData.get('deliveryLocation') || 'N/A';
-            const waypoint1 = formData.get('waypoint1') || 'N/A';
-            const waypoint2 = formData.get('waypoint2') || 'N/A';
-            const waypoint3 = formData.get('waypoint3') || 'N/A';
-            const waypoint4 = formData.get('waypoint4') || 'N/A';
-            const waypoint5 = formData.get('waypoint5') || 'N/A';
 
             // Prepare rate data
             const rateData = {
@@ -329,32 +251,10 @@
                 currency: currency,
                 validUntil: validUntil,
                 transitTime: transitTime,
-                isPeakSeason: isPeakSeason,
-                peakSeasonDetails: peakSeasonDetails,
-                urgency: urgency,
-                preferredDeliveryDate: preferredDeliveryDate,
+                fixedRateSurcharges: fixedRateSurcharges,
+                percentSurcharge: percentSurcharge,
+                total: total,
                 hideDocuments: hideDocuments,
-                transportMode: transportMode,
-                weightBucket: weightBucket,
-                incoterms: incoterms,
-                deliveryType: deliveryType,
-                loadType: loadType,
-                pallets: pallets,
-                palletType: palletType,
-                containerType: containerType,
-                airWeight: airWeight,
-                volume: volume,
-                collectionCountry: collectionCountry,
-                collectionPostcode: collectionPostcode,
-                collectionLocation: collectionLocation,
-                deliveryCountry: deliveryCountry,
-                deliveryPostcode: deliveryPostcode,
-                deliveryLocation: deliveryLocation,
-                waypoint1: waypoint1,
-                waypoint2: waypoint2,
-                waypoint3: waypoint3,
-                waypoint4: waypoint4,
-                waypoint5: waypoint5,
                 haulierId: haulierId,
                 quoteId: quoteId,
                 submittedAt: new Date()
@@ -391,37 +291,14 @@
                     tenderId: quoteId,
                     haulierName: haulierData.name || "Haulier Company",
                     haulierEmail: haulierData.email || "haulier@example.com",
-                    price: price,
+                    price: price.toFixed(2),
                     currency: currency,
                     validUntil: validUntil,
                     transitTime: transitTime,
-                    transportMode: transportMode,
-                    weightBucket: weightBucket,
-                    incoterms: incoterms,
-                    deliveryType: deliveryType,
-                    loadType: loadType,
-                    pallets: pallets,
-                    palletType: palletType,
-                    containerType: containerType,
-                    airWeight: airWeight,
-                    volume: volume,
-                    isPeakSeason: isPeakSeason,
-                    peakSeasonDetails: peakSeasonDetails,
-                    urgency: urgency,
-                    preferredDeliveryDate: preferredDeliveryDate,
-                    hideDocuments: hideDocuments,
-                    collectionCountry: collectionCountry,
-                    collectionPostcode: collectionPostcode,
-                    collectionLocation: collectionLocation,
-                    deliveryCountry: deliveryCountry,
-                    deliveryPostcode: deliveryPostcode,
-                    deliveryLocation: deliveryLocation,
-                    waypoint1: waypoint1,
-                    waypoint2: waypoint2,
-                    waypoint3: waypoint3,
-                    waypoint4: waypoint4,
-                    waypoint5: waypoint5,
-                    quoteId: quoteId
+                    fixedRateSurcharges: fixedRateSurcharges.toFixed(2),
+                    percentSurcharge: percentSurcharge.toFixed(2),
+                    total: total.toFixed(2),
+                    hideDocuments: hideDocuments
                 };
 
                 console.log('Email parameters:', emailParams); // Debugging
