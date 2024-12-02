@@ -7,81 +7,35 @@
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
-    <!-- EmailJS SDK -->
-    <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
-    <script>
-        (function(){
-            emailjs.init("ZU_ZvcimnTfLR22wF"); // Initialize EmailJS with your public key
-        })();
-    </script>
-    <style>
-        /* Optional: Add any additional custom styles here */
-    </style>
 </head>
 <body class="bg-gray-50">
-    <div id="quoteForm" class="max-w-2xl mx-auto p-4 mt-8">
-        <div class="bg-white rounded-lg shadow-lg p-6">
-            <h2 class="text-xl font-bold mb-6">Submit Your Quote</h2>
-            
-            <!-- Quote Details Display -->
-            <div id="quoteDetails" class="mb-6 p-4 bg-gray-50 rounded-lg">
-                <h3 class="font-semibold mb-2">Quote Details</h3>
-                <!-- Will be populated by JavaScript -->
+    <div class="max-w-md mx-auto p-4 mt-10 bg-white rounded shadow">
+        <h2 class="text-2xl font-bold mb-6 text-center">Submit Your Quote</h2>
+        <form id="submitQuoteForm" class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium">Price *</label>
+                <input type="number" name="price" required class="w-full p-2 border rounded" step="0.01" placeholder="Enter your price">
             </div>
-
-            <form id="submitQuoteForm" class="space-y-4">
-                <div>
-                    <label class="block text-sm font-medium mb-1">Price *</label>
-                    <div class="flex gap-4">
-                        <input type="number" name="price" required class="flex-1 p-2 border rounded" step="0.01" placeholder="Enter your price">
-                        <select name="currency" required class="w-32 p-2 border rounded">
-                            <option value="">Select Currency</option>
-                            <option value="GBP">GBP (£)</option>
-                            <option value="EUR">EUR (€)</option>
-                            <option value="USD">USD ($)</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium mb-1">Valid Until *</label>
-                    <input type="date" name="validUntil" required class="w-full p-2 border rounded">
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium mb-1">Estimated Transit Time (Days)</label>
-                    <input type="number" name="transitTime" class="w-full p-2 border rounded" min="1" placeholder="e.g., 5">
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium mb-1">Additional Services Available</label>
-                    <div class="space-y-2">
-                        <label class="flex items-center">
-                            <input type="checkbox" name="services" value="Tracking" class="mr-2">
-                            Real-time Tracking
-                        </label>
-                        <label class="flex items-center">
-                            <input type="checkbox" name="services" value="Insurance" class="mr-2">
-                            Insurance Available
-                        </label>
-                        <label class="flex items-center">
-                            <input type="checkbox" name="services" value="Customs" class="mr-2">
-                            Customs Clearance
-                        </label>
-                    </div>
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium mb-1">Notes & Terms</label>
-                    <textarea name="notes" class="w-full p-2 border rounded" rows="4" 
-                              placeholder="Add any additional information, terms, or conditions..."></textarea>
-                </div>
-
-                <button type="submit" class="w-full bg-blue-600 text-white p-3 rounded-lg font-medium hover:bg-blue-700">
-                    Submit Quote
-                </button>
-            </form>
-        </div>
+            <div>
+                <label class="block text-sm font-medium">Currency *</label>
+                <select name="currency" required class="w-full p-2 border rounded">
+                    <option value="">Select Currency</option>
+                    <option value="GBP">GBP (£)</option>
+                    <option value="EUR">EUR (€)</option>
+                    <option value="USD">USD ($)</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium">Valid Until *</label>
+                <input type="date" name="validUntil" required class="w-full p-2 border rounded">
+            </div>
+            <div>
+                <label class="block text-sm font-medium">Estimated Transit Time (Days)</label>
+                <input type="number" name="transitTime" class="w-full p-2 border rounded" min="1" placeholder="e.g., 5">
+            </div>
+            <button type="submit" class="w-full bg-blue-600 text-white p-2 rounded">Submit Quote</button>
+        </form>
+        <div id="message" class="mt-4 text-center text-red-500"></div>
     </div>
 
     <script>
@@ -103,137 +57,49 @@
         const quoteId = urlParams.get('quoteId');
         const haulierId = urlParams.get('haulierId');
 
-        // Function to display quote details
-        function displayQuoteDetails(quoteData) {
-            const detailsDiv = document.getElementById('quoteDetails');
-            detailsDiv.innerHTML = `
-                <div class="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                        <p><strong>Transport Mode:</strong> ${quoteData.transportMode}</p>
-                        <p><strong>Weight Bucket:</strong> ${quoteData.weightBucket}</p>
-                        <p><strong>Incoterms:</strong> ${quoteData.incoterms}</p>
-                        <p><strong>Collection:</strong> ${quoteData.collection.postcode}, ${quoteData.collection.country}</p>
-                        <p><strong>Delivery:</strong> ${quoteData.delivery.postcode}, ${quoteData.delivery.country}</p>
-                    </div>
-                    <div>
-                        <p><strong>Delivery Type:</strong> ${quoteData.deliveryType}</p>
-                        ${quoteData.isFullTruckLoad 
-                            ? '<p><strong>Load Type:</strong> Full Truck Load</p>'
-                            : `<p><strong>Pallets:</strong> ${quoteData.pallets}</p>`}
-                        ${quoteData.containerType ? `<p><strong>Container Type:</strong> ${quoteData.containerType}</p>` : ''}
-                        ${quoteData.airWeight ? `<p><strong>Air Weight:</strong> ${quoteData.airWeight}kg</p>` : ''}
-                        ${quoteData.volume ? `<p><strong>Volume:</strong> ${quoteData.volume}CBM</p>` : ''}
-                    </div>
-                </div>
-            `;
-        }
-
-        // Function to fetch and display quote data
-        async function getQuoteData() {
-            if (!quoteId) {
-                alert('Missing quoteId in URL parameters.');
-                return null;
-            }
-            try {
-                const quoteDoc = await db.collection('quotes').doc(quoteId).get();
-                if (!quoteDoc.exists) {
-                    alert('Quote not found.');
-                    return null;
-                }
-                const quoteData = quoteDoc.data();
-                displayQuoteDetails(quoteData);
-                return quoteData;
-            } catch (error) {
-                console.error('Error fetching quote data:', error);
-                alert('Error fetching quote data. Please try again.');
-                return null;
-            }
-        }
-
-        // Function to fetch haulier data
-        async function getHaulierData() {
-            if (!haulierId) {
-                alert('Missing haulierId in URL parameters.');
-                return null;
-            }
-            try {
-                const haulierDoc = await db.collection('hauliers').doc(haulierId).get();
-                if (!haulierDoc.exists) {
-                    alert('Haulier not found.');
-                    return null;
-                }
-                const haulierData = haulierDoc.data();
-                return haulierData;
-            } catch (error) {
-                console.error('Error fetching haulier data:', error);
-                alert('Error fetching haulier data. Please try again.');
-                return null;
-            }
-        }
-
-        // Function to format prices map into a readable string
-        function formatPrices(pricesMap, currency) {
-            let formattedPrices = "";
-            for (const [pallet, price] of Object.entries(pricesMap)) {
-                formattedPrices += `${pallet} Pallet${pallet > 1 ? 's' : ''}: ${price} ${currency}<br>`;
-            }
-            return formattedPrices;
-        }
-
-        // Function to send email via EmailJS
-        function sendNotificationEmail(emailParams) {
-            return emailjs.send('Azelis_Logistics', 'template_12utb0n', emailParams);
+        // Function to display a message to the user
+        function displayMessage(msg, isError = true) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.textContent = msg;
+            messageDiv.className = isError ? 'mt-4 text-center text-red-500' : 'mt-4 text-center text-green-500';
         }
 
         document.getElementById('submitQuoteForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const formData = new FormData(e.target);
-            const quoteData = await getQuoteData();
-            const haulierData = await getHaulierData();
+            displayMessage(''); // Clear any previous messages
 
-            if (!quoteData || !haulierData) {
-                alert('Invalid submission. Please check the URL and try again.');
+            // Basic validation for URL parameters
+            if (!quoteId || !haulierId) {
+                displayMessage('Missing quoteId or haulierId in URL parameters.');
                 return;
             }
 
+            // Gather form data
+            const formData = new FormData(e.target);
+            const price = parseFloat(formData.get('price'));
+            const currency = formData.get('currency');
+            const validUntil = formData.get('validUntil');
+            const transitTime = formData.get('transitTime') ? parseInt(formData.get('transitTime')) : null;
+
+            // Prepare rate data
+            const rateData = {
+                price: price,
+                currency: currency,
+                validUntil: validUntil,
+                transitTime: transitTime,
+                haulierId: haulierId,
+                quoteId: quoteId,
+                submittedAt: new Date()
+            };
+
+            console.log('Submitting rate:', rateData); // Debugging
+
             try {
-                // Get selected services
-                const services = Array.from(formData.getAll('services'));
-
-                // Prepare rate data
-                const rateData = {
-                    collectionCountry: quoteData.collection.country,
-                    collectionPostcode: quoteData.collection.postcode,
-                    deliveryCountry: quoteData.delivery.country,
-                    deliveryPostcode: quoteData.delivery.postcode,
-                    deliveryType: quoteData.deliveryType,
-                    transportMode: quoteData.transportMode,
-                    weightBucket: quoteData.weightBucket,
-                    incoterms: quoteData.incoterms,
-                    containerType: quoteData.containerType || null,
-                    airWeight: quoteData.airWeight || null,
-                    volume: quoteData.volume || null,
-                    priceValidity: formData.get('validUntil'),
-                    currency: formData.get('currency'),
-                    transitTime: formData.get('transitTime') ? parseInt(formData.get('transitTime')) : null,
-                    services: services,
-                    notes: formData.get('notes') || '',
-                    isFullTruckLoad: quoteData.isFullTruckLoad,
-                    fullTruckLoadPrice: quoteData.isFullTruckLoad ? parseFloat(formData.get('price')) : null,
-                    prices: quoteData.isFullTruckLoad ? {} : {
-                        [quoteData.pallets]: parseFloat(formData.get('price'))
-                    },
-                    haulierId: haulierId,
-                    submittedAt: new Date()
-                };
-
-                console.log('Submitting rate:', rateData); // Debugging
-
                 // Add rate to 'rates' collection
                 const rateRef = await db.collection('rates').add(rateData);
                 console.log('Rate added with ID:', rateRef.id); // Debugging
 
-                // Update quote status
+                // Optionally, update the quote's status
                 await db.collection('quotes').doc(quoteId).update({
                     status: 'responded',
                     respondedAt: new Date(),
@@ -241,65 +107,16 @@
                 });
                 console.log('Quote status updated.'); // Debugging
 
-                // Prepare email parameters for internal notification
-                const emailParams = {
-                    subject: "New Tender Quote Submission Received",
-                    to_email: quoteData.userEmail, // The internal user's email
-                    internalUserName: quoteData.internalUserName || "Team", // Ensure 'internalUserName' exists in Firestore or set default
-                    tenderId: quoteId,
-                    haulierName: haulierData.name || "Haulier Company", // Haulier's name
-                    haulierEmail: haulierData.email || "haulier@example.com", // Haulier's email
-                    transportMode: rateData.transportMode,
-                    weightBucket: rateData.weightBucket,
-                    incoterms: rateData.incoterms,
-                    currency: rateData.currency,
-                    loadType: rateData.isFullTruckLoad ? "Full Truck Load" : "Partial Load",
-                    deliveryType: rateData.deliveryType,
-                    pallets: rateData.isFullTruckLoad ? "N/A" : rateData.pallets,
-                    palletType: quoteData.palletType || "Standard", // Haulier's pallet type
-                    containerType: rateData.containerType || "N/A",
-                    airWeight: rateData.airWeight || "N/A",
-                    volume: rateData.volume || "N/A",
-                    priceValidity: rateData.priceValidity,
-                    transitTime: rateData.transitTime || "N/A",
-                    services: rateData.services.join(', ') || "None",
-                    notes: rateData.notes || "None",
-                    collectionCountry: rateData.collectionCountry,
-                    collectionPostcode: rateData.collectionPostcode,
-                    collectionLocation: quoteData.collection.location || "N/A", // Ensure 'collection.location' exists
-                    deliveryCountry: rateData.deliveryCountry,
-                    deliveryPostcode: rateData.deliveryPostcode,
-                    deliveryLocation: quoteData.delivery.location || "N/A", // Ensure 'delivery.location' exists
-                    isFullTruckLoad: rateData.isFullTruckLoad,
-                    fullTruckLoadPrice: rateData.fullTruckLoadPrice ? rateData.fullTruckLoadPrice.toFixed(2) : "N/A",
-                    prices: rateData.isFullTruckLoad ? "N/A" : formatPrices(rateData.prices, rateData.currency),
-                    submittedAt: rateData.submittedAt.toLocaleString()
-                    // Removed 'reviewLink' since you don't have one
-                };
-
-                console.log('Email parameters:', emailParams); // Debugging
-
-                // Send notification email to internal user
-                sendNotificationEmail(emailParams)
-                    .then((response) => {
-                        console.log('Notification email sent successfully!', response.status, response.text);
-                    })
-                    .catch((error) => {
-                        console.error('Failed to send notification email:', error);
-                        // Optionally, notify the user about the email failure
-                        alert('Rate submitted, but failed to send notification email.');
-                    });
-
-                alert('Rate submitted successfully!');
-                window.location.href = 'https://azelisshipping.github.io/AzelisLogistics/success.html';
+                displayMessage('Rate submitted successfully!', false);
+                // Optionally, redirect after a short delay
+                setTimeout(() => {
+                    window.location.href = 'https://azelisshipping.github.io/AzelisLogistics/success.html';
+                }, 2000);
             } catch (error) {
                 console.error('Error submitting rate:', error);
-                alert('Failed to submit rate. Please try again.');
+                displayMessage('Failed to submit rate. Please try again.');
             }
         });
-
-        // Initialize page by fetching quote data
-        getQuoteData();
     </script>
 </body>
 </html>
