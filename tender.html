@@ -443,6 +443,47 @@
 
             await db.collection('quotes').doc(quoteId).update(quoteUpdate);
 
+            // **New Code: Save to 'rates' collection**
+            const rateData = {
+                quoteId: quoteId,
+                haulierId: haulierId,
+                haulierName: haulierData.name,
+                haulierEmail: haulierData.email,
+                userEmail: quoteData.userEmail,
+                price: parseFloat(formData.get('price')),
+                currency: formData.get('currency'),
+                validUntil: formData.get('validUntil'),
+                transitTime: parseInt(formData.get('transitTime')),
+                fixedRateSurcharges: parseFloat(formData.get('fixedRateSurcharges')) || 0,
+                percentSurcharge: parseFloat(formData.get('percentSurcharge')) || 0,
+                total: parseFloat(formData.get('total')),
+                hideDocuments: formData.get('hideDocuments') === 'on',
+                palletRates: palletRates,
+                submittedAt: new Date(),
+                // Optional: Include additional quote details if needed
+                collection: quoteData.collection || {},
+                delivery: quoteData.delivery || {},
+                transportMode: quoteData.transportMode || 'N/A',
+                weightBucket: quoteData.weightBucket || 'N/A',
+                weightType: quoteData.weightType || 'N/A',
+                incoterms: quoteData.incoterms || 'N/A',
+                deliveryType: quoteData.deliveryType || 'N/A',
+                loadType: quoteData.loadType || 'N/A',
+                pallets: quoteData.pallets || 'N/A',
+                volume: quoteData.volume || 'N/A',
+                palletType: quoteData.palletType || 'N/A',
+                containerType: quoteData.containerType || 'N/A',
+                airWeight: quoteData.airWeight || 'N/A',
+                isPeakSeason: quoteData.isPeakSeason || false,
+                peakSeasonDetails: quoteData.peakSeasonDetails || 'N/A',
+                urgency: quoteData.urgency || 'N/A',
+                preferredDeliveryDate: quoteData.preferredDeliveryDate || 'N/A',
+                waypoints: quoteData.waypoints || []
+            };
+
+            await db.collection('rates').add(rateData);
+            // **End of New Code**
+
             displayMessage('Quote submitted successfully!');
             
             // Disable form after successful submission
