@@ -4,8 +4,19 @@
     <meta charset="UTF-8">
     <title>Submit Your Quote - Azelis Shipping</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
+    <!-- EmailJS SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+    <script>
+        (function(){
+            emailjs.init("ZU_ZvcimnTfLR22wF"); // Initialize EmailJS with your public key
+        })();
+    </script>
+    <style>
+        /* Optional: Add any additional custom styles here */
+    </style>
 </head>
 <body class="bg-gray-50">
     <div id="quoteForm" class="max-w-2xl mx-auto p-4 mt-8">
@@ -73,6 +84,7 @@
     </div>
 
     <script>
+        // Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyDiIRLwLeMAf1VZbZ7ygvGDu-gZH6sA424",
             authDomain: "azelislogistics.firebaseapp.com",
@@ -85,6 +97,7 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
+        // Retrieve URL parameters
         const urlParams = new URLSearchParams(window.location.search);
         const quoteId = urlParams.get('quoteId');
         const haulierId = urlParams.get('haulierId');
@@ -120,14 +133,25 @@
                 alert('Missing quoteId in URL parameters.');
                 return null;
             }
-            const quoteDoc = await db.collection('quotes').doc(quoteId).get();
-            if (!quoteDoc.exists) {
-                alert('Quote not found.');
+            try {
+                const quoteDoc = await db.collection('quotes').doc(quoteId).get();
+                if (!quoteDoc.exists) {
+                    alert('Quote not found.');
+                    return null;
+                }
+                const quoteData = quoteDoc.data();
+                displayQuoteDetails(quoteData);
+                return quoteData;
+            } catch (error) {
+                console.error('Error fetching quote data:', error);
+                alert('Error fetching quote data. Please try again.');
                 return null;
             }
-            const quoteData = quoteDoc.data();
-            displayQuoteDetails(quoteData);
-            return quoteData;
+        }
+
+        // Function to send email via EmailJS
+        function sendNotificationEmail(emailParams) {
+            return emailjs.send('Azelis_Logistics', 'template_12utb0n', emailParams);
         }
 
         document.getElementById('submitQuoteForm').addEventListener('submit', async (e) => {
@@ -135,7 +159,10 @@
             const formData = new FormData(e.target);
             const quoteData = await getQuoteData();
 
-            if (!quoteData || !haulierId) return;
+            if (!quoteData || !haulierId) {
+                alert('Invalid submission. Please check the URL and try again.');
+                return;
+            }
 
             try {
                 // Get selected services
@@ -151,14 +178,14 @@
                     transportMode: quoteData.transportMode,
                     weightBucket: quoteData.weightBucket,
                     incoterms: quoteData.incoterms,
-                    containerType: quoteData.containerType,
-                    airWeight: quoteData.airWeight,
-                    volume: quoteData.volume,
+                    containerType: quoteData.containerType || null,
+                    airWeight: quoteData.airWeight || null,
+                    volume: quoteData.volume || null,
                     priceValidity: formData.get('validUntil'),
                     currency: formData.get('currency'),
-                    transitTime: formData.get('transitTime'),
+                    transitTime: formData.get('transitTime') ? parseInt(formData.get('transitTime')) : null,
                     services: services,
-                    notes: formData.get('notes'),
+                    notes: formData.get('notes') || '',
                     isFullTruckLoad: quoteData.isFullTruckLoad,
                     fullTruckLoadPrice: quoteData.isFullTruckLoad ? parseFloat(formData.get('price')) : null,
                     prices: quoteData.isFullTruckLoad ? {} : {
@@ -169,7 +196,7 @@
                 };
 
                 // Add rate to 'rates' collection
-                await db.collection('rates').add(rateData);
+                const rateRef = await db.collection('rates').add(rateData);
 
                 // Update quote status
                 await db.collection('quotes').doc(quoteId).update({
@@ -178,15 +205,60 @@
                     responseBy: haulierId
                 });
 
+                // Prepare email parameters for internal notification
+                const emailParams = {
+                    subject: "New Tender Quote Submission Received",
+                    internalUserName: quoteData.internalUserName || "Team", // Replace with actual internal user name if available
+                    tenderId: quoteId,
+                    haulierName: quoteData.haulierName || "Haulier Company", // Replace with actual haulier name if available
+                    haulierEmail: quoteData.haulierEmail || "haulier@example.com", // Replace with actual haulier email if available
+                    transportMode: rateData.transportMode,
+                    weightBucket: rateData.weightBucket,
+                    incoterms: rateData.incoterms,
+                    currency: rateData.currency,
+                    loadType: rateData.isFullTruckLoad ? "Full Truck Load" : "Partial Load",
+                    deliveryType: rateData.deliveryType,
+                    pallets: rateData.isFullTruckLoad ? "N/A" : rateData.pallets,
+                    palletType: quoteData.palletType || "Standard", // Replace with actual pallet type if available
+                    containerType: rateData.containerType || "N/A",
+                    airWeight: rateData.airWeight || "N/A",
+                    volume: rateData.volume || "N/A",
+                    priceValidity: rateData.priceValidity,
+                    transitTime: rateData.transitTime || "N/A",
+                    services: rateData.services.join(', ') || "None",
+                    notes: rateData.notes || "None",
+                    collectionCountry: rateData.collectionCountry,
+                    collectionPostcode: rateData.collectionPostcode,
+                    collectionLocation: quoteData.collectionLocation || "N/A", // Replace with actual collection location if available
+                    deliveryCountry: rateData.deliveryCountry,
+                    deliveryPostcode: rateData.deliveryPostcode,
+                    deliveryLocation: quoteData.deliveryLocation || "N/A", // Replace with actual delivery location if available
+                    isFullTruckLoad: rateData.isFullTruckLoad,
+                    fullTruckLoadPrice: rateData.fullTruckLoadPrice ? rateData.fullTruckLoadPrice.toFixed(2) : "N/A",
+                    prices: rateData.prices,
+                    submittedAt: rateData.submittedAt.toLocaleString(),
+                    reviewLink: `https://yourdomain.com/review.html?rateId=${rateRef.id}` // Replace with your actual review page URL
+                };
+
+                // Send notification email to internal user
+                sendNotificationEmail(emailParams)
+                    .then((response) => {
+                        console.log('Notification email sent successfully!', response.status, response.text);
+                    })
+                    .catch((error) => {
+                        console.error('Failed to send notification email:', error);
+                        // Optionally, notify the user about the email failure
+                    });
+
                 alert('Rate submitted successfully!');
                 window.location.href = 'https://azelisshipping.github.io/AzelisLogistics/success.html';
             } catch (error) {
-                console.error('Error:', error);
+                console.error('Error submitting rate:', error);
                 alert('Failed to submit rate. Please try again.');
             }
         });
 
-        // Initialize page
+        // Initialize page by fetching quote data
         getQuoteData();
     </script>
 </body>
