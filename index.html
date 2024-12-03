@@ -1286,7 +1286,7 @@ const PostcodeSelector = ({ isOpen, onClose, onSelect, savedPostcodes, country, 
                                     <input
                                         type="number"
                                         className="combobox-input w-24"
-                                        min="1"
+                                        min="0"
                                         max="24"
                                         value={pallets}
                                         onChange={(e) => setPallets(Math.min(Math.max(parseInt(e.target.value) || 1, 1), 24))}
