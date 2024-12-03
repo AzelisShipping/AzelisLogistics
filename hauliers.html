@@ -199,7 +199,7 @@
                     email: formData.get('email'),
                     phone: formData.get('phone'),
                     countries: selectedCountries,
-                    transportModes: transportModes, // New field
+                    transportModes: transportModes,  // Add this line
                     services: formData.getAll('services'),
                     certifications: formData.getAll('certifications'),
                     active: true,
@@ -966,163 +966,200 @@
                             </div>
                         )}
 
-                        {/* Haulier Form Modal */}
-                        {showHaulierForm && (
-                            <div className="modal-overlay">
-                                <div className="modal-content max-w-2xl">
-                                    <div className="flex justify-between items-start mb-4">
-                                        <h3 className="text-lg font-semibold">
-                                            {editingHaulier ? 'Edit Haulier' : 'Add New Haulier'}
-                                        </h3>
+                    {/* Haulier Form Modal */}
+                    {showHaulierForm && (
+                        <div className="modal-overlay">
+                            <div className="modal-content max-w-2xl">
+                                <div className="flex justify-between items-start mb-4">
+                                    <h3 className="text-lg font-semibold">
+                                        {editingHaulier ? 'Edit Haulier' : 'Add New Haulier'}
+                                    </h3>
+                                    <button 
+                                        onClick={() => {
+                                            setShowHaulierForm(false);
+                                            setEditingHaulier(null);
+                                        }}
+                                        className="text-gray-400 hover:text-gray-600"
+                                    >
+                                        ×
+                                    </button>
+                                </div>
+                                
+                                <form onSubmit={handleHaulierSubmit} className="space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1">Company Name *</label>
+                                        <input 
+                                            name="name"
+                                            type="text"
+                                            required
+                                            defaultValue={editingHaulier?.name}
+                                            className="w-full p-2 border rounded"
+                                        />
+                                    </div>
+                                    
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-medium mb-1">Email Address *</label>
+                                            <input 
+                                                name="email"
+                                                type="email"
+                                                required
+                                                defaultValue={editingHaulier?.email}
+                                                className="w-full p-2 border rounded"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium mb-1">Phone Number</label>
+                                            <input 
+                                                name="phone"
+                                                type="tel"
+                                                defaultValue={editingHaulier?.phone}
+                                                className="w-full p-2 border rounded"
+                                            />
+                                        </div>
+                                    </div>
+                    
+                                    {/* Transport Modes Section */}
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2">Transport Modes *</label>
+                                        <div className="space-y-2">
+                                            <label className="flex items-center">
+                                                <input 
+                                                    type="checkbox" 
+                                                    name="transportModes" 
+                                                    value="Road"
+                                                    defaultChecked={editingHaulier?.transportModes?.includes('Road')}
+                                                    className="mr-2"
+                                                />
+                                                Road Transport
+                                            </label>
+                                            <label className="flex items-center">
+                                                <input 
+                                                    type="checkbox" 
+                                                    name="transportModes" 
+                                                    value="Sea"
+                                                    defaultChecked={editingHaulier?.transportModes?.includes('Sea')}
+                                                    className="mr-2"
+                                                />
+                                                Sea Freight
+                                            </label>
+                                            <label className="flex items-center">
+                                                <input 
+                                                    type="checkbox" 
+                                                    name="transportModes" 
+                                                    value="Air"
+                                                    defaultChecked={editingHaulier?.transportModes?.includes('Air')}
+                                                    className="mr-2"
+                                                />
+                                                Air Freight
+                                            </label>
+                                        </div>
+                                    </div>
+                    
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2">Operating Countries *</label>
+                                        <select
+                                            multiple
+                                            name="operatingCountries"
+                                            required
+                                            defaultValue={editingHaulier?.countries || []}
+                                            className="w-full p-2 border rounded h-40"
+                                        >
+                                            {allowedCountries.map(country => (
+                                                <option key={country} value={country}>
+                                                    {country}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <small className="text-gray-500">
+                                            Hold Ctrl/Cmd to select multiple countries
+                                        </small>
+                                    </div>
+                    
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2">Services Offered</label>
+                                        <div className="space-y-2">
+                                            <label className="flex items-center">
+                                                <input 
+                                                    type="checkbox" 
+                                                    name="services" 
+                                                    value="ADR"
+                                                    defaultChecked={editingHaulier?.services?.includes('ADR')}
+                                                    className="mr-2"
+                                                />
+                                                ADR/Hazardous Goods
+                                            </label>
+                                            <label className="flex items-center">
+                                                <input 
+                                                    type="checkbox" 
+                                                    name="services" 
+                                                    value="TEMP"
+                                                    defaultChecked={editingHaulier?.services?.includes('TEMP')}
+                                                    className="mr-2"
+                                                />
+                                                Temperature Controlled
+                                            </label>
+                                            <label className="flex items-center">
+                                                <input 
+                                                    type="checkbox" 
+                                                    name="services" 
+                                                    value="EXPRESS"
+                                                    defaultChecked={editingHaulier?.services?.includes('EXPRESS')}
+                                                    className="mr-2"
+                                                />
+                                                Express Delivery
+                                            </label>
+                                        </div>
+                                    </div>
+                    
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2">Certifications</label>
+                                        <div className="space-y-2">
+                                            <label className="flex items-center">
+                                                <input 
+                                                    type="checkbox" 
+                                                    name="certifications" 
+                                                    value="ISO9001"
+                                                    defaultChecked={editingHaulier?.certifications?.includes('ISO9001')}
+                                                    className="mr-2"
+                                                />
+                                                ISO 9001
+                                            </label>
+                                            <label className="flex items-center">
+                                                <input 
+                                                    type="checkbox" 
+                                                    name="certifications" 
+                                                    value="GDP"
+                                                    defaultChecked={editingHaulier?.certifications?.includes('GDP')}
+                                                    className="mr-2"
+                                                />
+                                                GDP Compliant
+                                            </label>
+                                        </div>
+                                    </div>
+                    
+                                    <div className="flex gap-2">
                                         <button 
+                                            type="submit"
+                                            className="flex-1 azelis-blue text-white p-2 rounded hover:bg-blue-700"
+                                        >
+                                            {editingHaulier ? 'Update' : 'Add'} Haulier
+                                        </button>
+                                        <button 
+                                            type="button"
                                             onClick={() => {
                                                 setShowHaulierForm(false);
                                                 setEditingHaulier(null);
                                             }}
-                                            className="text-gray-400 hover:text-gray-600"
+                                            className="flex-1 bg-gray-200 text-gray-700 p-2 rounded hover:bg-gray-300"
                                         >
-                                            ×
+                                            Cancel
                                         </button>
                                     </div>
-                                    
-                                    <form onSubmit={handleHaulierSubmit} className="space-y-4">
-                                        <div>
-                                            <label className="block text-sm font-medium mb-1">Company Name *</label>
-                                            <input 
-                                                name="name"
-                                                type="text"
-                                                required
-                                                defaultValue={editingHaulier?.name}
-                                                className="w-full p-2 border rounded"
-                                            />
-                                        </div>
-                                        
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div>
-                                                <label className="block text-sm font-medium mb-1">Email Address *</label>
-                                                <input 
-                                                    name="email"
-                                                    type="email"
-                                                    required
-                                                    defaultValue={editingHaulier?.email}
-                                                    className="w-full p-2 border rounded"
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium mb-1">Phone Number</label>
-                                                <input 
-                                                    name="phone"
-                                                    type="tel"
-                                                    defaultValue={editingHaulier?.phone}
-                                                    className="w-full p-2 border rounded"
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <div>
-                                            <label className="block text-sm font-medium mb-2">Operating Countries *</label>
-                                            <select
-                                                multiple
-                                                name="operatingCountries"
-                                                required
-                                                defaultValue={editingHaulier?.countries || []}
-                                                className="w-full p-2 border rounded h-40"
-                                            >
-                                                {allowedCountries.map(country => (
-                                                    <option key={country} value={country}>
-                                                        {country}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                            <small className="text-gray-500">
-                                                Hold Ctrl/Cmd to select multiple countries
-                                            </small>
-                                        </div>
-
-                                        <div>
-                                            <label className="block text-sm font-medium mb-2">Services Offered</label>
-                                            <div className="space-y-2">
-                                                <label className="flex items-center">
-                                                    <input 
-                                                        type="checkbox" 
-                                                        name="services" 
-                                                        value="ADR"
-                                                        defaultChecked={editingHaulier?.services?.includes('ADR')}
-                                                        className="mr-2"
-                                                    />
-                                                    ADR/Hazardous Goods
-                                                </label>
-                                                <label className="flex items-center">
-                                                    <input 
-                                                        type="checkbox" 
-                                                        name="services" 
-                                                        value="TEMP"
-                                                        defaultChecked={editingHaulier?.services?.includes('TEMP')}
-                                                        className="mr-2"
-                                                    />
-                                                    Temperature Controlled
-                                                </label>
-                                                <label className="flex items-center">
-                                                    <input 
-                                                        type="checkbox" 
-                                                        name="services" 
-                                                        value="EXPRESS"
-                                                        defaultChecked={editingHaulier?.services?.includes('EXPRESS')}
-                                                        className="mr-2"
-                                                    />
-                                                    Express Delivery
-                                                </label>
-                                            </div>
-                                        </div>
-
-                                        <div>
-                                            <label className="block text-sm font-medium mb-2">Certifications</label>
-                                            <div className="space-y-2">
-                                                <label className="flex items-center">
-                                                    <input 
-                                                        type="checkbox" 
-                                                        name="certifications" 
-                                                        value="ISO9001"
-                                                        defaultChecked={editingHaulier?.certifications?.includes('ISO9001')}
-                                                        className="mr-2"
-                                                    />
-                                                    ISO 9001
-                                                </label>
-                                                <label className="flex items-center">
-                                                    <input 
-                                                        type="checkbox" 
-                                                        name="certifications" 
-                                                        value="GDP"
-                                                        defaultChecked={editingHaulier?.certifications?.includes('GDP')}
-                                                        className="mr-2"
-                                                    />
-                                                    GDP Compliant
-                                                </label>
-                                            </div>
-                                        </div>
-
-                                        <div className="flex gap-2">
-                                            <button 
-                                                type="submit"
-                                                className="flex-1 azelis-blue text-white p-2 rounded hover:bg-blue-700"
-                                            >
-                                                {editingHaulier ? 'Update' : 'Add'} Haulier
-                                            </button>
-                                            <button 
-                                                type="button"
-                                                onClick={() => {
-                                                    setShowHaulierForm(false);
-                                                    setEditingHaulier(null);
-                                                }}
-                                                className="flex-1 bg-gray-200 text-gray-700 p-2 rounded hover:bg-gray-300"
-                                            >
-                                                Cancel
-                                            </button>
-                                        </div>
-                                    </form>
-                                </div>
+                                </form>
                             </div>
-                        )}
+                        </div>
+                    )}
 
                         {/* Rate Details Modal */}
                         {showRateDetails && selectedRate && (
