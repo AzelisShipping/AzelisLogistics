@@ -444,6 +444,9 @@
             await db.collection('quotes').doc(quoteId).update(quoteUpdate);
 
             // **New Code: Save to 'rates' collection**
+// In tender.html, update the rate data creation section:
+
+// Find this section in the quote submission handler:
             const rateData = {
                 quoteId: quoteId,
                 haulierId: haulierId,
@@ -460,10 +463,12 @@
                 hideDocuments: formData.get('hideDocuments') === 'on',
                 palletRates: palletRates,
                 submittedAt: new Date(),
+                // Add transport mode fields
+                transportMode: quoteData.transportMode,
+                haulierTransportModes: haulierData.transportModes, // Add this new field
                 // Optional: Include additional quote details if needed
                 collection: quoteData.collection || {},
                 delivery: quoteData.delivery || {},
-                transportMode: quoteData.transportMode || 'N/A',
                 weightBucket: quoteData.weightBucket || 'N/A',
                 weightType: quoteData.weightType || 'N/A',
                 incoterms: quoteData.incoterms || 'N/A',
@@ -480,7 +485,7 @@
                 preferredDeliveryDate: quoteData.preferredDeliveryDate || 'N/A',
                 waypoints: quoteData.waypoints || []
             };
-
+            
             await db.collection('rates').add(rateData);
             // **End of New Code**
 
