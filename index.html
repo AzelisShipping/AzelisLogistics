@@ -1283,14 +1283,24 @@ const PostcodeSelector = ({ isOpen, onClose, onSelect, savedPostcodes, country, 
                                     <label className="block text-sm font-medium mb-2 text-gray-600 mr-4">
                                         Number of Pallets:
                                     </label>
-                                    <input
-                                        type="number"
-                                        className="combobox-input w-24"
-                                        min="0"
-                                        max="24"
-                                        value={pallets}
-                                        onChange={(e) => setPallets(Math.min(Math.max(parseInt(e.target.value) || 1, 1), 24))}
-                                    />
+                            <input
+                                type="number"
+                                className="combobox-input w-24"
+                                min="0"
+                                max="24"
+                                value={pallets}
+                                onChange={(e) => {
+                                    const value = e.target.value;
+                                    if (value === '') {
+                                        setPallets('');
+                                    } else {
+                                        const numValue = parseInt(value);
+                                        if (!isNaN(numValue)) {
+                                            setPallets(Math.min(Math.max(numValue, 0), 24));
+                                        }
+                                    }
+                                }}
+                            />
                                 </div>
                             ) : null}
 
