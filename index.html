@@ -988,118 +988,118 @@ const sendQuoteRequest = async () => {
                         </div>
                     </div>
     
-                    {/* Basic Quote Fields */}
-                    <div className="mb-6">
-                        <h2 className="text-lg font-semibold mb-4 text-gray-700">Basic Quote Details</h2>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium mb-1 text-gray-600">
-                                    Transport Mode *
-                                </label>
+                   {/* Basic Quote Fields */}
+                <div className="mb-6">
+                    <h2 className="text-lg font-semibold mb-4 text-gray-700">Basic Quote Details</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium mb-1 text-gray-600">
+                                Transport Mode *
+                            </label>
+                            <select
+                                className="combobox-input"
+                                value={transportMode}
+                                onChange={(e) => setTransportMode(e.target.value)}
+                                required
+                            >
+                                <option value="Road">Road</option>
+                                <option value="Sea">Sea</option>
+                                <option value="Air">Air</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium mb-1 text-gray-600">
+                                Weight Bucket ({weightType === 'perPallet' ? 'Per Pallet' : 'Total Load'}) *
+                            </label>
+                            <div className="flex flex-col space-y-2">
                                 <select
                                     className="combobox-input"
-                                    value={transportMode}
-                                    onChange={(e) => setTransportMode(e.target.value)}
+                                    value={weightBucket}
+                                    onChange={(e) => setWeightBucket(e.target.value)}
                                     required
                                 >
-                                    <option value="Road">Road</option>
-                                    <option value="Sea">Sea</option>
-                                    <option value="Air">Air</option>
-                                </select>
-                            </div>
-    
-                            <div>
-                                <label className="block text-sm font-medium mb-1 text-gray-600">
-                                    Weight Bucket *
-                                </label>
-                                <div className="flex flex-col space-y-2">
-                                    <select
-                                        className="combobox-input"
-                                        value={weightBucket}
-                                        onChange={(e) => setWeightBucket(e.target.value)}
-                                        required
-                                    >
-                                        <option value="0-200kg">0 - 200 Kg</option>
-                                        <option value="201-400kg">201 - 400 Kg</option>
-                                        <option value="401-600kg">401 - 600 Kg</option>
-                                        <option value="601-800kg">601 - 800 Kg</option>
-                                        <option value="801-1000kg">801 - 1000 Kg</option>
-                                        <option value="1001-1500kg">1001 - 1500 Kg</option>
-                                        <option value="1501-2000kg">1501 - 2000 Kg</option>
-                                        <option value="2001-3000kg">2001 - 3000 Kg</option>
-                                        <option value="3001-4000kg">3001 - 4000 Kg</option>
-                                        <option value="4001-5000kg">4001 - 5000 Kg</option>
-                                        <option value="5001-6000kg">5001 - 6000 Kg</option>
-                                        <option value="6001-7000kg">6001 - 7000 Kg</option>
-                                        <option value="7001-8000kg">7001 - 8000 Kg</option>
-                                        <option value="8001-9000kg">8001 - 9000 Kg</option>
-                                        <option value="9001-10000kg">9001 - 10000 Kg</option>
-                                        <option value="10001-12000kg">10001 - 12000 Kg</option>
-                                        <option value="12001-14000kg">12001 - 14000 Kg</option>
-                                        <option value="14001-16000kg">14001 - 16000 Kg</option>
-                                        <option value="16001-18000kg">16001 - 18000 Kg</option>
-                                        <option value="18001-20000kg">18001 - 20000 Kg</option>
-                                        <option value="20001-25000kg">20001 - 25000 Kg</option>
-                                        <option value="25001-30000kg">25001 - 30000 Kg</option>
-                                    </select>
-                                </div>
-                            </div>
-    
-                            <div>
-                                <label className="block text-sm font-medium mb-1 text-gray-600">
-                                    Weight Type *
-                                </label>
-                                <div className="flex space-x-4 mt-2">
-                                    <label className="flex items-center">
-                                        <input
-                                            type="radio"
-                                            name="weightType"
-                                            value="perPallet"
-                                            checked={weightType === 'perPallet'}
-                                            onChange={() => setWeightType('perPallet')}
-                                            className="form-radio mr-2"
-                                        />
-                                        <span>Per Pallet</span>
-                                    </label>
-                                    <label className="flex items-center">
-                                        <input
-                                            type="radio"
-                                            name="weightType"
-                                            value="total"
-                                            checked={weightType === 'total'}
-                                            onChange={() => setWeightType('total')}
-                                            className="form-radio mr-2"
-                                        />
-                                        <span>Total Load</span>
-                                    </label>
-                                </div>
-                            </div>
-    
-                            <div>
-                                <label className="block text-sm font-medium mb-1 text-gray-600">
-                                    Incoterms *
-                                </label>
-                                <select
-                                    className="combobox-input"
-                                    value={incoterms}
-                                    onChange={(e) => setIncoterms(e.target.value)}
-                                    required
-                                >
-                                    <option value="EXW">EXW</option>
-                                    <option value="FCA">FCA</option>
-                                    <option value="CPT">CPT</option>
-                                    <option value="CIP">CIP</option>
-                                    <option value="DAP">DAP</option>
-                                    <option value="DPU">DPU</option>
-                                    <option value="DDP">DDP</option>
-                                    <option value="FAS">FAS</option>
-                                    <option value="FOB">FOB</option>
-                                    <option value="CFR">CFR</option>
-                                    <option value="CIF">CIF</option>
+                                    <option value="0-200kg">0 - 200 Kg</option>
+                                    <option value="201-400kg">201 - 400 Kg</option>
+                                    <option value="401-600kg">401 - 600 Kg</option>
+                                    <option value="601-800kg">601 - 800 Kg</option>
+                                    <option value="801-1000kg">801 - 1000 Kg</option>
+                                    <option value="1001-1500kg">1001 - 1500 Kg</option>
+                                    <option value="1501-2000kg">1501 - 2000 Kg</option>
+                                    <option value="2001-3000kg">2001 - 3000 Kg</option>
+                                    <option value="3001-4000kg">3001 - 4000 Kg</option>
+                                    <option value="4001-5000kg">4001 - 5000 Kg</option>
+                                    <option value="5001-6000kg">5001 - 6000 Kg</option>
+                                    <option value="6001-7000kg">6001 - 7000 Kg</option>
+                                    <option value="7001-8000kg">7001 - 8000 Kg</option>
+                                    <option value="8001-9000kg">8001 - 9000 Kg</option>
+                                    <option value="9001-10000kg">9001 - 10000 Kg</option>
+                                    <option value="10001-12000kg">10001 - 12000 Kg</option>
+                                    <option value="12001-14000kg">12001 - 14000 Kg</option>
+                                    <option value="14001-16000kg">14001 - 16000 Kg</option>
+                                    <option value="16001-18000kg">16001 - 18000 Kg</option>
+                                    <option value="18001-20000kg">18001 - 20000 Kg</option>
+                                    <option value="20001-25000kg">20001 - 25000 Kg</option>
+                                    <option value="25001-30000kg">25001 - 30000 Kg</option>
                                 </select>
                             </div>
                         </div>
+
+                        <div>
+                            <label className="block text-sm font-medium mb-1 text-gray-600">
+                                Weight Type *
+                            </label>
+                            <div className="flex space-x-4 mt-2">
+                                <label className="flex items-center">
+                                    <input
+                                        type="radio"
+                                        name="weightType"
+                                        value="perPallet"
+                                        checked={weightType === 'perPallet'}
+                                        onChange={() => setWeightType('perPallet')}
+                                        className="form-radio mr-2"
+                                    />
+                                    <span>Per Pallet</span>
+                                </label>
+                                <label className="flex items-center">
+                                    <input
+                                        type="radio"
+                                        name="weightType"
+                                        value="total"
+                                        checked={weightType === 'total'}
+                                        onChange={() => setWeightType('total')}
+                                        className="form-radio mr-2"
+                                    />
+                                    <span>Total Load</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium mb-1 text-gray-600">
+                                Incoterms *
+                            </label>
+                            <select
+                                className="combobox-input"
+                                value={incoterms}
+                                onChange={(e) => setIncoterms(e.target.value)}
+                                required
+                            >
+                                <option value="EXW">EXW</option>
+                                <option value="FCA">FCA</option>
+                                <option value="CPT">CPT</option>
+                                <option value="CIP">CIP</option>
+                                <option value="DAP">DAP</option>
+                                <option value="DPU">DPU</option>
+                                <option value="DDP">DDP</option>
+                                <option value="FAS">FAS</option>
+                                <option value="FOB">FOB</option>
+                                <option value="CFR">CFR</option>
+                                <option value="CIF">CIF</option>
+                            </select>
+                        </div>
                     </div>
+                </div>
  
 
                     {/* Collection Details */}
@@ -1195,8 +1195,7 @@ const sendQuoteRequest = async () => {
                             </div>
                         </div>
                     </div>
-
-                    {/* Advanced Options Section */}
+                    {/* In the Advanced Options section, remove the Weight Type Selection */}
                     <div className="mb-6">
                         <h2 className="text-lg font-semibold mb-4 text-gray-700">Advanced Options</h2>
                         <div className="space-y-4">
@@ -1230,6 +1229,7 @@ const sendQuoteRequest = async () => {
                                             </button>
                                         </>
                                     )}
+
                                     {transportMode === 'Sea' && (
                                         <>
                                             <button
@@ -1272,34 +1272,7 @@ const sendQuoteRequest = async () => {
                                 </div>
                             </div>
                             
-                            {/* Weight Type Selection */}
-                            <div className="flex items-center">
-                                <label className="block text-sm font-medium mb-2 text-gray-600 mr-4">
-                                    Weight Type:
-                                </label>
-                                <label className="flex items-center mr-4">
-                                    <input
-                                        type="radio"
-                                        name="weightType"
-                                        value="perPallet"
-                                        checked={weightType === 'perPallet'}
-                                        onChange={() => setWeightType('perPallet')}
-                                        className="form-radio"
-                                    />
-                                    <span className="ml-2">Per Pallet</span>
-                                </label>
-                                <label className="flex items-center">
-                                    <input
-                                        type="radio"
-                                        name="weightType"
-                                        value="total"
-                                        checked={weightType === 'total'}
-                                        onChange={() => setWeightType('total')}
-                                        className="form-radio"
-                                    />
-                                    <span className="ml-2">Total Load</span>
-                                </label>
-                            </div>
+    
 
                             {/* Number of Pallets */}
                             {(transportMode === 'Road' && loadType === 'Partial Load') || (transportMode === 'Sea' && loadType === 'LCL') || (transportMode === 'Air' && loadType === 'Pallets') ? (
