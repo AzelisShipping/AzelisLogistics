@@ -182,9 +182,15 @@
                 e.preventDefault();
                 const formData = new FormData(e.target);
                 const selectedCountries = formData.getAll('operatingCountries');
+                const transportModes = formData.getAll('transportModes');
             
                 if (selectedCountries.length === 0) {
                     alert('Please select at least one country of delivery.');
+                    return;
+                }
+            
+                if (transportModes.length === 0) {
+                    alert('Please select at least one transport mode.');
                     return;
                 }
             
@@ -193,6 +199,7 @@
                     email: formData.get('email'),
                     phone: formData.get('phone'),
                     countries: selectedCountries,
+                    transportModes: transportModes, // New field
                     services: formData.getAll('services'),
                     certifications: formData.getAll('certifications'),
                     active: true,
@@ -652,6 +659,9 @@
                                                     Contact
                                                 </th>
                                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    Transport Modes
+                                                </th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                     Countries
                                                 </th>
                                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -682,10 +692,26 @@
                                                         </td>
                                                         <td className="px-6 py-4">
                                                             <div className="flex flex-wrap gap-1">
+                                                                {haulier.transportModes?.map(mode => (
+                                                                    <span 
+                                                                        key={mode}
+                                                                        className={`px-2 py-1 rounded-full text-xs ${
+                                                                            mode === 'Road' ? 'bg-green-100 text-green-800' :
+                                                                            mode === 'Sea' ? 'bg-blue-100 text-blue-800' :
+                                                                            'bg-purple-100 text-purple-800'
+                                                                        }`}
+                                                                    >
+                                                                        {mode}
+                                                                    </span>
+                                                                ))}
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-6 py-4">
+                                                            <div className="flex flex-wrap gap-1">
                                                                 {haulier.countries.map(country => (
                                                                     <span 
                                                                         key={country}
-                                                                        className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs"
+                                                                        className="px-2 py-1 bg-gray-100 text-gray-800 rounded-full text-xs"
                                                                     >
                                                                         {country}
                                                                     </span>
