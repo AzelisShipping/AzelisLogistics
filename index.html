@@ -601,7 +601,7 @@ const PostcodeSelector = ({ isOpen, onClose, onSelect, savedPostcodes, country, 
         // Advanced Options State
         const [loadType, setLoadType] = useState('Partial Load'); // Changed from isFullTruckLoad
         const [weightType, setWeightType] = useState('perPallet'); // 'perPallet' or 'total'
-        const [pallets, setPallets] = useState(1);
+        const [pallets, setPallets] = useState('');
         const [containerType, setContainerType] = useState('');
         const [airWeight, setAirWeight] = useState('');
         const [volume, setVolume] = useState('');
