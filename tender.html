@@ -7,6 +7,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
     <script>emailjs.init("ZU_ZvcimnTfLR22wF");</script>
     <style>
         .azelis-blue { background-color: #003087; }
@@ -311,24 +312,104 @@
 
             // Populate pallet rates table
             const palletRatesBody = document.getElementById('palletRatesBody');
-            palletRatesBody.innerHTML = Array.from({ length: 24 }, (_, i) => `
-                <tr>
-                    <td class="px-4 py-2 border text-center">${i + 1}</td>
-                    <td class="px-4 py-2 border">
-                        <input type="number" 
-                               name="palletRate_${i + 1}" 
-                               class="w-full p-2 border rounded" 
-                               step="0.01" 
-                               placeholder="Rate for ${i + 1} pallet${i > 0 ? 's' : ''}">
-                    </td>
-                </tr>
-            `).join('');
-
-            // Set form currency to match quote currency
-            if (quoteData.currency) {
-                document.querySelector('select[name="currency"]').value = quoteData.currency;
+            if (quoteData.getAllPalletRates) {
+                // Show all 24 pallet rates with import/export options
+                const ratesContainer = document.createElement('div');
+                ratesContainer.className = 'mb-4';
+                
+                // Add Excel import/export buttons
+                const buttonContainer = document.createElement('div');
+                buttonContainer.className = 'mb-4 flex gap-4';
+                
+                // Export template button
+                const exportTemplateBtn = document.createElement('button');
+                exportTemplateBtn.className = 'px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600';
+                exportTemplateBtn.textContent = 'Export Template';
+                exportTemplateBtn.onclick = () => {
+                    const wb = XLSX.utils.book_new();
+                    const ws_data = Array.from({length: 24}, (_, i) => [`${i + 1} Pallet`, '']);
+                    const ws = XLSX.utils.aoa_to_sheet([['Pallets', 'Rate'], ...ws_data]);
+                    XLSX.utils.book_append_sheet(wb, ws, "Pallet Rates");
+                    XLSX.writeFile(wb, "pallet_rates_template.xlsx");
+                };
+               // Import rates button
+                const importInput = document.createElement('input');
+                importInput.type = 'file';
+                importInput.accept = '.xlsx,.xls';
+                importInput.className = 'hidden';
+                importInput.onchange = (e) => {
+                    const file = e.target.files[0];
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                        const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+                        
+                        jsonData.forEach(row => {
+                            const palletNum = row['Pallets'].split(' ')[0];
+                            const rateInput = document.querySelector(`[name="palletRate_${palletNum}"]`);
+                            if (rateInput) {
+                                rateInput.value = row['Rate'];
+                            }
+                        });
+                    };
+                    reader.readAsArrayBuffer(file);
+                };
+                
+                const importBtn = document.createElement('button');
+                importBtn.className = 'px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600';
+                importBtn.textContent = 'Import Rates';
+                importBtn.onclick = () => importInput.click();
+                
+                buttonContainer.appendChild(exportTemplateBtn);
+                buttonContainer.appendChild(importBtn);
+                buttonContainer.appendChild(importInput);
+                
+                palletRatesBody.parentElement.parentElement.insertBefore(buttonContainer, palletRatesBody.parentElement);
+                
+                // Create textarea for bulk paste
+                const bulkPasteContainer = document.createElement('div');
+                bulkPasteContainer.className = 'mb-4';
+                const bulkPasteLabel = document.createElement('label');
+                bulkPasteLabel.className = 'block text-sm font-medium mb-2';
+                bulkPasteLabel.textContent = 'Paste rates from Excel (one rate per line)';
+                const bulkPasteArea = document.createElement('textarea');
+                bulkPasteArea.className = 'w-full p-2 border rounded';
+                bulkPasteArea.rows = 5;
+                bulkPasteArea.onchange = (e) => {
+                    const rates = e.target.value.split('\n');
+                    rates.forEach((rate, index) => {
+                        if (index < 24) {
+                            const rateInput = document.querySelector(`[name="palletRate_${index + 1}"]`);
+                            if (rateInput) {
+                                rateInput.value = rate.trim();
+                            }
+                        }
+                    });
+                };
+                
+                bulkPasteContainer.appendChild(bulkPasteLabel);
+                bulkPasteContainer.appendChild(bulkPasteArea);
+                palletRatesBody.parentElement.parentElement.insertBefore(bulkPasteContainer, palletRatesBody.parentElement);
+            } else if (quoteData.loadType === 'Partial Load' || quoteData.loadType === 'LCL') {
+                // Show only single pallet rate input
+                palletRatesBody.innerHTML = `
+                    <tr>
+                        <td class="px-4 py-2 border text-center">${quoteData.pallets}</td>
+                        <td class="px-4 py-2 border">
+                            <input type="number" 
+                                   name="palletRate_${quoteData.pallets}" 
+                                   class="w-full p-2 border rounded" 
+                                   step="0.01" 
+                                   placeholder="Rate for ${quoteData.pallets} pallet${quoteData.pallets > 1 ? 's' : ''}">
+                        </td>
+                    </tr>
+                `;
+            } else {
+                // Hide pallet rates section for FTL
+                document.getElementById('palletRatesSection').style.display = 'none';
             }
-
             // Show/hide pallet rates section based on load type
             const palletRatesSection = document.getElementById('palletRatesSection');
             palletRatesSection.style.display = quoteData.loadType === 'Full Truck Load' ? 'none' : 'block';
