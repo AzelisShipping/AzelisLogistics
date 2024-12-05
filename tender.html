@@ -67,7 +67,7 @@
                     <h4 class="font-semibold mb-2">Delivery Details</h4>
                     <p><strong>Delivery Type:</strong> <span id="deliveryType"></span></p>
                     <p><strong>Load Type:</strong> <span id="loadType"></span></p>
-                    <p><strong>Pallets:</strong> <span id="pallets"></span></p>
+                    <p><strong>Pallets:</strong> <span id="pallets2"></span></p>
                     <p><strong>Volume (CBM):</strong> <span id="volume"></span></p>
                 </div>
                 
@@ -114,7 +114,8 @@
                 </div>
             </div>
         </div>
-<!-- Quote Submission Form -->
+
+        <!-- Quote Submission Form -->
         <form id="submitQuoteForm" class="space-y-6">
             <!-- Basic Quote Details -->
             <div>
@@ -209,8 +210,12 @@
 <script>
     // Firebase configuration
     const firebaseConfig = {
-        // Your Firebase config here
-        // ...
+        apiKey: "AIzaSyDiIRLwLeMAf1VZbZ7ygvGDu-gZH6sA424",
+        authDomain: "azelislogistics.firebaseapp.com",
+        projectId: "azelislogistics",
+        storageBucket: "azelislogistics.appspot.com",
+        messagingSenderId: "13102382958",
+        appId: "1:13102382958:web:82a3324843432519cb8b7f"
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
@@ -289,6 +294,11 @@
             const quoteDoc = await db.collection('quotes').doc(quoteId).get();
             quoteData = quoteDoc.data();
 
+            if (!quoteData) {
+                displayMessage('Quote data not found', true);
+                return;
+            }
+
             // Populate all the tender details
             document.getElementById('tenderId').textContent = quoteId;
             document.getElementById('transportMode').textContent = quoteData.transportMode || 'N/A';
@@ -297,10 +307,11 @@
             document.getElementById('incoterms').textContent = quoteData.incoterms || 'N/A';
             document.getElementById('displayCurrency').textContent = quoteData.currency || 'N/A';
             document.getElementById('getAllPalletRates').textContent = quoteData.getAllPalletRates ? 'Yes' : 'No';
+            document.getElementById('pallets').textContent = quoteData.pallets || 'N/A';
             
             document.getElementById('deliveryType').textContent = quoteData.deliveryType || 'N/A';
             document.getElementById('loadType').textContent = quoteData.loadType || 'N/A';
-            document.getElementById('pallets').textContent = quoteData.pallets || 'N/A';
+            document.getElementById('pallets2').textContent = quoteData.pallets || 'N/A';
             document.getElementById('volume').textContent = quoteData.volume ? `${quoteData.volume} CBM` : 'N/A';
             
             document.getElementById('palletType').textContent = quoteData.palletType || 'N/A';
@@ -507,7 +518,10 @@
 
             // Show/hide pallet rates section based on load type
             const palletRatesSection = document.getElementById('palletRatesSection');
-            palletRatesSection.style.display = quoteData.loadType === 'Full Truck Load' ? 'none' : 'block';
+            palletRatesSection.style.display = (quoteData.loadType === 'Full Truck Load' || !quoteData.loadType) ? 'none' : 'block';
+
+            // Set currency field to match quote data
+            document.querySelector('[name="currency"]').value = quoteData.currency || 'GBP';
 
         } catch (error) {
             console.error('Error fetching quote:', error);
