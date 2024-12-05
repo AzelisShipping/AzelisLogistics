@@ -53,12 +53,13 @@
         <div id="tenderOverview" class="mb-8">
             <h3 class="text-2xl font-semibold mb-4">Tender Details</h3>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <!-- Basic Information -->
+                <!-- Important Details -->
                 <div class="border p-4 rounded shadow-sm highlight">
                     <h4 class="font-semibold mb-2">Important Details</h4>
                     <p><strong>Tender ID:</strong> <span id="tenderId"></span></p>
                     <p><strong>Get All Pallet Rates:</strong> <span id="getAllPalletRates"></span></p>
-                    <p><strong>Number of Pallets:</strong> <span id="pallets"></span></p>
+                    <p id="numberOfPalletsField"><strong>Number of Pallets:</strong> <span id="pallets"></span></p>
+                    <p id="containerTypeField"><strong>Container Type:</strong> <span id="containerType"></span></p>
                 </div>
                 
                 <!-- Transport Information -->
@@ -83,7 +84,6 @@
                 <!-- Additional Information -->
                 <div class="border p-4 rounded shadow-sm">
                     <h4 class="font-semibold mb-2">Additional Information</h4>
-                    <p><strong>Container Type:</strong> <span id="containerType"></span></p>
                     <p><strong>Air Weight (KG):</strong> <span id="airWeight"></span></p>
                     <p><strong>Peak Season:</strong> <span id="peakSeason"></span></p>
                     <p><strong>Peak Details:</strong> <span id="peakDetails"></span></p>
@@ -125,17 +125,10 @@
 
         <!-- Quote Submission Form -->
         <form id="submitQuoteForm" class="space-y-6">
-            <!-- Basic Quote Details -->
-            <div>
+            <!-- Rate Table -->
+            <div id="rateTableSection">
                 <h3 class="text-xl font-semibold mb-2">Your Quote</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div id="basePriceField">
-                        <label class="block text-sm font-medium mb-1">Base Price *</label>
-                        <div class="tooltip">
-                            <input type="number" name="price" required class="w-full p-2 border rounded" step="0.01">
-                            <span class="tooltip-text">Enter your base price without surcharges</span>
-                        </div>
-                    </div>
                     <div>
                         <label class="block text-sm font-medium mb-1">Currency *</label>
                         <select name="currency" required class="w-full p-2 border rounded">
@@ -153,49 +146,31 @@
                         <input type="number" name="transitTime" required class="w-full p-2 border rounded" min="1">
                     </div>
                 </div>
-            </div>
-            
-            <!-- Surcharges -->
-            <div>
-                <h3 class="text-xl font-semibold mb-2">Surcharges</h3>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium mb-1">Fixed Rate Surcharges</label>
-                        <div class="tooltip">
-                            <input type="number" name="fixedRateSurcharges" class="w-full p-2 border rounded" step="0.01" value="0">
-                            <span class="tooltip-text">Additional fixed costs (e.g., fuel surcharge)</span>
+
+                <!-- Surcharges -->
+                <div class="mt-4">
+                    <h3 class="text-xl font-semibold mb-2">Surcharges</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Fixed Rate Surcharges</label>
+                            <div class="tooltip">
+                                <input type="number" name="fixedRateSurcharges" class="w-full p-2 border rounded" step="0.01" value="0">
+                                <span class="tooltip-text">Additional fixed costs (e.g., fuel surcharge)</span>
+                            </div>
                         </div>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium mb-1">% Surcharge</label>
-                        <div class="tooltip">
-                            <input type="number" name="percentSurcharge" class="w-full p-2 border rounded" step="0.01" value="0">
-                            <span class="tooltip-text">Percentage-based surcharges</span>
+                        <div>
+                            <label class="block text-sm font-medium mb-1">% Surcharge</label>
+                            <div class="tooltip">
+                                <input type="number" name="percentSurcharge" class="w-full p-2 border rounded" step="0.01" value="0">
+                                <span class="tooltip-text">Percentage-based surcharges</span>
+                            </div>
                         </div>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium mb-1">Total</label>
-                        <input type="number" name="total" readonly class="w-full p-2 border rounded bg-gray-100">
                     </div>
                 </div>
-            </div>
 
-            <!-- Per-Pallet Rates -->
-            <div id="palletRatesSection">
-                <h3 class="text-xl font-semibold mb-2">Per-Pallet Rates</h3>
-                <div class="overflow-x-auto">
-                    <table class="w-full table-auto border">
-                        <thead>
-                            <tr class="bg-gray-200">
-                                <th class="px-4 py-2 border">Pallet Quantity</th>
-                                <th class="px-4 py-2 border">Rate</th>
-                                <th class="px-4 py-2 border">Total</th>
-                            </tr>
-                        </thead>
-                        <tbody id="palletRatesBody">
-                            <!-- Pallet rates will be populated here -->
-                        </tbody>
-                    </table>
+                <!-- Rate Table -->
+                <div id="dynamicRateTable" class="mt-4">
+                    <!-- The rate table will be dynamically generated here -->
                 </div>
             </div>
 
@@ -257,30 +232,14 @@
         }).format(amount);
     }
 
-    function calculateTotal() {
-        const basePriceInput = document.querySelector('[name="price"]');
-        if (basePriceInput && basePriceInput.offsetParent !== null) {
-            const basePrice = parseFloat(basePriceInput.value) || 0;
-            const fixedSurcharges = parseFloat(document.querySelector('[name="fixedRateSurcharges"]').value) || 0;
-            const percentSurcharge = parseFloat(document.querySelector('[name="percentSurcharge"]').value) || 0;
-            
-            const percentAmount = basePrice * (percentSurcharge / 100);
-            const total = basePrice + fixedSurcharges + percentAmount;
-            
-            document.querySelector('[name="total"]').value = total.toFixed(2);
-        } else {
-            document.querySelector('[name="total"]').value = '';
-        }
-    }
-
-    function calculatePalletTotals() {
+    function calculateTotals() {
         const fixedSurcharges = parseFloat(document.querySelector('[name="fixedRateSurcharges"]').value) || 0;
         const percentSurcharge = parseFloat(document.querySelector('[name="percentSurcharge"]').value) || 0;
         
-        const rateInputs = document.querySelectorAll('[name^="palletRate_"]');
+        const rateInputs = document.querySelectorAll('[name^="rateInput_"]');
         rateInputs.forEach(rateInput => {
-            const qty = rateInput.getAttribute('data-qty');
-            const totalInput = document.querySelector(`[name="palletTotal_${qty}"]`);
+            const identifier = rateInput.getAttribute('data-identifier');
+            const totalInput = document.querySelector(`[name="totalInput_${identifier}"]`);
             const rate = parseFloat(rateInput.value) || 0;
             const percentAmount = rate * (percentSurcharge / 100);
             const total = rate + fixedSurcharges + percentAmount;
@@ -288,16 +247,9 @@
         });
     }
 
-    // Set up event listeners for price calculations
-    document.querySelector('[name="price"]').addEventListener('input', calculateTotal);
-    document.querySelector('[name="fixedRateSurcharges"]').addEventListener('input', () => {
-        calculateTotal();
-        calculatePalletTotals();
-    });
-    document.querySelector('[name="percentSurcharge"]').addEventListener('input', () => {
-        calculateTotal();
-        calculatePalletTotals();
-    });
+    // Set up event listeners for calculations
+    document.querySelector('[name="fixedRateSurcharges"]').addEventListener('input', calculateTotals);
+    document.querySelector('[name="percentSurcharge"]').addEventListener('input', calculateTotals);
 
     async function populateTenderDetails() {
         if (!quoteId) {
@@ -323,13 +275,13 @@
             document.getElementById('displayCurrency').textContent = quoteData.currency || 'N/A';
             document.getElementById('getAllPalletRates').textContent = quoteData.getAllPalletRates ? 'Yes' : 'No';
             document.getElementById('pallets').textContent = quoteData.pallets || 'N/A';
+            document.getElementById('containerType').textContent = quoteData.containerType || 'N/A';
             
             document.getElementById('deliveryType').textContent = quoteData.deliveryType || 'N/A';
             document.getElementById('loadType').textContent = quoteData.loadType || 'N/A';
             document.getElementById('palletType').textContent = quoteData.palletType || 'N/A';
             document.getElementById('volume').textContent = quoteData.volume ? `${quoteData.volume} CBM` : 'N/A';
             
-            document.getElementById('containerType').textContent = quoteData.containerType || 'N/A';
             document.getElementById('airWeight').textContent = quoteData.airWeight ? `${quoteData.airWeight} kg` : 'N/A';
             document.getElementById('peakSeason').textContent = quoteData.isPeakSeason ? 'Yes' : 'No';
             document.getElementById('peakDetails').textContent = quoteData.peakSeasonDetails || 'N/A';
@@ -360,167 +312,97 @@
                 waypointsContainer.innerHTML = '<p class="text-gray-500">No waypoints specified</p>';
             }
 
-            // Show/hide Base Price field based on transport mode and load type
-            const basePriceField = document.getElementById('basePriceField');
-            const basePriceInput = document.querySelector('[name="price"]');
+            // Hide "Number of Pallets" field if irrelevant
+            const numberOfPalletsField = document.getElementById('numberOfPalletsField');
+            const containerTypeField = document.getElementById('containerTypeField');
+            const loadType = quoteData.loadType || '';
+            const transportMode = quoteData.transportMode || '';
 
-            const isBasePriceNeeded = 
-                (quoteData.transportMode === 'Sea' && quoteData.loadType === 'Container') ||
-                (quoteData.transportMode === 'Road' && quoteData.loadType === 'Full Truck Load');
-
-            if (isBasePriceNeeded) {
-                basePriceField.style.display = 'block';
-                basePriceInput.setAttribute('required', 'required');
+            if (['Full Truck Load', 'Container'].includes(loadType) || ['20ft', '40ft', '40ft-hc'].includes(quoteData.containerType)) {
+                numberOfPalletsField.style.display = 'none';
             } else {
-                basePriceField.style.display = 'none';
-                basePriceInput.removeAttribute('required');
+                numberOfPalletsField.style.display = 'block';
             }
 
-            // Populate pallet rates table
-            const palletRatesBody = document.getElementById('palletRatesBody');
-            if (!isBasePriceNeeded) {
+            // Hide "Container Type" field if irrelevant
+            if (quoteData.containerType) {
+                containerTypeField.style.display = 'block';
+            } else {
+                containerTypeField.style.display = 'none';
+            }
+
+            // Generate dynamic rate table
+            const dynamicRateTable = document.getElementById('dynamicRateTable');
+            let rateTableHTML = '';
+            let identifiers = [];
+
+            if (['Full Truck Load'].includes(loadType)) {
+                // For Full Truck Load
+                identifiers = ['Full Truck Load'];
+            } else if (transportMode === 'Sea' && ['Container'].includes(loadType)) {
+                // For Sea Containers
+                identifiers = [quoteData.containerType];
+            } else if (['Partial Load', 'LCL', 'Pallets'].includes(loadType)) {
+                // For Pallet Rates
                 const getAllPalletRates = quoteData.getAllPalletRates;
                 const numberOfPallets = parseInt(quoteData.pallets) || 1;
 
-                // Create container for bulk upload options
-                const bulkUploadContainer = document.createElement('div');
-                bulkUploadContainer.className = 'mb-6 p-4 border rounded';
-            
-                // Add Excel import/export buttons only if Get All Pallet Rates is Yes
                 if (getAllPalletRates) {
-                    const buttonContainer = document.createElement('div');
-                    buttonContainer.className = 'flex gap-4 mb-4';
-                
-                    // Export template button
-                    const exportTemplateBtn = document.createElement('button');
-                    exportTemplateBtn.className = 'px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600';
-                    exportTemplateBtn.textContent = 'Export Template';
-                    exportTemplateBtn.onclick = () => {
-                        const wb = XLSX.utils.book_new();
-                        // Include base price and surcharges in template
-                        const ws_data = [
-                            ['Pallets', 'Base Rate', 'Fixed Surcharge', 'Percent Surcharge', 'Total'],
-                            ...Array.from({length: 24}, (_, i) => [`${i + 1} Pallet`, '', '', '', '=B' + (i+2) + '+C' + (i+2) + '+(B' + (i+2) + '*D' + (i+2) + '/100)'])
-                        ];
-                        const ws = XLSX.utils.aoa_to_sheet(ws_data);
-                        XLSX.utils.book_append_sheet(wb, ws, "Pallet Rates");
-                        XLSX.writeFile(wb, "pallet_rates_template.xlsx");
-                    };
-                
-                    // Import rates button and input
-                    const importInput = document.createElement('input');
-                    importInput.type = 'file';
-                    importInput.accept = '.xlsx,.xls';
-                    importInput.className = 'hidden';
-                    importInput.onchange = (e) => {
-                        const file = e.target.files[0];
-                        const reader = new FileReader();
-                        reader.onload = (e) => {
-                            const data = new Uint8Array(e.target.result);
-                            const workbook = XLSX.read(data, { type: 'array' });
-                            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                            const jsonData = XLSX.utils.sheet_to_json(firstSheet);
-                            
-                            jsonData.forEach(row => {
-                                const palletNum = row['Pallets'].split(' ')[0];
-                                const baseRate = parseFloat(row['Base Rate']) || 0;
-                                const fixedSurcharge = parseFloat(row['Fixed Surcharge']) || 0;
-                                const percentSurcharge = parseFloat(row['Percent Surcharge']) || 0;
-                                
-                                const percentAmount = baseRate * (percentSurcharge / 100);
-                                const total = baseRate + fixedSurcharge + percentAmount;
-                                
-                                const rateInput = document.querySelector(`[name="palletRate_${palletNum}"]`);
-                                const totalInput = document.querySelector(`[name="palletTotal_${palletNum}"]`);
-                                if (rateInput && totalInput) {
-                                    rateInput.value = baseRate.toFixed(2);
-                                    totalInput.value = total.toFixed(2);
-                                }
-                            });
-                        };
-                        reader.readAsArrayBuffer(file);
-                    };
-                
-                    const importBtn = document.createElement('button');
-                    importBtn.className = 'px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600';
-                    importBtn.textContent = 'Import Rates';
-                    importBtn.onclick = () => importInput.click();
-                
-                    buttonContainer.appendChild(exportTemplateBtn);
-                    buttonContainer.appendChild(importBtn);
-                    buttonContainer.appendChild(importInput);
-                    palletRatesBody.parentElement.parentElement.insertBefore(buttonContainer, palletRatesBody.parentElement);
-                }
-            
-                // Create table for entering rates
-                let palletQuantities = [];
-
-                if (getAllPalletRates) {
-                    palletQuantities = Array.from({length: 24}, (_, i) => i + 1);
+                    identifiers = Array.from({length: 24}, (_, i) => `${i + 1} Pallet${i > 0 ? 's' : ''}`);
                 } else {
-                    palletQuantities = [numberOfPallets];
+                    identifiers = [`${numberOfPallets} Pallet${numberOfPallets > 1 ? 's' : ''}`];
                 }
+            } else {
+                // For other types, use a single identifier
+                identifiers = ['Rate'];
+            }
 
-                palletQuantities.forEach(i => {
-                    const row = document.createElement('tr');
-                    
-                    const rateInputName = `palletRate_${i}`;
-                    const totalInputName = `palletTotal_${i}`;
-                    
-                    row.innerHTML = `
-                        <td class="px-4 py-2 border text-center">${i}</td>
+            rateTableHTML += `
+                <table class="w-full table-auto border">
+                    <thead>
+                        <tr class="bg-gray-200">
+                            <th class="px-4 py-2 border">Description</th>
+                            <th class="px-4 py-2 border">Rate</th>
+                            <th class="px-4 py-2 border">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            identifiers.forEach((identifier, index) => {
+                rateTableHTML += `
+                    <tr>
+                        <td class="px-4 py-2 border text-center">${identifier}</td>
                         <td class="px-4 py-2 border">
                             <input type="number" 
-                                   name="${rateInputName}" 
-                                   data-qty="${i}"
+                                   name="rateInput_${index}" 
+                                   data-identifier="${index}"
                                    class="w-full p-2 border rounded" 
                                    step="0.01" 
-                                   placeholder="Rate for ${i} pallet${i > 1 ? 's' : ''}">
+                                   placeholder="Rate for ${identifier}">
                         </td>
                         <td class="px-4 py-2 border">
                             <input type="number" 
-                                   name="${totalInputName}" 
+                                   name="totalInput_${index}" 
                                    class="w-full p-2 border rounded bg-gray-100" 
                                    readonly>
                         </td>
-                    `;
-                    palletRatesBody.appendChild(row);
-                    
-                    const rateInput = row.querySelector(`[name="${rateInputName}"]`);
-                    rateInput.addEventListener('input', calculatePalletTotals);
-                });
+                    </tr>
+                `;
+            });
 
-                // Create textarea for bulk paste if Get All Pallet Rates is Yes
-                if (getAllPalletRates) {
-                    const bulkPasteContainer = document.createElement('div');
-                    bulkPasteContainer.className = 'mb-4';
-                    const bulkPasteLabel = document.createElement('label');
-                    bulkPasteLabel.className = 'block text-sm font-medium mb-2';
-                    bulkPasteLabel.textContent = 'Paste rates from Excel (one rate per line)';
-                    const bulkPasteArea = document.createElement('textarea');
-                    bulkPasteArea.className = 'w-full p-2 border rounded';
-                    bulkPasteArea.rows = 5;
-                    bulkPasteArea.onchange = (e) => {
-                        const rates = e.target.value.split('\n');
-                        rates.forEach((rate, index) => {
-                            if (index < 24) {
-                                const rateInput = document.querySelector(`[name="palletRate_${index + 1}"]`);
-                                if (rateInput) {
-                                    rateInput.value = rate.trim();
-                                }
-                            }
-                        });
-                        calculatePalletTotals();
-                    };
-                    
-                    bulkPasteContainer.appendChild(bulkPasteLabel);
-                    bulkPasteContainer.appendChild(bulkPasteArea);
-                    palletRatesBody.parentElement.parentElement.insertBefore(bulkPasteContainer, palletRatesBody.parentElement);
-                }
-            } else {
-                // Hide pallet rates section
-                document.getElementById('palletRatesSection').style.display = 'none';
-            }
+            rateTableHTML += `
+                    </tbody>
+                </table>
+            `;
+
+            dynamicRateTable.innerHTML = rateTableHTML;
+
+            // Add event listeners for the new rate inputs
+            const rateInputs = document.querySelectorAll('[name^="rateInput_"]');
+            rateInputs.forEach(rateInput => {
+                rateInput.addEventListener('input', calculateTotals);
+            });
 
             // Set currency field to match quote data
             document.querySelector('[name="currency"]').value = quoteData.currency || 'GBP';
@@ -531,7 +413,162 @@
         }
     }
 
-    // Handle form submission (unchanged)
+    // Handle form submission
+    document.getElementById('submitQuoteForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+
+        try {
+            if (!quoteData) throw new Error('Quote data not loaded');
+
+            // Get all rates
+            const rates = {};
+            const rateInputs = document.querySelectorAll('[name^="rateInput_"]');
+            rateInputs.forEach(rateInput => {
+                const index = rateInput.getAttribute('data-identifier');
+                const totalInput = document.querySelector(`[name="totalInput_${index}"]`);
+                const identifier = rateInput.closest('tr').querySelector('td').textContent;
+                const rate = parseFloat(rateInput.value) || 0;
+                const total = parseFloat(totalInput.value) || 0;
+                rates[identifier] = { rate, total };
+            });
+
+            // Generate rates HTML for email
+            let ratesHTML = '<table style="width:100%; border-collapse:collapse;">';
+            ratesHTML += '<tr><th style="border:1px solid #ddd;padding:8px;">Description</th><th style="border:1px solid #ddd;padding:8px;">Rate</th><th style="border:1px solid #ddd;padding:8px;">Total</th></tr>';
+            Object.entries(rates).forEach(([identifier, { rate, total }]) => {
+                ratesHTML += `
+                    <tr>
+                        <td style="border:1px solid #ddd;padding:8px;">${identifier}</td>
+                        <td style="border:1px solid #ddd;padding:8px;">${formatCurrency(rate, formData.get('currency'))}</td>
+                        <td style="border:1px solid #ddd;padding:8px;">${formatCurrency(total, formData.get('currency'))}</td>
+                    </tr>
+                `;
+            });
+            ratesHTML += '</table>';
+
+            // Get haulier details
+            const haulierDoc = await db.collection('hauliers').doc(haulierId).get();
+            const haulierData = haulierDoc.data();
+
+            // Email parameters for internal notification
+            const emailParams = {
+                to_email: quoteData.userEmail,
+                subject: `Quote Response Received - ${quoteId}`,
+                quoteId: quoteId,
+                haulierName: haulierData.name,
+                haulierEmail: haulierData.email,
+                currency: formData.get('currency'),
+                validUntil: formData.get('validUntil'),
+                transitTime: formData.get('transitTime'),
+                fixedRateSurcharges: formData.get('fixedRateSurcharges') || '0',
+                percentSurcharge: formData.get('percentSurcharge') || '0',
+                hideDocuments: formData.get('hideDocuments') ? 'Yes' : 'No',
+                includeCustomsClearance: formData.get('includeCustomsClearance') ? 'Yes' : 'No',
+                ratesHTML: ratesHTML,
+                
+                // Route details
+                collectionCountry: quoteData.collection?.country || 'N/A',
+                collectionPostcode: quoteData.collection?.postcode || 'N/A',
+                deliveryCountry: quoteData.delivery?.country || 'N/A',
+                deliveryPostcode: quoteData.delivery?.postcode || 'N/A',
+                deliveryLocation: quoteData.delivery?.location || 'N/A',
+                
+                // Transport details
+                transportMode: quoteData.transportMode,
+                weightBucket: quoteData.weightBucket,
+                deliveryType: quoteData.deliveryType,
+                loadType: quoteData.loadType,
+                containerType: quoteData.containerType || 'N/A',
+                airWeight: quoteData.airWeight || 'N/A',
+                volume: quoteData.volume || 'N/A',
+                
+                // Additional details
+                isPeakSeason: quoteData.isPeakSeason ? 'Yes' : 'No',
+                peakSeasonDetails: quoteData.peakSeasonDetails || 'N/A',
+                urgency: quoteData.urgency || 'N/A',
+                preferredDeliveryDate: quoteData.preferredDeliveryDate || 'N/A'
+            };
+
+            // Add waypoints to email parameters
+            for (let i = 1; i <= 5; i++) {
+                const waypoint = quoteData.waypoints?.[i - 1];
+                emailParams[`waypoint${i}`] = waypoint ? 
+                    `${waypoint.country} - ${waypoint.postcode}` : 
+                    'N/A';
+            }
+
+            // Send email notification
+            await emailjs.send('Azelis_Logistics', 'template_12utb0n', emailParams);
+
+            // Update quote in Firestore
+            const quoteUpdate = {
+                responses: firebase.firestore.FieldValue.arrayUnion({
+                    haulierId: haulierId,
+                    haulierName: haulierData.name,
+                    currency: formData.get('currency'),
+                    validUntil: formData.get('validUntil'),
+                    transitTime: parseInt(formData.get('transitTime')),
+                    fixedRateSurcharges: parseFloat(formData.get('fixedRateSurcharges')) || 0,
+                    percentSurcharge: parseFloat(formData.get('percentSurcharge')) || 0,
+                    hideDocuments: formData.get('hideDocuments') === 'on',
+                    includeCustomsClearance: formData.get('includeCustomsClearance') === 'on',
+                    rates: rates,
+                    submittedAt: new Date()
+                })
+            };
+
+            await db.collection('quotes').doc(quoteId).update(quoteUpdate);
+
+            // Save to 'rates' collection
+            const rateData = {
+                quoteId: quoteId,
+                haulierId: haulierId,
+                haulierName: haulierData.name,
+                haulierEmail: haulierData.email,
+                userEmail: quoteData.userEmail,
+                currency: formData.get('currency'),
+                validUntil: formData.get('validUntil'),
+                transitTime: parseInt(formData.get('transitTime')),
+                fixedRateSurcharges: parseFloat(formData.get('fixedRateSurcharges')) || 0,
+                percentSurcharge: parseFloat(formData.get('percentSurcharge')) || 0,
+                hideDocuments: formData.get('hideDocuments') === 'on',
+                includeCustomsClearance: formData.get('includeCustomsClearance') === 'on',
+                rates: rates,
+                submittedAt: new Date(),
+                transportMode: quoteData.transportMode,
+                haulierTransportModes: haulierData.transportModes,
+                collection: quoteData.collection || {},
+                delivery: quoteData.delivery || {},
+                weightBucket: quoteData.weightBucket || 'N/A',
+                weightType: quoteData.weightType || 'N/A',
+                incoterms: quoteData.incoterms || 'N/A',
+                deliveryType: quoteData.deliveryType || 'N/A',
+                loadType: quoteData.loadType || 'N/A',
+                pallets: quoteData.pallets || 'N/A',
+                volume: quoteData.volume || 'N/A',
+                palletType: quoteData.palletType || 'N/A',
+                containerType: quoteData.containerType || 'N/A',
+                airWeight: quoteData.airWeight || 'N/A',
+                isPeakSeason: quoteData.isPeakSeason || false,
+                peakSeasonDetails: quoteData.peakSeasonDetails || 'N/A',
+                urgency: quoteData.urgency || 'N/A',
+                preferredDeliveryDate: quoteData.preferredDeliveryDate || 'N/A',
+                waypoints: quoteData.waypoints || []
+            };
+            await db.collection('rates').add(rateData);
+
+            displayMessage('Quote submitted successfully!');
+            
+            // Disable form after successful submission
+            document.getElementById('submitQuoteForm').style.opacity = '0.5';
+            document.getElementById('submitQuoteForm').style.pointerEvents = 'none';
+
+        } catch (error) {
+            console.error('Error submitting quote:', error);
+            displayMessage('Error submitting quote. Please try again.', true);
+        }
+    });
 
     // Initialize page
     window.addEventListener('DOMContentLoaded', populateTenderDetails);
