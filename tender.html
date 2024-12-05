@@ -120,7 +120,7 @@
             <div>
                 <h3 class="text-xl font-semibold mb-2">Your Quote</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
+                    <div id="basePriceField">
                         <label class="block text-sm font-medium mb-1">Base Price *</label>
                         <div class="tooltip">
                             <input type="number" name="price" required class="w-full p-2 border rounded" step="0.01">
@@ -180,6 +180,7 @@
                             <tr class="bg-gray-200">
                                 <th class="px-4 py-2 border">Pallet Quantity</th>
                                 <th class="px-4 py-2 border">Rate</th>
+                                <th class="px-4 py-2 border">Total</th>
                             </tr>
                         </thead>
                         <tbody id="palletRatesBody">
@@ -208,12 +209,8 @@
 <script>
     // Firebase configuration
     const firebaseConfig = {
-        apiKey: "AIzaSyDiIRLwLeMAf1VZbZ7ygvGDu-gZH6sA424",
-        authDomain: "azelislogistics.firebaseapp.com",
-        projectId: "azelislogistics",
-        storageBucket: "azelislogistics.appspot.com",
-        messagingSenderId: "13102382958",
-        appId: "1:13102382958:web:82a3324843432519cb8b7f"
+        // Your Firebase config here
+        // ...
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
@@ -239,20 +236,48 @@
     }
 
     function calculateTotal() {
-        const basePrice = parseFloat(document.querySelector('[name="price"]').value) || 0;
+        const basePriceInput = document.querySelector('[name="price"]');
+        if (basePriceInput && basePriceInput.offsetParent !== null) {
+            const basePrice = parseFloat(basePriceInput.value) || 0;
+            const fixedSurcharges = parseFloat(document.querySelector('[name="fixedRateSurcharges"]').value) || 0;
+            const percentSurcharge = parseFloat(document.querySelector('[name="percentSurcharge"]').value) || 0;
+            
+            const percentAmount = basePrice * (percentSurcharge / 100);
+            const total = basePrice + fixedSurcharges + percentAmount;
+            
+            document.querySelector('[name="total"]').value = total.toFixed(2);
+        } else {
+            document.querySelector('[name="total"]').value = '';
+        }
+    }
+
+    function calculatePalletTotals() {
         const fixedSurcharges = parseFloat(document.querySelector('[name="fixedRateSurcharges"]').value) || 0;
         const percentSurcharge = parseFloat(document.querySelector('[name="percentSurcharge"]').value) || 0;
         
-        const percentAmount = basePrice * (percentSurcharge / 100);
-        const total = basePrice + fixedSurcharges + percentAmount;
-        
-        document.querySelector('[name="total"]').value = total.toFixed(2);
+        for (let i = 1; i <= 24; i++) {
+            const rateInput = document.querySelector(`[name="palletRate_${i}"]`);
+            const totalInput = document.querySelector(`[name="palletTotal_${i}"]`);
+            
+            if (rateInput && totalInput) {
+                const rate = parseFloat(rateInput.value) || 0;
+                const percentAmount = rate * (percentSurcharge / 100);
+                const total = rate + fixedSurcharges + percentAmount;
+                totalInput.value = total.toFixed(2);
+            }
+        }
     }
 
     // Set up event listeners for price calculations
     document.querySelector('[name="price"]').addEventListener('input', calculateTotal);
-    document.querySelector('[name="fixedRateSurcharges"]').addEventListener('input', calculateTotal);
-    document.querySelector('[name="percentSurcharge"]').addEventListener('input', calculateTotal);
+    document.querySelector('[name="fixedRateSurcharges"]').addEventListener('input', () => {
+        calculateTotal();
+        calculatePalletTotals();
+    });
+    document.querySelector('[name="percentSurcharge"]').addEventListener('input', () => {
+        calculateTotal();
+        calculatePalletTotals();
+    });
 
     async function populateTenderDetails() {
         if (!quoteId) {
@@ -310,6 +335,17 @@
                 waypointsContainer.innerHTML = '<p class="text-gray-500">No waypoints specified</p>';
             }
 
+            // Show/hide Base Price field based on getAllPalletRates
+            const basePriceField = document.getElementById('basePriceField');
+            const basePriceInput = document.querySelector('[name="price"]');
+            if (quoteData.getAllPalletRates) {
+                basePriceField.style.display = 'none';
+                basePriceInput.removeAttribute('required');
+            } else {
+                basePriceField.style.display = 'block';
+                basePriceInput.setAttribute('required', 'required');
+            }
+
             // Populate pallet rates table
             const palletRatesBody = document.getElementById('palletRatesBody');
             if (quoteData.getAllPalletRates) {
@@ -337,66 +373,80 @@
                     XLSX.writeFile(wb, "pallet_rates_template.xlsx");
                 };
             
-                    // Import rates button and input
-                    const importInput = document.createElement('input');
-                    importInput.type = 'file';
-                    importInput.accept = '.xlsx,.xls';
-                    importInput.className = 'hidden';
-                    importInput.onchange = (e) => {
-                        const file = e.target.files[0];
-                        const reader = new FileReader();
-                        reader.onload = (e) => {
-                            const data = new Uint8Array(e.target.result);
-                            const workbook = XLSX.read(data, { type: 'array' });
-                            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                            const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+                // Import rates button and input
+                const importInput = document.createElement('input');
+                importInput.type = 'file';
+                importInput.accept = '.xlsx,.xls';
+                importInput.className = 'hidden';
+                importInput.onchange = (e) => {
+                    const file = e.target.files[0];
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                        const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+                        
+                        jsonData.forEach(row => {
+                            const palletNum = row['Pallets'].split(' ')[0];
+                            const baseRate = parseFloat(row['Base Rate']) || 0;
+                            const fixedSurcharge = parseFloat(row['Fixed Surcharge']) || 0;
+                            const percentSurcharge = parseFloat(row['Percent Surcharge']) || 0;
                             
-                            jsonData.forEach(row => {
-                                const palletNum = row['Pallets'].split(' ')[0];
-                                const baseRate = parseFloat(row['Base Rate']) || 0;
-                                const fixedSurcharge = parseFloat(row['Fixed Surcharge']) || 0;
-                                const percentSurcharge = parseFloat(row['Percent Surcharge']) || 0;
-                                
-                                const total = baseRate + fixedSurcharge + (baseRate * percentSurcharge / 100);
-                                
-                                const rateInput = document.querySelector(`[name="palletRate_${palletNum}"]`);
-                                if (rateInput) {
-                                    rateInput.value = total.toFixed(2);
-                                }
-                            });
-                        };
-                        reader.readAsArrayBuffer(file);
+                            const percentAmount = baseRate * (percentSurcharge / 100);
+                            const total = baseRate + fixedSurcharge + percentAmount;
+                            
+                            const rateInput = document.querySelector(`[name="palletRate_${palletNum}"]`);
+                            const totalInput = document.querySelector(`[name="palletTotal_${palletNum}"]`);
+                            if (rateInput && totalInput) {
+                                rateInput.value = baseRate.toFixed(2);
+                                totalInput.value = total.toFixed(2);
+                            }
+                        });
                     };
-                
-                    const importBtn = document.createElement('button');
-                    importBtn.className = 'px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600';
-                    importBtn.textContent = 'Import Rates';
-                    importBtn.onclick = () => importInput.click();
-                
-                    buttonContainer.appendChild(exportTemplateBtn);
-                    buttonContainer.appendChild(importBtn);
-                    buttonContainer.appendChild(importInput);
-                
-                    // Create table for entering rates
-                    for (let i = 1; i <= 24; i++) {
-                        const row = document.createElement('tr');
-                        row.innerHTML = `
-                            <td class="px-4 py-2 border text-center">${i}</td>
-                            <td class="px-4 py-2 border">
-                                <input type="number" 
-                                       name="palletRate_${i}" 
-                                       class="w-full p-2 border rounded" 
-                                       step="0.01" 
-                                       placeholder="Rate for ${i} pallet${i > 1 ? 's' : ''}">
-                            </td>
-                        `;
-                        palletRatesBody.appendChild(row);
-                    }
-                
-                    palletRatesBody.parentElement.parentElement.insertBefore(buttonContainer, palletRatesBody.parentElement);
-                
+                    reader.readAsArrayBuffer(file);
+                };
+            
+                const importBtn = document.createElement('button');
+                importBtn.className = 'px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600';
+                importBtn.textContent = 'Import Rates';
+                importBtn.onclick = () => importInput.click();
+            
+                buttonContainer.appendChild(exportTemplateBtn);
+                buttonContainer.appendChild(importBtn);
+                buttonContainer.appendChild(importInput);
+            
+                // Create table for entering rates
+                for (let i = 1; i <= 24; i++) {
+                    const row = document.createElement('tr');
+                    
+                    const rateInputName = `palletRate_${i}`;
+                    const totalInputName = `palletTotal_${i}`;
+                    
+                    row.innerHTML = `
+                        <td class="px-4 py-2 border text-center">${i}</td>
+                        <td class="px-4 py-2 border">
+                            <input type="number" 
+                                   name="${rateInputName}" 
+                                   class="w-full p-2 border rounded" 
+                                   step="0.01" 
+                                   placeholder="Rate for ${i} pallet${i > 1 ? 's' : ''}">
+                        </td>
+                        <td class="px-4 py-2 border">
+                            <input type="number" 
+                                   name="${totalInputName}" 
+                                   class="w-full p-2 border rounded bg-gray-100" 
+                                   readonly>
+                        </td>
+                    `;
+                    palletRatesBody.appendChild(row);
+                    
+                    const rateInput = row.querySelector(`[name="${rateInputName}"]`);
+                    rateInput.addEventListener('input', calculatePalletTotals);
+                }
+            
                 palletRatesBody.parentElement.parentElement.insertBefore(buttonContainer, palletRatesBody.parentElement);
-                
+            
                 // Create textarea for bulk paste
                 const bulkPasteContainer = document.createElement('div');
                 bulkPasteContainer.className = 'mb-4';
@@ -416,6 +466,7 @@
                             }
                         }
                     });
+                    calculatePalletTotals();
                 };
                 
                 bulkPasteContainer.appendChild(bulkPasteLabel);
@@ -423,22 +474,37 @@
                 palletRatesBody.parentElement.parentElement.insertBefore(bulkPasteContainer, palletRatesBody.parentElement);
             } else if (quoteData.loadType === 'Partial Load' || quoteData.loadType === 'LCL') {
                 // Show only single pallet rate input
-                palletRatesBody.innerHTML = `
-                    <tr>
-                        <td class="px-4 py-2 border text-center">${quoteData.pallets}</td>
-                        <td class="px-4 py-2 border">
-                            <input type="number" 
-                                   name="palletRate_${quoteData.pallets}" 
-                                   class="w-full p-2 border rounded" 
-                                   step="0.01" 
-                                   placeholder="Rate for ${quoteData.pallets} pallet${quoteData.pallets > 1 ? 's' : ''}">
-                        </td>
-                    </tr>
+                const pallets = quoteData.pallets || 1;
+                const row = document.createElement('tr');
+                
+                const rateInputName = `palletRate_${pallets}`;
+                const totalInputName = `palletTotal_${pallets}`;
+                
+                row.innerHTML = `
+                    <td class="px-4 py-2 border text-center">${pallets}</td>
+                    <td class="px-4 py-2 border">
+                        <input type="number" 
+                               name="${rateInputName}" 
+                               class="w-full p-2 border rounded" 
+                               step="0.01" 
+                               placeholder="Rate for ${pallets} pallet${pallets > 1 ? 's' : ''}">
+                    </td>
+                    <td class="px-4 py-2 border">
+                        <input type="number" 
+                               name="${totalInputName}" 
+                               class="w-full p-2 border rounded bg-gray-100" 
+                               readonly>
+                    </td>
                 `;
+                palletRatesBody.appendChild(row);
+                
+                const rateInput = row.querySelector(`[name="${rateInputName}"]`);
+                rateInput.addEventListener('input', calculatePalletTotals);
             } else {
                 // Hide pallet rates section for FTL
                 document.getElementById('palletRatesSection').style.display = 'none';
             }
+
             // Show/hide pallet rates section based on load type
             const palletRatesSection = document.getElementById('palletRatesSection');
             palletRatesSection.style.display = quoteData.loadType === 'Full Truck Load' ? 'none' : 'block';
@@ -462,20 +528,22 @@
             if (quoteData.loadType !== 'Full Truck Load') {
                 for (let i = 1; i <= 24; i++) {
                     const rate = parseFloat(formData.get(`palletRate_${i}`));
+                    const total = parseFloat(formData.get(`palletTotal_${i}`));
                     if (!isNaN(rate)) {
-                        palletRates[i] = rate;
+                        palletRates[i] = { rate, total };
                     }
                 }
             }
 
             // Generate pallet rates HTML for email
             let palletRatesHTML = '<table style="width:100%; border-collapse:collapse;">';
-            palletRatesHTML += '<tr><th style="border:1px solid #ddd;padding:8px;">Pallets</th><th style="border:1px solid #ddd;padding:8px;">Rate</th></tr>';
-            Object.entries(palletRates).forEach(([qty, rate]) => {
+            palletRatesHTML += '<tr><th style="border:1px solid #ddd;padding:8px;">Pallets</th><th style="border:1px solid #ddd;padding:8px;">Rate</th><th style="border:1px solid #ddd;padding:8px;">Total</th></tr>';
+            Object.entries(palletRates).forEach(([qty, { rate, total }]) => {
                 palletRatesHTML += `
                     <tr>
                         <td style="border:1px solid #ddd;padding:8px;">${qty}</td>
                         <td style="border:1px solid #ddd;padding:8px;">${formatCurrency(rate, formData.get('currency'))}</td>
+                        <td style="border:1px solid #ddd;padding:8px;">${formatCurrency(total, formData.get('currency'))}</td>
                     </tr>
                 `;
             });
@@ -557,10 +625,7 @@
 
             await db.collection('quotes').doc(quoteId).update(quoteUpdate);
 
-            // **New Code: Save to 'rates' collection**
-// In tender.html, update the rate data creation section:
-
-// Find this section in the quote submission handler:
+            // Save to 'rates' collection
             const rateData = {
                 quoteId: quoteId,
                 haulierId: haulierId,
@@ -577,10 +642,8 @@
                 hideDocuments: formData.get('hideDocuments') === 'on',
                 palletRates: palletRates,
                 submittedAt: new Date(),
-                // Add transport mode fields
                 transportMode: quoteData.transportMode,
-                haulierTransportModes: haulierData.transportModes, // Add this new field
-                // Optional: Include additional quote details if needed
+                haulierTransportModes: haulierData.transportModes,
                 collection: quoteData.collection || {},
                 delivery: quoteData.delivery || {},
                 weightBucket: quoteData.weightBucket || 'N/A',
@@ -599,9 +662,7 @@
                 preferredDeliveryDate: quoteData.preferredDeliveryDate || 'N/A',
                 waypoints: quoteData.waypoints || []
             };
-            
             await db.collection('rates').add(rateData);
-            // **End of New Code**
 
             displayMessage('Quote submitted successfully!');
             
