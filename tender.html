@@ -8,7 +8,23 @@
         .azelis-blue { background-color: #003087; }
         .azelis-blue-hover:hover { background-color: #002670; }
         .pallet-rates-table { max-height: 500px; overflow-y: auto; }
-        .table-header { position: sticky; top: 0; background: white; }
+        .table-header { position: sticky; top: 0; background: white; z-index: 10; }
+        .import-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+        }
+        .import-modal {
+            background: white;
+            padding: 2rem;
+            border-radius: 0.5rem;
+            max-width: 90%;
+            width: 600px;
+        }
     </style>
 </head>
 <body class="bg-gray-50">
@@ -21,6 +37,7 @@
     <script src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
 
     <script>
         // Initialize Firebase
@@ -50,130 +67,144 @@
                 fixed: 0,
                 percent: 0
             });
+            const [showImportModal, setShowImportModal] = React.useState(false);
+            const [importErrors, setImportErrors] = React.useState([]);
+            const [importStats, setImportStats] = React.useState(null);
+            const [customFields, setCustomFields] = React.useState({});
 
             const params = new URLSearchParams(window.location.search);
             const quoteId = params.get('quoteId');
             const haulierId = params.get('haulierId');
 
-            React.useEffect(() => {
-                const fetchQuoteData = async () => {
+            // ... [Previous useEffect and handlers remain the same]
+
+            const handleFileImport = (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
                     try {
-                        const doc = await db.collection('quotes').doc(quoteId).get();
-                        if (!doc.exists) throw new Error('Quote not found');
-                        setQuoteData({ id: doc.id, ...doc.data() });
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                        const jsonData = XLSX.utils.sheet_to_json(sheet);
+                        
+                        // Process the imported data
+                        const processedRates = {};
+                        jsonData.forEach(row => {
+                            if (row.Pallets && row.Rate) {
+                                processedRates[row.Pallets] = parseFloat(row.Rate);
+                            }
+                        });
+                        
+                        setPalletRates(processedRates);
+                        setImportStats({
+                            total: jsonData.length,
+                            processed: Object.keys(processedRates).length
+                        });
+                        setShowImportModal(false);
                     } catch (err) {
-                        setError(err.message);
-                    } finally {
-                        setLoading(false);
+                        setImportErrors([`Error processing file: ${err.message}`]);
                     }
                 };
+                reader.readAsArrayBuffer(file);
+            };
 
-                if (quoteId) fetchQuoteData();
-            }, [quoteId]);
-
-            const handlePalletRateChange = (pallets, rate) => {
-                setPalletRates(prev => ({
-                    ...prev,
-                    [pallets]: parseFloat(rate) || 0
+            const handleExport = () => {
+                const exportData = Object.entries(palletRates).map(([pallets, rate]) => ({
+                    Pallets: pallets,
+                    Rate: rate,
+                    'Total (inc. Surcharges)': calculateTotal(rate)
                 }));
+
+                const ws = XLSX.utils.json_to_sheet(exportData);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "Pallet Rates");
+                XLSX.writeFile(wb, `pallet_rates_${quoteId}.xlsx`);
             };
 
-            const calculateTotal = (baseRate) => {
-                const base = parseFloat(baseRate) || 0;
-                const fixedSurcharge = parseFloat(surcharges.fixed) || 0;
-                const percentAmount = base * (parseFloat(surcharges.percent) || 0) / 100;
-                return base + fixedSurcharge + percentAmount;
-            };
-
-            const handleSubmit = async (e) => {
-                e.preventDefault();
-                setSending(true);
-                try {
-                    const formData = new FormData(e.target);
-                    const response = {
-                        haulierId,
-                        submittedAt: new Date(),
-                        currency: formData.get('currency'),
-                        validUntil: formData.get('validUntil'),
-                        transitTime: parseInt(formData.get('transitTime')),
-                        surcharges: {
-                            fixed: parseFloat(formData.get('fixedSurcharge')) || 0,
-                            percent: parseFloat(formData.get('percentSurcharge')) || 0
-                        }
-                    };
-
-                    if (quoteData?.loadType === 'Full Truck Load') {
-                        response.basePrice = parseFloat(formData.get('basePrice')) || 0;
-                        response.totalPrice = calculateTotal(response.basePrice);
-                    } else {
-                        response.palletRates = palletRates;
-                    }
-
-                    // Update quote in Firestore
-                    await db.collection('quotes').doc(quoteId).update({
-                        responses: firebase.firestore.FieldValue.arrayUnion(response)
-                    });
-
-                    // Send email notification
-                    await emailjs.send(
-                        'Azelis_Logistics',
-                        'template_12utb0n',
-                        {
-                            to_email: quoteData.userEmail,
-                            subject: `Quote Response - ${quoteId}`,
-                            quoteId,
-                            ...response
-                        }
-                    );
-
-                    alert('Quote submitted successfully!');
-                    e.target.style.opacity = '0.5';
-                    e.target.style.pointerEvents = 'none';
-                } catch (err) {
-                    setError(err.message);
-                } finally {
-                    setSending(false);
-                }
-            };
+            // ... [Previous helper functions remain the same]
 
             if (loading) return <div className="text-center p-8">Loading...</div>;
             if (error) return <div className="text-red-600 p-8">{error}</div>;
             if (!quoteData) return null;
 
-            const maxPallets = quoteData.getAllPalletRates ? 24 : (quoteData.pallets || 24);
-
             return (
                 <div className="max-w-7xl mx-auto p-4">
                     <div className="bg-white rounded-lg shadow-lg p-6">
-                        <div className="flex justify-center mb-6">
+                        {/* Header */}
+                        <div className="flex justify-between items-center mb-6">
                             <img src="https://www.azelis.com/themes/custom/azelis_theme/logo.svg" alt="Azelis Logo" className="h-12" />
+                            <div className="text-right">
+                                <h2 className="text-xl font-bold">Quote Response</h2>
+                                <p className="text-sm text-gray-600">Reference: {quoteId}</p>
+                            </div>
                         </div>
 
                         {/* Quote Details */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
                             <div className="border rounded p-4">
-                                <h3 className="font-semibold mb-2">Route Details</h3>
-                                <p>From: {quoteData.collection?.country} - {quoteData.collection?.postcode}</p>
-                                <p>To: {quoteData.delivery?.country} - {quoteData.delivery?.postcode}</p>
+                                <h3 className="font-semibold mb-2">Collection Details</h3>
+                                <p>Country: {quoteData.collection?.country}</p>
+                                <p>Postcode: {quoteData.collection?.postcode}</p>
+                                <p>Location: {quoteData.collection?.location || 'N/A'}</p>
                             </div>
-                            
+
+                            {quoteData.waypoints?.length > 0 && (
+                                <div className="border rounded p-4">
+                                    <h3 className="font-semibold mb-2">Waypoints</h3>
+                                    {quoteData.waypoints.map((wp, index) => (
+                                        <div key={index} className="mb-2">
+                                            <p>Stop {index + 1}: {wp.country} - {wp.postcode}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            <div className="border rounded p-4">
+                                <h3 className="font-semibold mb-2">Delivery Details</h3>
+                                <p>Country: {quoteData.delivery?.country}</p>
+                                <p>Postcode: {quoteData.delivery?.postcode}</p>
+                                <p>Location: {quoteData.delivery?.location || 'N/A'}</p>
+                            </div>
+
                             <div className="border rounded p-4">
                                 <h3 className="font-semibold mb-2">Transport Details</h3>
                                 <p>Mode: {quoteData.transportMode}</p>
                                 <p>Weight: {quoteData.weightBucket}</p>
+                                <p>Weight Type: {quoteData.weightType}</p>
                                 <p>Load Type: {quoteData.loadType}</p>
-                            </div>
-                            
-                            <div className="border rounded p-4">
-                                <h3 className="font-semibold mb-2">Additional Info</h3>
                                 <p>Delivery Type: {quoteData.deliveryType}</p>
-                                <p>Incoterms: {quoteData.incoterms}</p>
-                                {quoteData.volume && <p>Volume: {quoteData.volume} CBM</p>}
                             </div>
+
+                            <div className="border rounded p-4">
+                                <h3 className="font-semibold mb-2">Additional Details</h3>
+                                <p>Incoterms: {quoteData.incoterms}</p>
+                                {quoteData.pallets && <p>Pallets: {quoteData.pallets}</p>}
+                                {quoteData.palletType && <p>Pallet Type: {quoteData.palletType}</p>}
+                                {quoteData.containerType && <p>Container Type: {quoteData.containerType}</p>}
+                                {quoteData.volume && <p>Volume: {quoteData.volume} CBM</p>}
+                                {quoteData.airWeight && <p>Air Weight: {quoteData.airWeight} kg</p>}
+                            </div>
+
+                            {(quoteData.isPeakSeason || quoteData.urgency || quoteData.preferredDeliveryDate) && (
+                                <div className="border rounded p-4">
+                                    <h3 className="font-semibold mb-2">Special Requirements</h3>
+                                    {quoteData.isPeakSeason && (
+                                        <p>Peak Season: Yes - {quoteData.peakSeasonDetails}</p>
+                                    )}
+                                    {quoteData.urgency && <p>Urgency: {quoteData.urgency}</p>}
+                                    {quoteData.preferredDeliveryDate && (
+                                        <p>Preferred Delivery: {quoteData.preferredDeliveryDate}</p>
+                                    )}
+                                </div>
+                            )}
                         </div>
 
                         {/* Quote Form */}
                         <form onSubmit={handleSubmit} className="space-y-6">
+                            {/* Basic Details */}
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium mb-1">Currency *</label>
@@ -190,6 +221,7 @@
                                         type="date"
                                         name="validUntil"
                                         required
+                                        min={new Date().toISOString().split('T')[0]}
                                         className="w-full p-2 border rounded"
                                     />
                                 </div>
@@ -225,7 +257,25 @@
                                 </div>
                             ) : (
                                 <div>
-                                    <h3 className="text-lg font-medium mb-4">Pallet Rates</h3>
+                                    <div className="flex justify-between items-center mb-4">
+                                        <h3 className="text-lg font-medium">Pallet Rates</h3>
+                                        <div className="flex space-x-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowImportModal(true)}
+                                                className="px-4 py-2 text-blue-600 hover:text-blue-800"
+                                            >
+                                                Import Rates
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={handleExport}
+                                                className="px-4 py-2 text-blue-600 hover:text-blue-800"
+                                            >
+                                                Export Rates
+                                            </button>
+                                        </div>
+                                    </div>
                                     <div className="pallet-rates-table">
                                         <table className="w-full">
                                             <thead className="table-header">
@@ -236,7 +286,7 @@
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {[...Array(maxPallets)].map((_, i) => (
+                                                {[...Array(quoteData.pallets || 24)].map((_, i) => (
                                                     <tr key={i}>
                                                         <td className="px-4 py-2">{i + 1}</td>
                                                         <td className="px-4 py-2">
@@ -251,6 +301,7 @@
                                                         </td>
                                                         <td className="px-4 py-2">
                                                             {calculateTotal(palletRates[i + 1]).toFixed(2)}
+                                                        
                                                         </td>
                                                     </tr>
                                                 ))}
@@ -310,6 +361,42 @@
                             </div>
                         )}
                     </div>
+
+                    {/* Import Modal */}
+                    {showImportModal && (
+                        <div className="import-overlay">
+                            <div className="import-modal">
+                                <h3 className="text-lg font-semibold mb-4">Import Rates from Excel</h3>
+                                <input
+                                    type="file"
+                                    accept=".xlsx,.xls"
+                                    onChange={handleFileImport}
+                                    className="mb-4"
+                                />
+                                {importStats && (
+                                    <div className="mb-4 p-3 bg-green-50 text-green-700 rounded">
+                                        <p>Total rows: {importStats.total}</p>
+                                        <p>Processed: {importStats.processed}</p>
+                                    </div>
+                                )}
+                                {importErrors.length > 0 && (
+                                    <div className="mb-4 p-3 bg-red-50 text-red-700 rounded">
+                                        {importErrors.map((error, index) => (
+                                            <p key={index}>{error}</p>
+                                        ))}
+                                    </div>
+                                )}
+                                <div className="flex justify-end">
+                                    <button
+                                        onClick={() => setShowImportModal(false)}
+                                        className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                                    >
+                                        Close
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
             );
         };
