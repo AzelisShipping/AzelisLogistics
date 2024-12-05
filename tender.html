@@ -376,18 +376,14 @@
                 bulkPasteLabel.textContent = 'Paste rates from Excel (one rate per line)';
                 const bulkPasteArea = document.createElement('textarea');
                 bulkPasteArea.className = 'w-full p-2 border rounded';
-                bulkPasteArea.rows = 25; // Increased rows for better visibility
-                bulkPasteArea.placeholder = 'Pallet Qty\tRate\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24';
+                bulkPasteArea.rows = 5;
                 bulkPasteArea.onchange = (e) => {
-                    const lines = e.target.value.split('\n');
-                    lines.forEach((line, index) => {
+                    const rates = e.target.value.split('\n');
+                    rates.forEach((rate, index) => {
                         if (index < 24) {
-                            const rate = line.split('\t')[1]; // Get the rate from second column
-                            if (rate) {
-                                const rateInput = document.querySelector(`[name="palletRate_${index + 1}"]`);
-                                if (rateInput) {
-                                    rateInput.value = rate.trim();
-                                }
+                            const rateInput = document.querySelector(`[name="palletRate_${index + 1}"]`);
+                            if (rateInput) {
+                                rateInput.value = rate.trim();
                             }
                         }
                     });
@@ -424,23 +420,17 @@
         }
     }
 
-        // 2. Update the form submission logic to handle pallet rates
-        const handleFormSubmit = async (e) => {
-            e.preventDefault();
-            const formData = new FormData(e.target);
-        
-            // For pallet-based quotes, don't collect base price
-            const isFullTruckLoad = quoteData.loadType === 'Full Truck Load';
-            const isContainer = quoteData.loadType === 'Container';
-            
-            let basePrice = 0;
-            if (isFullTruckLoad || isContainer) {
-                basePrice = parseFloat(formData.get('price')) || 0;
-            }
-        
+    // Handle form submission
+    document.getElementById('submitQuoteForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+
+        try {
+            if (!quoteData) throw new Error('Quote data not loaded');
+
             // Get all pallet rates
             const palletRates = {};
-            if (!isFullTruckLoad && !isContainer) {
+            if (quoteData.loadType !== 'Full Truck Load') {
                 for (let i = 1; i <= 24; i++) {
                     const rate = parseFloat(formData.get(`palletRate_${i}`));
                     if (!isNaN(rate)) {
@@ -448,40 +438,19 @@
                     }
                 }
             }
-           // Calculate surcharges for each pallet rate
-            const fixedSurcharge = parseFloat(formData.get('fixedRateSurcharges')) || 0;
-            const percentSurcharge = parseFloat(formData.get('percentSurcharge')) || 0;
-        
-            const palletRatesWithSurcharges = {};
-            Object.entries(palletRates).forEach(([qty, rate]) => {
-                const percentAmount = rate * (percentSurcharge / 100);
-                palletRatesWithSurcharges[qty] = rate + fixedSurcharge + percentAmount;
-            });
 
-        // Generate HTML table for email
-            const generatePalletRatesTable = () => {
-                let html = `
-                    <table style="width:100%; border-collapse:collapse; margin-top:15px;">
-                        <tr>
-                            <th style="border:1px solid #ddd; padding:8px; background:#f5f5f5;">Pallets</th>
-                            <th style="border:1px solid #ddd; padding:8px; background:#f5f5f5;">Base Rate</th>
-                            <th style="border:1px solid #ddd; padding:8px; background:#f5f5f5;">Total (inc. Surcharges)</th>
-                        </tr>
+            // Generate pallet rates HTML for email
+            let palletRatesHTML = '<table style="width:100%; border-collapse:collapse;">';
+            palletRatesHTML += '<tr><th style="border:1px solid #ddd;padding:8px;">Pallets</th><th style="border:1px solid #ddd;padding:8px;">Rate</th></tr>';
+            Object.entries(palletRates).forEach(([qty, rate]) => {
+                palletRatesHTML += `
+                    <tr>
+                        <td style="border:1px solid #ddd;padding:8px;">${qty}</td>
+                        <td style="border:1px solid #ddd;padding:8px;">${formatCurrency(rate, formData.get('currency'))}</td>
+                    </tr>
                 `;
-                
-                Object.entries(palletRates).forEach(([qty, rate]) => {
-                    html += `
-                        <tr>
-                            <td style="border:1px solid #ddd; padding:8px;">${qty}</td>
-                            <td style="border:1px solid #ddd; padding:8px;">${formatCurrency(rate, formData.get('currency'))}</td>
-                            <td style="border:1px solid #ddd; padding:8px;">${formatCurrency(palletRatesWithSurcharges[qty], formData.get('currency'))}</td>
-                        </tr>
-                    `;
-                });
-                
-                html += '</table>';
-                return html;
-            };
+            });
+            palletRatesHTML += '</table>';
 
             // Get haulier details
             const haulierDoc = await db.collection('hauliers').doc(haulierId).get();
@@ -502,14 +471,8 @@
                 percentSurcharge: formData.get('percentSurcharge') || '0',
                 total: formData.get('total'),
                 hideDocuments: formData.get('hideDocuments') ? 'Yes' : 'No',
+                palletRatesHTML: palletRatesHTML,
                 getAllPalletRates: quoteData.getAllPalletRates ? 'Yes' : 'No',
-                palletRatesHTML: generatePalletRatesTable(),
-                basePrice: isFullTruckLoad || isContainer ? formatCurrency(basePrice, formData.get('currency')) : 'N/A',
-                fixedRateSurcharges: formatCurrency(fixedSurcharge, formData.get('currency')),
-                percentSurcharge: `${percentSurcharge}%`,
-                total: isFullTruckLoad || isContainer ? 
-                    formatCurrency(calculateTotal(basePrice, fixedSurcharge, percentSurcharge), formData.get('currency')) :
-                    'See pallet rates table'
                 
                 // Route details
                 collectionCountry: quoteData.collection?.country || 'N/A',
