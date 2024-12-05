@@ -592,6 +592,7 @@ const PostcodeSelector = ({ isOpen, onClose, onSelect, savedPostcodes, country, 
         const [delivery, setDelivery] = useState({ country: '', location: '', postcode: '' });
         const [deliveryType, setDeliveryType] = useState('STD');
         const [hideDocuments, setHideDocuments] = useState(false);
+        const [getRatesForAllPallets, setGetRatesForAllPallets] = useState(false);
         
         // New Basic Fields
         const [transportMode, setTransportMode] = useState('Road');
@@ -844,6 +845,8 @@ const PostcodeSelector = ({ isOpen, onClose, onSelect, savedPostcodes, country, 
                     weightBucket,
                     incoterms,
                     loadType,
+                    getAllPalletRates: getRatesForAllPallets,  // ADD THIS
+                    pallets: getRatesForAllPallets ? 24 : pallets,  // ADD THIS
                     weightType,
                     pallets: loadType !== 'Full Truck Load' ? pallets : null,
                     palletType: (loadType === 'Pallets' || loadType === 'Partial Load' || loadType === 'LCL') ? palletType : null,
@@ -1198,7 +1201,7 @@ const PostcodeSelector = ({ isOpen, onClose, onSelect, savedPostcodes, country, 
                             </div>
                         </div>
                     </div>
-                    {/* In the Advanced Options section, remove the Weight Type Selection */}
+                    {/* Advanced Options */}
                     <div className="mb-6">
                         <h2 className="text-lg font-semibold mb-4 text-gray-700">Advanced Options</h2>
                         <div className="space-y-4">
@@ -1232,7 +1235,7 @@ const PostcodeSelector = ({ isOpen, onClose, onSelect, savedPostcodes, country, 
                                             </button>
                                         </>
                                     )}
-
+                    
                                     {transportMode === 'Sea' && (
                                         <>
                                             <button
@@ -1274,33 +1277,50 @@ const PostcodeSelector = ({ isOpen, onClose, onSelect, savedPostcodes, country, 
                                     )}
                                 </div>
                             </div>
-                            
-    
-
+                    
+                            {/* Get All Pallet Rates Option */}
+                            {(['Partial Load', 'LCL', 'Pallets'].includes(loadType)) && (
+                                <div className="flex items-center space-x-2 mt-4">
+                                    <input
+                                        type="checkbox"
+                                        id="getAllPalletRates"
+                                        checked={getRatesForAllPallets}
+                                        onChange={(e) => setGetRatesForAllPallets(e.target.checked)}
+                                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                    />
+                                    <label htmlFor="getAllPalletRates" className="text-sm text-gray-700">
+                                        Get rates for all pallet quantities (1-24)
+                                    </label>
+                                </div>
+                            )}
+                    
                             {/* Number of Pallets */}
-                            {(transportMode === 'Road' && loadType === 'Partial Load') || (transportMode === 'Sea' && loadType === 'LCL') || (transportMode === 'Air' && loadType === 'Pallets') ? (
+                            {(transportMode === 'Road' && loadType === 'Partial Load') || 
+                             (transportMode === 'Sea' && loadType === 'LCL') || 
+                             (transportMode === 'Air' && loadType === 'Pallets') ? (
                                 <div className="flex items-center">
                                     <label className="block text-sm font-medium mb-2 text-gray-600 mr-4">
                                         Number of Pallets:
                                     </label>
-                            <input
-                                type="number"
-                                className="combobox-input w-24"
-                                min="0"
-                                max="24"
-                                value={pallets}
-                                onChange={(e) => {
-                                    const value = e.target.value;
-                                    if (value === '') {
-                                        setPallets('');
-                                    } else {
-                                        const numValue = parseInt(value);
-                                        if (!isNaN(numValue)) {
-                                            setPallets(Math.min(Math.max(numValue, 0), 24));
-                                        }
-                                    }
-                                }}
-                            />
+                                    <input
+                                        type="number"
+                                        className="combobox-input w-24"
+                                        min="0"
+                                        max="24"
+                                        value={pallets}
+                                        disabled={getRatesForAllPallets}
+                                        onChange={(e) => {
+                                            const value = e.target.value;
+                                            if (value === '') {
+                                                setPallets('');
+                                            } else {
+                                                const numValue = parseInt(value);
+                                                if (!isNaN(numValue)) {
+                                                    setPallets(Math.min(Math.max(numValue, 0), 24));
+                                                }
+                                            }
+                                        }}
+                                    />
                                 </div>
                             ) : null}
 
