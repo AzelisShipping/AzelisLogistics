@@ -57,6 +57,8 @@
                     <p><strong>Weight Type:</strong> <span id="weightType"></span></p>
                     <p><strong>Incoterms:</strong> <span id="incoterms"></span></p>
                     <p><strong>Currency:</strong> <span id="displayCurrency"></span></p>
+                    <p><strong>Get All Pallet Rates:</strong> <span id="getAllPalletRates"></span></p>
+                    <p><strong>Number of Pallets:</strong> <span id="pallets"></span></p>
                 </div>
                 
                 <!-- Delivery Details -->
@@ -268,6 +270,7 @@
             document.getElementById('weightType').textContent = quoteData.weightType === 'perPallet' ? 'Per Pallet' : 'Total Load';
             document.getElementById('incoterms').textContent = quoteData.incoterms || 'N/A';
             document.getElementById('displayCurrency').textContent = quoteData.currency || 'N/A';
+            document.getElementById('getAllPalletRates').textContent = quoteData.getAllPalletRates ? 'Yes' : 'No';
             
             document.getElementById('deliveryType').textContent = quoteData.deliveryType || 'N/A';
             document.getElementById('loadType').textContent = quoteData.loadType || 'N/A';
@@ -388,6 +391,7 @@
                 total: formData.get('total'),
                 hideDocuments: formData.get('hideDocuments') ? 'Yes' : 'No',
                 palletRatesHTML: palletRatesHTML,
+                getAllPalletRates: quoteData.getAllPalletRates ? 'Yes' : 'No',
                 
                 // Route details
                 collectionCountry: quoteData.collection?.country || 'N/A',
