@@ -191,6 +191,14 @@
                 </div>
             </div>
 
+            <!-- Include Customs Clearance Option -->
+            <div>
+                <label class="flex items-center">
+                    <input type="checkbox" name="includeCustomsClearance" class="mr-2">
+                    <span>Include Customs Clearance in Price</span>
+                </label>
+            </div>
+
             <!-- Hide Documents Option -->
             <div>
                 <label class="flex items-center">
@@ -210,6 +218,7 @@
 <script>
     // Firebase configuration
     const firebaseConfig = {
+        // Your Firebase config here
         apiKey: "AIzaSyDiIRLwLeMAf1VZbZ7ygvGDu-gZH6sA424",
         authDomain: "azelislogistics.firebaseapp.com",
         projectId: "azelislogistics",
@@ -346,20 +355,25 @@
                 waypointsContainer.innerHTML = '<p class="text-gray-500">No waypoints specified</p>';
             }
 
-            // Show/hide Base Price field based on getAllPalletRates
+            // Show/hide Base Price field based on transport mode and load type
             const basePriceField = document.getElementById('basePriceField');
             const basePriceInput = document.querySelector('[name="price"]');
-            if (quoteData.getAllPalletRates) {
-                basePriceField.style.display = 'none';
-                basePriceInput.removeAttribute('required');
-            } else {
+
+            const isBasePriceNeeded = 
+                (quoteData.transportMode === 'Sea' && quoteData.loadType === 'Container') ||
+                (quoteData.transportMode === 'Road' && quoteData.loadType === 'Full Truck Load');
+
+            if (isBasePriceNeeded) {
                 basePriceField.style.display = 'block';
                 basePriceInput.setAttribute('required', 'required');
+            } else {
+                basePriceField.style.display = 'none';
+                basePriceInput.removeAttribute('required');
             }
 
             // Populate pallet rates table
             const palletRatesBody = document.getElementById('palletRatesBody');
-            if (quoteData.getAllPalletRates) {
+            if (!isBasePriceNeeded) {
                 // Create container for bulk upload options
                 const bulkUploadContainer = document.createElement('div');
                 bulkUploadContainer.className = 'mb-6 p-4 border rounded';
@@ -483,42 +497,10 @@
                 bulkPasteContainer.appendChild(bulkPasteLabel);
                 bulkPasteContainer.appendChild(bulkPasteArea);
                 palletRatesBody.parentElement.parentElement.insertBefore(bulkPasteContainer, palletRatesBody.parentElement);
-            } else if (quoteData.loadType === 'Partial Load' || quoteData.loadType === 'LCL') {
-                // Show only single pallet rate input
-                const pallets = quoteData.pallets || 1;
-                const row = document.createElement('tr');
-                
-                const rateInputName = `palletRate_${pallets}`;
-                const totalInputName = `palletTotal_${pallets}`;
-                
-                row.innerHTML = `
-                    <td class="px-4 py-2 border text-center">${pallets}</td>
-                    <td class="px-4 py-2 border">
-                        <input type="number" 
-                               name="${rateInputName}" 
-                               class="w-full p-2 border rounded" 
-                               step="0.01" 
-                               placeholder="Rate for ${pallets} pallet${pallets > 1 ? 's' : ''}">
-                    </td>
-                    <td class="px-4 py-2 border">
-                        <input type="number" 
-                               name="${totalInputName}" 
-                               class="w-full p-2 border rounded bg-gray-100" 
-                               readonly>
-                    </td>
-                `;
-                palletRatesBody.appendChild(row);
-                
-                const rateInput = row.querySelector(`[name="${rateInputName}"]`);
-                rateInput.addEventListener('input', calculatePalletTotals);
             } else {
-                // Hide pallet rates section for FTL
+                // Hide pallet rates section
                 document.getElementById('palletRatesSection').style.display = 'none';
             }
-
-            // Show/hide pallet rates section based on load type
-            const palletRatesSection = document.getElementById('palletRatesSection');
-            palletRatesSection.style.display = (quoteData.loadType === 'Full Truck Load' || !quoteData.loadType) ? 'none' : 'block';
 
             // Set currency field to match quote data
             document.querySelector('[name="currency"]').value = quoteData.currency || 'GBP';
@@ -539,7 +521,11 @@
 
             // Get all pallet rates
             const palletRates = {};
-            if (quoteData.loadType !== 'Full Truck Load') {
+            const isBasePriceNeeded = 
+                (quoteData.transportMode === 'Sea' && quoteData.loadType === 'Container') ||
+                (quoteData.transportMode === 'Road' && quoteData.loadType === 'Full Truck Load');
+
+            if (!isBasePriceNeeded) {
                 for (let i = 1; i <= 24; i++) {
                     const rate = parseFloat(formData.get(`palletRate_${i}`));
                     const total = parseFloat(formData.get(`palletTotal_${i}`));
@@ -550,18 +536,23 @@
             }
 
             // Generate pallet rates HTML for email
-            let palletRatesHTML = '<table style="width:100%; border-collapse:collapse;">';
-            palletRatesHTML += '<tr><th style="border:1px solid #ddd;padding:8px;">Pallets</th><th style="border:1px solid #ddd;padding:8px;">Rate</th><th style="border:1px solid #ddd;padding:8px;">Total</th></tr>';
-            Object.entries(palletRates).forEach(([qty, { rate, total }]) => {
-                palletRatesHTML += `
-                    <tr>
-                        <td style="border:1px solid #ddd;padding:8px;">${qty}</td>
-                        <td style="border:1px solid #ddd;padding:8px;">${formatCurrency(rate, formData.get('currency'))}</td>
-                        <td style="border:1px solid #ddd;padding:8px;">${formatCurrency(total, formData.get('currency'))}</td>
-                    </tr>
-                `;
-            });
-            palletRatesHTML += '</table>';
+            let palletRatesHTML = '';
+            if (Object.keys(palletRates).length > 0) {
+                palletRatesHTML = '<table style="width:100%; border-collapse:collapse;">';
+                palletRatesHTML += '<tr><th style="border:1px solid #ddd;padding:8px;">Pallets</th><th style="border:1px solid #ddd;padding:8px;">Rate</th><th style="border:1px solid #ddd;padding:8px;">Total</th></tr>';
+                Object.entries(palletRates).forEach(([qty, { rate, total }]) => {
+                    palletRatesHTML += `
+                        <tr>
+                            <td style="border:1px solid #ddd;padding:8px;">${qty}</td>
+                            <td style="border:1px solid #ddd;padding:8px;">${formatCurrency(rate, formData.get('currency'))}</td>
+                            <td style="border:1px solid #ddd;padding:8px;">${formatCurrency(total, formData.get('currency'))}</td>
+                        </tr>
+                    `;
+                });
+                palletRatesHTML += '</table>';
+            } else {
+                palletRatesHTML = 'N/A';
+            }
 
             // Get haulier details
             const haulierDoc = await db.collection('hauliers').doc(haulierId).get();
@@ -574,14 +565,15 @@
                 quoteId: quoteId,
                 haulierName: haulierData.name,
                 haulierEmail: haulierData.email,
-                price: formData.get('price'),
+                price: formData.get('price') || 'N/A',
                 currency: formData.get('currency'),
                 validUntil: formData.get('validUntil'),
                 transitTime: formData.get('transitTime'),
                 fixedRateSurcharges: formData.get('fixedRateSurcharges') || '0',
                 percentSurcharge: formData.get('percentSurcharge') || '0',
-                total: formData.get('total'),
+                total: formData.get('total') || 'N/A',
                 hideDocuments: formData.get('hideDocuments') ? 'Yes' : 'No',
+                includeCustomsClearance: formData.get('includeCustomsClearance') ? 'Yes' : 'No',
                 palletRatesHTML: palletRatesHTML,
                 getAllPalletRates: quoteData.getAllPalletRates ? 'Yes' : 'No',
                 
@@ -624,14 +616,15 @@
                 responses: firebase.firestore.FieldValue.arrayUnion({
                     haulierId: haulierId,
                     haulierName: haulierData.name,
-                    price: parseFloat(formData.get('price')),
+                    price: parseFloat(formData.get('price')) || null,
                     currency: formData.get('currency'),
                     validUntil: formData.get('validUntil'),
                     transitTime: parseInt(formData.get('transitTime')),
                     fixedRateSurcharges: parseFloat(formData.get('fixedRateSurcharges')) || 0,
                     percentSurcharge: parseFloat(formData.get('percentSurcharge')) || 0,
-                    total: parseFloat(formData.get('total')),
+                    total: parseFloat(formData.get('total')) || null,
                     hideDocuments: formData.get('hideDocuments') === 'on',
+                    includeCustomsClearance: formData.get('includeCustomsClearance') === 'on',
                     palletRates: palletRates,
                     submittedAt: new Date()
                 })
@@ -646,14 +639,15 @@
                 haulierName: haulierData.name,
                 haulierEmail: haulierData.email,
                 userEmail: quoteData.userEmail,
-                price: parseFloat(formData.get('price')),
+                price: parseFloat(formData.get('price')) || null,
                 currency: formData.get('currency'),
                 validUntil: formData.get('validUntil'),
                 transitTime: parseInt(formData.get('transitTime')),
                 fixedRateSurcharges: parseFloat(formData.get('fixedRateSurcharges')) || 0,
                 percentSurcharge: parseFloat(formData.get('percentSurcharge')) || 0,
-                total: parseFloat(formData.get('total')),
+                total: parseFloat(formData.get('total')) || null,
                 hideDocuments: formData.get('hideDocuments') === 'on',
+                includeCustomsClearance: formData.get('includeCustomsClearance') === 'on',
                 palletRates: palletRates,
                 submittedAt: new Date(),
                 transportMode: quoteData.transportMode,
