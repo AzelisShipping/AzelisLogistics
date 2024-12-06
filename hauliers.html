@@ -1048,20 +1048,29 @@
                                                     </div>
                                                 </td>
                                                 {Array.from({ length: 24 }, (_, i) => i + 1).map(num => (
-                                                    <td key={num} className="px-4 py-4 text-center min-w-[80px]">
-                                                        {rate.prices?.[num] ? (
-                                                            <div className="font-medium">
-                                                                {formatCurrency(
-                                                                    rate.prices[num] + 
-                                                                    (rate.fixedRateSurcharges || 0) + 
-                                                                    (rate.prices[num] * (rate.percentSurcharge || 0) / 100),
-                                                                    rate.currency
-                                                                )}
-                                                            </div>
-                                                        ) : (
-                                                            <span className="text-gray-400">-</span>
-                                                        )}
-                                                    </td>
+                                              <td key={num} className="px-4 py-4 text-center min-w-[80px]">
+                        {rate.rates?.[`${num} Pallet${num > 1 ? 's' : ''}`]?.total ? (
+                            // New format from tender submissions
+                            <div className="font-medium">
+                                {formatCurrency(
+                                    rate.rates[`${num} Pallet${num > 1 ? 's' : ''}`].total,
+                                    rate.currency
+                                )}
+                            </div>
+                        ) : rate.prices?.[num] ? (
+                            // Legacy format 
+                            <div className="font-medium">
+                                {formatCurrency(
+                                    rate.prices[num] + 
+                                    (rate.fixedRateSurcharges || 0) + 
+                                    (rate.prices[num] * (rate.percentSurcharge || 0) / 100),
+                                    rate.currency
+                                )}
+                            </div>
+                        ) : (
+                            <span className="text-gray-400">-</span>
+                        )}
+                    </td>
                                                 ))}
                                                     <td className="px-6 py-4">
                                                         <div className="flex flex-col space-y-2">
