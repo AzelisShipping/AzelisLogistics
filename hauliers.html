@@ -930,8 +930,8 @@
                                 </div>
                                 
                                 {/* Rates Table */}
-                                <div className="overflow-x-auto">
-                                    <table className="w-full">
+                                <div className="overflow-x-auto" style={{ maxWidth: '100vw' }}>
+                                    <table className="w-full whitespace-nowrap">
                                         <thead className="bg-gray-50">
                                             <tr>
                                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -940,15 +940,15 @@
                                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                     Transport Details
                                                 </th>
-                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Base Price
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[150px]">
+                                                    Total Price Info
                                                 </th>
-                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Customs & Surcharges
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[150px]">
+                                                    Additional Charges
                                                 </th>
                                                 {Array.from({ length: 24 }, (_, i) => i + 1).map(num => (
-                                                    <th key={num} className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                        {num}
+                                                    <th key={num} className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[80px]">
+                                                        {num} {num === 1 ? 'Pallet' : 'Pallets'}
                                                     </th>
                                                 ))}
                                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -997,42 +997,72 @@
                                                             <div>{rate.incoterms}</div>
                                                         </div>
                                                     </td>
-                                                    <td className="px-6 py-4">
-                                                        <div className="text-sm">
-                                                            {rate.isFullTruckLoad ? (
-                                                                <div>{formatCurrency(rate.fullTruckLoadPrice || 0, rate.currency)}</div>
-                                                            ) : (
-                                                                <div>{formatCurrency(rate.prices?.[1] || 0, rate.currency)} (1 pallet)</div>
-                                                            )}
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-6 py-4">
-                                                        <div className="text-sm">
-                                                            <div>Fixed: {formatCurrency(rate.fixedRateSurcharges || 0, rate.currency)}</div>
-                                                            <div>Surcharge: {rate.percentSurcharge || 0}%</div>
-                                                            <div className="mt-1 text-xs">
-                                                                Customs: {rate.includeCustomsClearance ? (
-                                                                    <span className="text-green-600">Included</span>
-                                                                ) : (
-                                                                    <span className="text-red-600">Not Included</span>
+                                                 <td className="px-6 py-4 min-w-[150px]">
+                                                    <div className="text-sm">
+                                                        {rate.isFullTruckLoad ? (
+                                                            <div className="font-medium">
+                                                                {formatCurrency(
+                                                                    rate.fullTruckLoadPrice + 
+                                                                    (rate.fixedRateSurcharges || 0) + 
+                                                                    (rate.fullTruckLoadPrice * (rate.percentSurcharge || 0) / 100), 
+                                                                    rate.currency
                                                                 )}
                                                             </div>
+                                                        ) : rate.getAllPalletRates ? (
+                                                            <div className="text-green-600 font-medium">All Pallet Rates Available</div>
+                                                        ) : (
+                                                            <div className="font-medium">
+                                                                {rate.pallets && rate.prices?.[rate.pallets] ? 
+                                                                    `${rate.pallets} ${rate.pallets > 1 ? 'Pallets' : 'Pallet'}: ${
+                                                                        formatCurrency(
+                                                                            rate.prices[rate.pallets] + 
+                                                                            (rate.fixedRateSurcharges || 0) + 
+                                                                            (rate.prices[rate.pallets] * (rate.percentSurcharge || 0) / 100),
+                                                                            rate.currency
+                                                                        )
+                                                                    }` : 'Price not set'
+                                                                }
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 min-w-[150px]">
+                                                    <div className="text-sm space-y-1">
+                                                        {rate.fixedRateSurcharges > 0 && (
+                                                            <div>
+                                                                Fixed: <span className="font-medium">{formatCurrency(rate.fixedRateSurcharges || 0, rate.currency)}</span>
+                                                            </div>
+                                                        )}
+                                                        {rate.percentSurcharge > 0 && (
+                                                            <div>
+                                                                Surcharge: <span className="font-medium">{rate.percentSurcharge}%</span>
+                                                            </div>
+                                                        )}
+                                                        <div>
+                                                            Customs: {rate.includeCustomsClearance ? (
+                                                                <span className="text-green-600 font-medium">Included</span>
+                                                            ) : (
+                                                                <span className="text-red-600 font-medium">Not Included</span>
+                                                            )}
                                                         </div>
+                                                    </div>
+                                                </td>
+                                                {Array.from({ length: 24 }, (_, i) => i + 1).map(num => (
+                                                    <td key={num} className="px-4 py-4 text-center min-w-[80px]">
+                                                        {rate.prices?.[num] ? (
+                                                            <div className="font-medium">
+                                                                {formatCurrency(
+                                                                    rate.prices[num] + 
+                                                                    (rate.fixedRateSurcharges || 0) + 
+                                                                    (rate.prices[num] * (rate.percentSurcharge || 0) / 100),
+                                                                    rate.currency
+                                                                )}
+                                                            </div>
+                                                        ) : (
+                                                            <span className="text-gray-400">-</span>
+                                                        )}
                                                     </td>
-                                                    {Array.from({ length: 24 }, (_, i) => i + 1).map(num => (
-                                                        <td key={num} className="px-2 py-4 text-center text-sm">
-                                                            {rate.prices?.[num] ? (
-                                                                <div className="text-xs">
-                                                                    {formatCurrency(
-                                                                        rate.prices[num] +
-                                                                        (rate.fixedRateSurcharges || 0) +
-                                                                        (rate.prices[num] * (rate.percentSurcharge || 0) / 100),
-                                                                        rate.currency
-                                                                    )}
-                                                                </div>
-                                                            ) : '-'}
-                                                        </td>
-                                                    ))}
+                                                ))}
                                                     <td className="px-6 py-4">
                                                         <div className="flex flex-col space-y-2">
                                                             <button
