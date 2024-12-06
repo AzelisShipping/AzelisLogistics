@@ -441,29 +441,67 @@
                     alert('No rates to export.');
                     return;
                 }
-
+            
                 const exportData = rates.map(rate => ({
-                    'Haulier': getHaulierNameById(rate.haulierId),
-                    'Collection Country': rate.collectionCountry,
-                    'Collection Postcode': rate.collectionPostcode || '',
-                    'Delivery Country': rate.deliveryCountry,
-                    'Delivery Postcode': rate.deliveryPostcode || '',
-                    'Transport Mode': rate.transportMode,
-                    'Weight Bucket': rate.weightBucket,
-                    'Incoterms': rate.incoterms,
-                    'Delivery Type': rate.deliveryType,
-                    'Price Validity': rate.priceValidity,
-                    'Currency': rate.currency,
-                    'Is Full Truck Load': rate.isFullTruckLoad ? 'Yes' : 'No',
-                    'Full Truck Load Price': rate.fullTruckLoadPrice,
-                    'Transit Time (Days)': rate.transitTime,
-                    'Services': rate.services?.join(', ') || '',
-                    'Container Type': rate.containerType || '',
-                    'Air Weight (kg)': rate.airWeight || '',
+                    'Quote ID': rate.quoteId || '',
+                    'Haulier ID': rate.haulierId || '',
+                    'Haulier Name': rate.haulierName || '',
+                    'Haulier Email': rate.haulierEmail || '',
+                    'User Email': rate.userEmail || '',
+                    'Currency': rate.currency || '',
+                    'Valid Until': rate.validUntil || '',
+                    'Transit Time': rate.transitTime || '',
+                    'Fixed Rate Surcharges': rate.fixedRateSurcharges || '',
+                    'Percent Surcharge': rate.percentSurcharge || '',
+                    'Hide Documents': rate.hideDocuments ? 'Yes' : 'No',
+                    'Include Customs Clearance': rate.includeCustomsClearance ? 'Yes' : 'No',
+                    'Submission Date': rate.submittedAt ? rate.submittedAt.toDate().toLocaleDateString() : '',
+                    'Transport Mode': rate.transportMode || '',
+                    'Haulier Transport Modes': rate.haulierTransportModes ? rate.haulierTransportModes.join(', ') : '',
+                    
+                    // Collection Details
+                    'Collection Country': rate.collection?.country || '',
+                    'Collection Postcode': rate.collection?.postcode || '',
+                    'Collection Location': rate.collection?.location || '',
+                    
+                    // Delivery Details
+                    'Delivery Country': rate.delivery?.country || '',
+                    'Delivery Postcode': rate.delivery?.postcode || '',
+                    'Delivery Location': rate.delivery?.location || '',
+                    
+                    // Transport Details
+                    'Weight Bucket': rate.weightBucket || '',
+                    'Weight Type': rate.weightType || '',
+                    'Incoterms': rate.incoterms || '',
+                    'Delivery Type': rate.deliveryType || '',
+                    'Load Type': rate.loadType || '',
+                    'Number of Pallets': rate.pallets || '',
                     'Volume (CBM)': rate.volume || '',
-                    ...generatePalletPriceColumns(rate.prices)
+                    'Pallet Type': rate.palletType || '',
+                    'Container Type': rate.containerType || '',
+                    'Air Weight (KG)': rate.airWeight || '',
+                    
+                    // Additional Details
+                    'Is Peak Season': rate.isPeakSeason ? 'Yes' : 'No',
+                    'Peak Season Details': rate.peakSeasonDetails || '',
+                    'Urgency': rate.urgency || '',
+                    'Preferred Delivery Date': rate.preferredDeliveryDate || '',
+                    
+                    // Waypoints
+                    ...rate.waypoints?.reduce((acc, wp, index) => ({
+                        ...acc,
+                        [`Waypoint ${index + 1} Country`]: wp.country || '',
+                        [`Waypoint ${index + 1} Postcode`]: wp.postcode || ''
+                    }), {}),
+                    
+                    // Rate Details
+                    ...Object.entries(rate.rates || {}).reduce((acc, [key, value]) => ({
+                        ...acc,
+                        [`${key} Base Rate`]: value.rate || '',
+                        [`${key} Total`]: value.total || ''
+                    }), {})
                 }));
-
+            
                 const ws = XLSX.utils.json_to_sheet(exportData);
                 const wb = XLSX.utils.book_new();
                 XLSX.utils.book_append_sheet(wb, ws, "Rates");
@@ -1161,65 +1199,122 @@
                         </div>
                     )}
 
-                        {/* Rate Details Modal */}
-                        {showRateDetails && selectedRate && (
-                            <div className="modal-overlay">
-                                <div className="modal-content max-w-2xl">
-                                    <div className="flex justify-between items-start mb-4">
-                                        <h3 className="text-lg font-semibold">Rate Details</h3>
-                                        <button 
-                                            onClick={() => {
-                                                setShowRateDetails(false);
-                                                setSelectedRate(null);
-                                            }}
-                                            className="text-gray-400 hover:text-gray-600"
-                                        >
-                                            ×
-                                        </button>
-                                    </div>
-
-                                    <div className="space-y-4">
+                     {/* Rate Details Modal */}
+                {showRateDetails && selectedRate && (
+                    <div className="modal-overlay">
+                        <div className="modal-content max-w-4xl">
+                            <div className="flex justify-between items-start mb-4">
+                                <h3 className="text-lg font-semibold">Rate Details</h3>
+                                <button 
+                                    onClick={() => {
+                                        setShowRateDetails(false);
+                                        setSelectedRate(null);
+                                    }}
+                                    className="text-gray-400 hover:text-gray-600"
+                                >
+                                    ×
+                                </button>
+                            </div>
+                
+                            <div className="space-y-6">
+                                {/* Basic Info */}
+                                <div>
+                                    <h4 className="font-medium mb-2">Basic Information</h4>
+                                    <div className="grid grid-cols-2 gap-4">
                                         <div>
-                                            <h4 className="font-medium mb-2">Pricing Information</h4>
-                                            {selectedRate.isFullTruckLoad ? (
-                                                <div className="text-lg font-semibold">
-                                                    Full Truck Load Price: {formatCurrency(selectedRate.fullTruckLoadPrice, selectedRate.currency)}
-                                                </div>
-                                            ) : (
-                                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                                                    {Object.entries(selectedRate.prices).map(([pallets, price]) => (
-                                                        <div key={pallets} className="p-2 bg-gray-50 rounded">
-                                                            <div className="text-sm text-gray-600">{pallets} Pallet{pallets > 1 ? 's' : ''}</div>
-                                                            <div className="font-medium">{formatCurrency(price, selectedRate.currency)}</div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            )}
+                                            <p><strong>Quote ID:</strong> {selectedRate.quoteId || 'N/A'}</p>
+                                            <p><strong>Haulier:</strong> {selectedRate.haulierName || 'N/A'}</p>
+                                            <p><strong>Currency:</strong> {selectedRate.currency || 'N/A'}</p>
+                                            <p><strong>Valid Until:</strong> {selectedRate.validUntil ? new Date(selectedRate.validUntil).toLocaleDateString() : 'N/A'}</p>
                                         </div>
-
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div>
-                                                <h4 className="font-medium mb-2">Service Details</h4>
-                                                <div className="text-sm space-y-1">
-                                                    <div>Transit Time: {selectedRate.transitTime || 'Not specified'} days</div>
-                                                    <div>Services: {selectedRate.services?.join(', ') || 'None specified'}</div>
-                                                </div>
-                                            </div>
-                                            {(selectedRate.containerType || selectedRate.airWeight || selectedRate.volume) && (
-                                                <div>
-                                                    <h4 className="font-medium mb-2">Additional Specifications</h4>
-                                                    <div className="text-sm space-y-1">
-                                                        {selectedRate.containerType && <div>Container: {selectedRate.containerType}</div>}
-                                                        {selectedRate.airWeight && <div>Air Weight: {selectedRate.airWeight}kg</div>}
-                                                        {selectedRate.volume && <div>Volume: {selectedRate.volume}CBM</div>}
-                                                    </div>
-                                                </div>
-                                            )}
+                                        <div>
+                                            <p><strong>Transit Time:</strong> {selectedRate.transitTime || 'N/A'} days</p>
+                                            <p><strong>Fixed Surcharges:</strong> {formatCurrency(selectedRate.fixedRateSurcharges || 0, selectedRate.currency)}</p>
+                                            <p><strong>Percent Surcharge:</strong> {selectedRate.percentSurcharge || 0}%</p>
                                         </div>
                                     </div>
                                 </div>
+                
+                        {/* Pricing Details */}
+                        <div>
+                            <h4 className="font-medium mb-2">Pricing Information</h4>
+                            <div className="grid grid-cols-3 gap-4">
+                                {selectedRate.isFullTruckLoad ? (
+                                    <div className="p-3 bg-gray-50 rounded">
+                                        <p className="font-medium">Full Truck Load Price</p>
+                                        <p>Base Rate: {formatCurrency(selectedRate.fullTruckLoadPrice || 0, selectedRate.currency)}</p>
+                                        <p>Total: {formatCurrency(
+                                            (selectedRate.fullTruckLoadPrice || 0) + 
+                                            (selectedRate.fixedRateSurcharges || 0) + 
+                                            ((selectedRate.fullTruckLoadPrice || 0) * (selectedRate.percentSurcharge || 0) / 100), 
+                                            selectedRate.currency
+                                        )}</p>
+                                    </div>
+                                ) : selectedRate.rates ? (
+                                    Object.entries(selectedRate.rates).map(([key, value]) => (
+                                        <div key={key} className="p-3 bg-gray-50 rounded">
+                                            <p className="font-medium">{key}</p>
+                                            <p>Base Rate: {formatCurrency(value.rate || 0, selectedRate.currency)}</p>
+                                            <p>Total: {formatCurrency(value.total || 0, selectedRate.currency)}</p>
+                                        </div>
+                                    ))
+                                ) : (
+                                    // Handle legacy format or different rate structure
+                                    Object.entries(selectedRate.prices || {}).map(([pallets, price]) => (
+                                        <div key={pallets} className="p-3 bg-gray-50 rounded">
+                                            <p className="font-medium">{pallets} Pallet{parseInt(pallets) > 1 ? 's' : ''}</p>
+                                            <p>Base Rate: {formatCurrency(price || 0, selectedRate.currency)}</p>
+                                            <p>Total: {formatCurrency(
+                                                (price || 0) + 
+                                                (selectedRate.fixedRateSurcharges || 0) + 
+                                                ((price || 0) * (selectedRate.percentSurcharge || 0) / 100), 
+                                                selectedRate.currency
+                                            )}</p>
+                                        </div>
+                                    ))
+                                )}
                             </div>
-                        )}
+                        </div>
+                
+                                {/* Additional Details */}
+                                <div>
+                                    <h4 className="font-medium mb-2">Additional Details</h4>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <p><strong>Hide Documents:</strong> {selectedRate.hideDocuments ? 'Yes' : 'No'}</p>
+                                            <p><strong>Include Customs:</strong> {selectedRate.includeCustomsClearance ? 'Yes' : 'No'}</p>
+                                            <p><strong>Peak Season:</strong> {selectedRate.isPeakSeason ? 'Yes' : 'No'}</p>
+                                            {selectedRate.isPeakSeason && 
+                                                <p><strong>Peak Details:</strong> {selectedRate.peakSeasonDetails}</p>}
+                                        </div>
+                                        <div>
+                                            <p><strong>Urgency:</strong> {selectedRate.urgency || 'N/A'}</p>
+                                            <p><strong>Preferred Delivery:</strong> {selectedRate.preferredDeliveryDate || 'N/A'}</p>
+                                            <p><strong>Submission Date:</strong> {selectedRate.submittedAt ? 
+                                                selectedRate.submittedAt.toDate().toLocaleDateString() : 'N/A'}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                
+                                {/* Waypoints */}
+                                {selectedRate.waypoints && selectedRate.waypoints.length > 0 && (
+                                    <div>
+                                        <h4 className="font-medium mb-2">Waypoints</h4>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            {selectedRate.waypoints.map((waypoint, index) => (
+                                                <div key={index} className="p-2 bg-gray-50 rounded">
+                                                    <p className="font-medium">Waypoint {index + 1}</p>
+                                                    <p>Country: {waypoint.country}</p>
+                                                    <p>Postcode: {waypoint.postcode}</p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                         {/* Rate Form Modal */}
                         {showRateForm && (
