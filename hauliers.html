@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1473,7 +1474,6 @@
             const [transportMode, setTransportMode] = React.useState(editingRate?.transportMode || '');
             const [loadType, setLoadType] = React.useState(editingRate?.isFullTruckLoad ? 'ftl' : 'pl');
             const [palletPrices, setPalletPrices] = React.useState(editingRate?.prices || {});
-            const [showQuickInput, setShowQuickInput] = React.useState(false);
 
             const handleTransportModeChange = (e) => {
                 setTransportMode(e.target.value);
@@ -1675,30 +1675,19 @@
                             {/* Load Type Pricing */}  
                             <div>
                                 <h4 className="text-md font-semibold mb-2">Load Pricing</h4>
-                            {loadType === 'ftl' ? (
-                                <div>
-                                    <label className="block text-sm font-medium mb-1">Full Truck Load Price *</label>
-                                    <input   
-                                        name="ftlPrice"
-                                        type="number"
-                                        step="0.01"
-                                        required={loadType === 'ftl'}  
-                                        defaultValue={editingRate?.fullTruckLoadPrice}
-                                        className="w-full p-2 border rounded"
-                                    />  
-                                </div>
-                            ) : (
-                                <>
-                                    <div className="flex justify-between items-center mb-4">
-                                        <h5 className="text-sm font-medium">Pallet Prices</h5>
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowQuickInput(true)}
-                                            className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
-                                        >
-                                            Quick Input
-                                        </button>
+                                {loadType === 'ftl' ? (
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1">Full Truck Load Price *</label>
+                                        <input   
+                                            name="ftlPrice"
+                                            type="number"
+                                            step="0.01"
+                                            required={loadType === 'ftl'}  
+                                            defaultValue={editingRate?.fullTruckLoadPrice}
+                                            className="w-full p-2 border rounded"
+                                        />  
                                     </div>
+                                ) : (  
                                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">  
                                         {Array.from({ length: 24 }, (_, i) => i + 1).map(pallet => (
                                             <div key={pallet}>
@@ -1714,97 +1703,7 @@
                                             </div>
                                         ))}
                                     </div>
-                                    {showQuickInput && (
-                                        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-                                            <div className="bg-white rounded-lg p-6 max-w-md w-full">
-                                                <div className="flex justify-between items-start mb-4">
-                                                    <h3 className="text-lg font-semibold">Quick Pallet Rates Input</h3>
-                                                    <button 
-                                                        onClick={() => setShowQuickInput(false)}
-                                                        className="text-gray-400 hover:text-gray-600"
-                                                    >
-                                                        ×
-                                                    </button>
-                                                </div>
-                                                
-                                                <div className="mb-4">
-                                                    <h4 className="font-medium mb-2">Instructions:</h4>
-                                                    <ol className="list-decimal list-inside text-sm text-gray-600 space-y-1">
-                                                        <li>Copy a column of rates from Excel</li>
-                                                        <li>Paste them in the box below</li>
-                                                        <li>Each line will map to a pallet count (1-24)</li>
-                                                        <li>Empty lines or invalid numbers will be ignored</li>
-                                                    </ol>
-                                                </div>
-                                    
-                                                <textarea
-                                                    className="w-full h-48 p-2 border rounded mb-4 font-mono"
-                                                    placeholder="100&#13;&#10;200&#13;&#10;300&#13;&#10;..."
-                                                    onChange={(e) => {
-                                                        const lines = e.target.value.split('\n')
-                                                            .map(line => line.trim())
-                                                            .filter(line => line !== '');
-                                    
-                                                        const newPrices = {};
-                                                        let validCount = 0;
-                                                        let errors = [];
-                                    
-                                                        lines.forEach((line, index) => {
-                                                            // Remove any currency symbols and commas
-                                                            const cleanNumber = line.replace(/[£$€,]/g, '').trim();
-                                                            const num = parseFloat(cleanNumber);
-                                                            
-                                                            if (!isNaN(num) && index < 24) {
-                                                                newPrices[index + 1] = num;
-                                                                validCount++;
-                                                            } else if (!isNaN(num)) {
-                                                                errors.push(`Line ${index + 1}: Ignored - exceeds 24 pallet limit`);
-                                                            } else {
-                                                                errors.push(`Line ${index + 1}: Invalid number format - "${line}"`);
-                                                            }
-                                                        });
-                                    
-                                                        if (errors.length > 0) {
-                                                            alert('Warnings:\n' + errors.join('\n'));
-                                                        }
-                                    
-                                                        if (validCount > 0) {
-                                                            setPalletPrices(newPrices);
-                                                        }
-                                                    }}
-                                                />
-                                    
-                                                <div className="text-sm text-gray-500 mb-4">
-                                                    <div>Supported formats:</div>
-                                                    <code className="bg-gray-100 px-2 py-1 rounded">
-                                                        100<br/>
-                                                        £100<br/>
-                                                        €100<br/>
-                                                        $100<br/>
-                                                        1,000
-                                                    </code>
-                                                </div>
-                                    
-                                                <div className="flex justify-end space-x-2">
-                                                    <button
-                                                        onClick={() => {
-                                                            setPalletPrices({});
-                                                            setShowQuickInput(false);
-                                                        }}
-                                                        className="px-4 py-2 text-red-600 hover:bg-red-50 rounded"
-                                                    >
-                                                        Clear All
-                                                    </button>
-                                                    <button
-                                                        onClick={() => setShowQuickInput(false)}
-                                                        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                                                    >
-                                                        Apply
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
+                                )}
                             </div>  
 
                             {/* Haulier Selection */}
