@@ -958,140 +958,182 @@
                                         </thead>
                                         <tbody className="bg-white divide-y divide-gray-200">
                                             {filterRates(rates).map(rate => (
-                                                <tr key={rate.id} className="hover:bg-gray-50">
-                                                    <td className="px-6 py-4">
-                                                        <div className="text-sm">
-                                                            <div className="font-medium text-gray-900 mb-1">
-                                                                {getHaulierNameById(rate.haulierId)}
-                                                            </div>
-                                                            <div>From: {rate.collection?.country || rate.collectionCountry} - {rate.collection?.postcode || rate.collectionPostcode}</div>
-                                                            <div>To: {rate.delivery?.country || rate.deliveryCountry} - {rate.delivery?.postcode || rate.deliveryPostcode}</div>
-                                                            <div className="text-xs text-gray-500 mt-1">
-                                                                Valid until: {formatDate(rate.validUntil)}
-                                                            </div>
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-6 py-4">
-                                                        <div className="text-sm">
-                                                            <div className="flex items-center gap-2">
-                                                                <span className={`px-2 py-1 rounded-full text-xs ${
-                                                                    rate.transportMode === 'Road' ? 'bg-green-100 text-green-800' :
-                                                                    rate.transportMode === 'Sea' ? 'bg-blue-100 text-blue-800' :
-                                                                    'bg-purple-100 text-purple-800'
-                                                                }`}>
-                                                                    {rate.transportMode}
-                                                                </span>
-                                                                {rate.containerType && (
-                                                                    <span className="px-2 py-1 bg-gray-100 rounded-full text-xs">
-                                                                        {rate.containerType}
-                                                                    </span>
-                                                                )}
-                                                                {rate.getAllPalletRates && (
-                                                                    <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs">
-                                                                        All Pallets (1-24)
-                                                                    </span>
-                                                                )}
-                                                            </div>
-                                                            <div className="mt-1">{rate.weightBucket}</div>
-                                                            <div>{rate.deliveryType}</div>
-                                                            <div>{rate.incoterms}</div>
-                                                        </div>
-                                                    </td>
-                                                 <td className="px-6 py-4 min-w-[150px]">
-                                                    <div className="text-sm">
-                                                        {rate.isFullTruckLoad ? (
-                                                            <div className="font-medium">
-                                                                {formatCurrency(
-                                                                    rate.fullTruckLoadPrice + 
-                                                                    (rate.fixedRateSurcharges || 0) + 
-                                                                    (rate.fullTruckLoadPrice * (rate.percentSurcharge || 0) / 100), 
-                                                                    rate.currency
-                                                                )}
-                                                            </div>
-                                                        ) : rate.getAllPalletRates ? (
-                                                            <div className="text-green-600 font-medium">All Pallet Rates Available</div>
-                                                        ) : (
-                                                            <div className="font-medium">
-                                                                {rate.pallets && rate.prices?.[rate.pallets] ? 
-                                                                    `${rate.pallets} ${rate.pallets > 1 ? 'Pallets' : 'Pallet'}: ${
-                                                                        formatCurrency(
-                                                                            rate.prices[rate.pallets] + 
-                                                                            (rate.fixedRateSurcharges || 0) + 
-                                                                            (rate.prices[rate.pallets] * (rate.percentSurcharge || 0) / 100),
-                                                                            rate.currency
-                                                                        )
-                                                                    }` : 'Price not set'
-                                                                }
-                                                            </div>
+                                    <tr key={rate.id} className="hover:bg-gray-50">
+                                        <td className="px-6 py-4">
+                                            <div className="text-sm">
+                                                <div className="font-medium text-gray-900 mb-1">
+                                                    {getHaulierNameById(rate.haulierId)}
+                                                </div>
+                                                <div>From: {rate.collection?.country || rate.collectionCountry} - {rate.collection?.postcode || rate.collectionPostcode}</div>
+                                                <div>To: {rate.delivery?.country || rate.deliveryCountry} - {rate.delivery?.postcode || rate.deliveryPostcode}</div>
+                                                <div className="text-xs text-gray-500 mt-1">
+                                                    Valid until: {formatDate(rate.validUntil || rate.priceValidity)}
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="text-sm">
+                                                <div className="flex items-center gap-2">
+                                                    <span className={`px-2 py-1 rounded-full text-xs ${
+                                                        rate.transportMode === 'Road' ? 'bg-green-100 text-green-800' :
+                                                        rate.transportMode === 'Sea' ? 'bg-blue-100 text-blue-800' :
+                                                        'bg-purple-100 text-purple-800'
+                                                    }`}>
+                                                        {rate.transportMode}
+                                                    </span>
+                                                    {rate.containerType && (
+                                                        <span className="px-2 py-1 bg-gray-100 rounded-full text-xs">
+                                                            {rate.containerType}
+                                                        </span>
+                                                    )}
+                                                    {rate.getAllPalletRates && (
+                                                        <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs">
+                                                            All Pallets (1-24)
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <div className="mt-1">{rate.weightBucket}</div>
+                                                <div>{rate.deliveryType}</div>
+                                                <div>{rate.incoterms}</div>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 min-w-[150px]">
+                                            <div className="text-sm">
+                                                {/* Full Truck Load Price */}
+                                                {(rate.isFullTruckLoad || rate.loadType === 'Full Truck Load') && (
+                                                    <div className="font-medium">
+                                                        {formatCurrency(
+                                                            (rate.fullTruckLoadPrice || 0) + 
+                                                            (rate.fixedRateSurcharges || 0) + 
+                                                            ((rate.fullTruckLoadPrice || 0) * (rate.percentSurcharge || 0) / 100), 
+                                                            rate.currency
                                                         )}
                                                     </div>
-                                                </td>
-                                                <td className="px-6 py-4 min-w-[150px]">
-                                                    <div className="text-sm space-y-1">
-                                                        {rate.fixedRateSurcharges > 0 && (
-                                                            <div>
-                                                                Fixed: <span className="font-medium">{formatCurrency(rate.fixedRateSurcharges || 0, rate.currency)}</span>
-                                                            </div>
+                                                )}
+                                                
+                                                {/* Container Price */}
+                                                {rate.containerType && rate.containerPrice && (
+                                                    <div className="font-medium">
+                                                        {formatCurrency(
+                                                            (rate.containerPrice || 0) + 
+                                                            (rate.fixedRateSurcharges || 0) + 
+                                                            ((rate.containerPrice || 0) * (rate.percentSurcharge || 0) / 100),
+                                                            rate.currency
                                                         )}
-                                                        {rate.percentSurcharge > 0 && (
-                                                            <div>
-                                                                Surcharge: <span className="font-medium">{rate.percentSurcharge}%</span>
-                                                            </div>
-                                                        )}
-                                                        <div>
-                                                            Customs: {rate.includeCustomsClearance ? (
-                                                                <span className="text-green-600 font-medium">Included</span>
-                                                            ) : (
-                                                                <span className="text-red-600 font-medium">Not Included</span>
-                                                            )}
-                                                        </div>
                                                     </div>
-                                                </td>
-                                                {Array.from({ length: 24 }, (_, i) => i + 1).map(num => (
-                                              <td key={num} className="px-4 py-4 text-center min-w-[80px]">
-                        {rate.rates?.[`${num} Pallet${num > 1 ? 's' : ''}`]?.total ? (
-                            // New format from tender submissions
-                            <div className="font-medium">
-                                {formatCurrency(
-                                    rate.rates[`${num} Pallet${num > 1 ? 's' : ''}`].total,
-                                    rate.currency
-                                )}
-                            </div>
-                        ) : rate.prices?.[num] ? (
-                            // Legacy format 
-                            <div className="font-medium">
-                                {formatCurrency(
-                                    rate.prices[num] + 
-                                    (rate.fixedRateSurcharges || 0) + 
-                                    (rate.prices[num] * (rate.percentSurcharge || 0) / 100),
-                                    rate.currency
-                                )}
-                            </div>
-                        ) : (
-                            <span className="text-gray-400">-</span>
-                        )}
-                    </td>
-                                                ))}
-                                                    <td className="px-6 py-4">
-                                                        <div className="flex flex-col space-y-2">
-                                                            <button
-                                                                onClick={() => {
-                                                                    setEditingRate(rate);
-                                                                    setShowRateForm(true);
-                                                                }}
-                                                                className="text-blue-600 hover:text-blue-800 text-sm"
-                                                            >
-                                                                Edit
-                                                            </button>
-                                                            <button
-                                                                onClick={() => handleRateDelete(rate.id)}
-                                                                className="text-red-600 hover:text-red-800 text-sm"
-                                                            >
-                                                                Delete
-                                                            </button>
-                                                        </div>
-                                                    </td>
-                                                </tr>
+                                                )}
+                                                
+                                                {/* Single Rate (from new tender format) */}
+                                                {rate.rates?.['Rate']?.total && (
+                                                    <div className="font-medium">
+                                                        {formatCurrency(rate.rates['Rate'].total, rate.currency)}
+                                                    </div>
+                                                )}
+                                                
+                                                {/* Air Freight Rate */}
+                                                {rate.transportMode === 'Air' && rate.airFreightPrice && (
+                                                    <div className="font-medium">
+                                                        {formatCurrency(
+                                                            (rate.airFreightPrice || 0) + 
+                                                            (rate.fixedRateSurcharges || 0) + 
+                                                            ((rate.airFreightPrice || 0) * (rate.percentSurcharge || 0) / 100),
+                                                            rate.currency
+                                                        )}
+                                                    </div>
+                                                )}
+                                                
+                                                {/* Regular Pallet Rates Display */}
+                                                {(!rate.isFullTruckLoad && !rate.containerType && rate.transportMode !== 'Air') && (
+                                                    <div className="font-medium">
+                                                        {rate.pallets && (rate.rates?.[`${rate.pallets} Pallet${rate.pallets > 1 ? 's' : ''}`]?.total || rate.prices?.[rate.pallets]) ? 
+                                                            formatCurrency(
+                                                                rate.rates?.[`${rate.pallets} Pallet${rate.pallets > 1 ? 's' : ''}`]?.total ||
+                                                                (rate.prices[rate.pallets] + 
+                                                                (rate.fixedRateSurcharges || 0) + 
+                                                                (rate.prices[rate.pallets] * (rate.percentSurcharge || 0) / 100)),
+                                                                rate.currency
+                                                            ) : 'Price not set'
+                                                        }
+                                                    </div>
+                                                )}
+                                                
+                                                {/* Weight-based Rate */}
+                                                {rate.weightBasedPrice && (
+                                                    <div className="font-medium">
+                                                        {formatCurrency(
+                                                            (rate.weightBasedPrice || 0) + 
+                                                            (rate.fixedRateSurcharges || 0) + 
+                                                            ((rate.weightBasedPrice || 0) * (rate.percentSurcharge || 0) / 100),
+                                                            rate.currency
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 min-w-[150px]">
+                                            <div className="text-sm space-y-1">
+                                                {rate.fixedRateSurcharges > 0 && (
+                                                    <div>
+                                                        Fixed: <span className="font-medium">{formatCurrency(rate.fixedRateSurcharges || 0, rate.currency)}</span>
+                                                    </div>
+                                                )}
+                                                {rate.percentSurcharge > 0 && (
+                                                    <div>
+                                                        Surcharge: <span className="font-medium">{rate.percentSurcharge}%</span>
+                                                    </div>
+                                                )}
+                                                <div>
+                                                    Customs: {rate.includeCustomsClearance ? (
+                                                        <span className="text-green-600 font-medium">Included</span>
+                                                    ) : (
+                                                        <span className="text-red-600 font-medium">Not Included</span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </td>
+                                        {/* Pallet Price Columns */}
+                                        {Array.from({ length: 24 }, (_, i) => i + 1).map(num => (
+                                            <td key={num} className="px-4 py-4 text-center min-w-[80px]">
+                                                {rate.rates?.[`${num} Pallet${num > 1 ? 's' : ''}`]?.total ? (
+                                                    // New format from tender submissions
+                                                    <div className="font-medium">
+                                                        {formatCurrency(rate.rates[`${num} Pallet${num > 1 ? 's' : ''}`].total, rate.currency)}
+                                                    </div>
+                                                ) : rate.prices?.[num] ? (
+                                                    // Legacy format 
+                                                    <div className="font-medium">
+                                                        {formatCurrency(
+                                                            rate.prices[num] + 
+                                                            (rate.fixedRateSurcharges || 0) + 
+                                                            (rate.prices[num] * (rate.percentSurcharge || 0) / 100),
+                                                            rate.currency
+                                                        )}
+                                                    </div>
+                                                ) : (
+                                                    <span className="text-gray-400">-</span>
+                                                )}
+                                            </td>
+                                        ))}
+                                        <td className="px-6 py-4">
+                                            <div className="flex flex-col space-y-2">
+                                                <button
+                                                    onClick={() => {
+                                                        setEditingRate(rate);
+                                                        setShowRateForm(true);
+                                                    }}
+                                                    className="text-blue-600 hover:text-blue-800 text-sm"
+                                                >
+                                                    Edit
+                                                </button>
+                                                <button
+                                                    onClick={() => handleRateDelete(rate.id)}
+                                                    className="text-red-600 hover:text-red-800 text-sm"
+                                                >
+                                                    Delete
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
                                             ))}
                                         </tbody>
                                     </table>
