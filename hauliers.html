@@ -442,65 +442,78 @@
                     return;
                 }
             
-                const exportData = rates.map(rate => ({
-                    'Quote ID': rate.quoteId || '',
-                    'Haulier ID': rate.haulierId || '',
-                    'Haulier Name': rate.haulierName || '',
-                    'Haulier Email': rate.haulierEmail || '',
-                    'User Email': rate.userEmail || '',
-                    'Currency': rate.currency || '',
-                    'Valid Until': rate.validUntil || '',
-                    'Transit Time': rate.transitTime || '',
-                    'Fixed Rate Surcharges': rate.fixedRateSurcharges || '',
-                    'Percent Surcharge': rate.percentSurcharge || '',
-                    'Hide Documents': rate.hideDocuments ? 'Yes' : 'No',
-                    'Include Customs Clearance': rate.includeCustomsClearance ? 'Yes' : 'No',
-                    'Submission Date': rate.submittedAt ? rate.submittedAt.toDate().toLocaleDateString() : '',
-                    'Transport Mode': rate.transportMode || '',
-                    'Haulier Transport Modes': rate.haulierTransportModes ? rate.haulierTransportModes.join(', ') : '',
-                    
-                    // Collection Details
-                    'Collection Country': rate.collection?.country || '',
-                    'Collection Postcode': rate.collection?.postcode || '',
-                    'Collection Location': rate.collection?.location || '',
-                    
-                    // Delivery Details
-                    'Delivery Country': rate.delivery?.country || '',
-                    'Delivery Postcode': rate.delivery?.postcode || '',
-                    'Delivery Location': rate.delivery?.location || '',
-                    
-                    // Transport Details
-                    'Weight Bucket': rate.weightBucket || '',
-                    'Weight Type': rate.weightType || '',
-                    'Incoterms': rate.incoterms || '',
-                    'Delivery Type': rate.deliveryType || '',
-                    'Load Type': rate.loadType || '',
-                    'Number of Pallets': rate.pallets || '',
-                    'Volume (CBM)': rate.volume || '',
-                    'Pallet Type': rate.palletType || '',
-                    'Container Type': rate.containerType || '',
-                    'Air Weight (KG)': rate.airWeight || '',
-                    
-                    // Additional Details
-                    'Is Peak Season': rate.isPeakSeason ? 'Yes' : 'No',
-                    'Peak Season Details': rate.peakSeasonDetails || '',
-                    'Urgency': rate.urgency || '',
-                    'Preferred Delivery Date': rate.preferredDeliveryDate || '',
-                    
-                    // Waypoints
-                    ...rate.waypoints?.reduce((acc, wp, index) => ({
-                        ...acc,
-                        [`Waypoint ${index + 1} Country`]: wp.country || '',
-                        [`Waypoint ${index + 1} Postcode`]: wp.postcode || ''
-                    }), {}),
-                    
-                    // Rate Details
-                    ...Object.entries(rate.rates || {}).reduce((acc, [key, value]) => ({
-                        ...acc,
-                        [`${key} Base Rate`]: value.rate || '',
-                        [`${key} Total`]: value.total || ''
-                    }), {})
-                }));
+                const exportData = rates.map(rate => {
+                    // Start with basic rate information
+                    const baseData = {
+                        'Quote ID': rate.quoteId || '',
+                        'Haulier ID': rate.haulierId || '',
+                        'Haulier Name': rate.haulierName || '',
+                        'Haulier Email': rate.haulierEmail || '',
+                        'User Email': rate.userEmail || '',
+                        'Currency': rate.currency || '',
+                        'Valid Until': rate.validUntil || '',
+                        'Transit Time': rate.transitTime || '',
+                        'Fixed Rate Surcharges': rate.fixedRateSurcharges || '',
+                        'Percent Surcharge': rate.percentSurcharge || '',
+                        'Hide Documents': rate.hideDocuments ? 'Yes' : 'No',
+                        'Include Customs Clearance': rate.includeCustomsClearance ? 'Yes' : 'No',
+                        'Submission Date': rate.submittedAt ? rate.submittedAt.toDate().toLocaleDateString() : '',
+                        'Transport Mode': rate.transportMode || '',
+                        'Haulier Transport Modes': rate.haulierTransportModes ? rate.haulierTransportModes.join(', ') : '',
+                        
+                        // Collection Details
+                        'Collection Country': rate.collection?.country || rate.collectionCountry || '',
+                        'Collection Postcode': rate.collection?.postcode || rate.collectionPostcode || '',
+                        'Collection Location': rate.collection?.location || '',
+                        
+                        // Delivery Details
+                        'Delivery Country': rate.delivery?.country || rate.deliveryCountry || '',
+                        'Delivery Postcode': rate.delivery?.postcode || rate.deliveryPostcode || '',
+                        'Delivery Location': rate.delivery?.location || '',
+                        
+                        // Transport Details
+                        'Weight Bucket': rate.weightBucket || '',
+                        'Weight Type': rate.weightType || '',
+                        'Incoterms': rate.incoterms || '',
+                        'Delivery Type': rate.deliveryType || '',
+                        'Load Type': rate.loadType || '',
+                        'Number of Pallets': rate.pallets || '',
+                        'Volume (CBM)': rate.volume || '',
+                        'Pallet Type': rate.palletType || '',
+                        'Container Type': rate.containerType || '',
+                        'Air Weight (KG)': rate.airWeight || '',
+                        
+                        // Additional Details
+                        'Is Peak Season': rate.isPeakSeason ? 'Yes' : 'No',
+                        'Peak Season Details': rate.peakSeasonDetails || '',
+                        'Urgency': rate.urgency || '',
+                        'Preferred Delivery Date': rate.preferredDeliveryDate || '',
+                    };
+            
+                    // Add waypoints
+                    if (rate.waypoints) {
+                        rate.waypoints.forEach((wp, index) => {
+                            baseData[`Waypoint ${index + 1} Country`] = wp.country || '';
+                            baseData[`Waypoint ${index + 1} Postcode`] = wp.postcode || '';
+                        });
+                    }
+            
+                    // Add pricing information
+                    if (rate.isFullTruckLoad) {
+                        baseData['Full Truck Load Price'] = rate.fullTruckLoadPrice || '';
+                    } else if (rate.rates) {
+                        Object.entries(rate.rates).forEach(([key, value]) => {
+                            baseData[`${key} Rate`] = value.rate || '';
+                            baseData[`${key} Total`] = value.total || '';
+                        });
+                    } else if (rate.prices) {
+                        Object.entries(rate.prices).forEach(([pallets, price]) => {
+                            baseData[`${pallets} Pallet Price`] = price || '';
+                        });
+                    }
+            
+                    return baseData;
+                });
             
                 const ws = XLSX.utils.json_to_sheet(exportData);
                 const wb = XLSX.utils.book_new();
@@ -951,8 +964,9 @@
                                                     </td>
                                                     <td className="px-6 py-4">
                                                         <div className="text-sm">
-                                                            <div>From: {rate.collectionCountry} - {rate.collectionPostcode}</div>
-                                                            <div>To: {rate.deliveryCountry} - {rate.deliveryPostcode}</div>
+                                                            <div>From: {rate.collection?.country || rate.collectionCountry} - {rate.collection?.postcode || rate.collectionPostcode}</div>
+                                                            <div>To: {rate.delivery?.country || rate.deliveryCountry} - {rate.delivery?.postcode || rate.deliveryPostcode}</div>
+                                                            <div>Submitted: {rate.submittedAt ? rate.submittedAt.toDate().toLocaleDateString() : 'N/A'}</div>
                                                         </div>
                                                     </td>
                                                     <td className="px-6 py-4">
@@ -975,7 +989,7 @@
                                                         </button>
                                                     </td>
                                                     <td className="px-6 py-4">
-                                                        <div className="text-sm">{formatDate(rate.priceValidity)}</div>
+                                                        <div className="text-sm">{formatDate(rate.validUntil)}</div>
                                                     </td>
                                                     <td className="px-6 py-4">
                                                         <div className="flex space-x-2">
