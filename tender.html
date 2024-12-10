@@ -339,14 +339,14 @@
             if (['Full Truck Load'].includes(loadType)) {
                 // For Full Truck Load
                 identifiers = ['Full Truck Load'];
-            } else if (transportMode === 'Sea' && ['Container'].includes(loadType)) {
-                // For Sea Containers
+            } else if (transportMode === 'Sea' && quoteData.containerType) {
+                // For Sea Containers - simplified logic to always show container type if it exists
                 identifiers = [quoteData.containerType];
             } else if (['Partial Load', 'LCL', 'Pallets'].includes(loadType)) {
                 // For Pallet Rates
                 const getAllPalletRates = quoteData.getAllPalletRates;
                 const numberOfPallets = parseInt(quoteData.pallets) || 1;
-
+            
                 if (getAllPalletRates) {
                     identifiers = Array.from({length: 24}, (_, i) => `${i + 1} Pallet${i > 0 ? 's' : ''}`);
                 } else {
