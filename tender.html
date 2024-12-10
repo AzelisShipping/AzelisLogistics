@@ -413,99 +413,128 @@
         }
     }
 
-    // Handle form submission
-    document.getElementById('submitQuoteForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const formData = new FormData(e.target);
-
-        try {
-            if (!quoteData) throw new Error('Quote data not loaded');
-
-            // Get all rates
-            const rates = {};
-            const rateInputs = document.querySelectorAll('[name^="rateInput_"]');
-            rateInputs.forEach(rateInput => {
-                const index = rateInput.getAttribute('data-identifier');
-                const totalInput = document.querySelector(`[name="totalInput_${index}"]`);
-                const identifier = rateInput.closest('tr').querySelector('td').textContent;
-                const rate = parseFloat(rateInput.value) || 0;
-                const total = parseFloat(totalInput.value) || 0;
-                rates[identifier] = { rate, total };
-            });
-
-            // Generate rates HTML for email
-            let ratesHTML = '<table style="width:100%; border-collapse:collapse;">';
-            ratesHTML += '<tr><th style="border:1px solid #ddd;padding:8px;">Description</th><th style="border:1px solid #ddd;padding:8px;">Rate</th><th style="border:1px solid #ddd;padding:8px;">Total</th></tr>';
-            Object.entries(rates).forEach(([identifier, { rate, total }]) => {
-                ratesHTML += `
-                    <tr>
-                        <td style="border:1px solid #ddd;padding:8px;">${identifier}</td>
-                        <td style="border:1px solid #ddd;padding:8px;">${formatCurrency(rate, formData.get('currency'))}</td>
-                        <td style="border:1px solid #ddd;padding:8px;">${formatCurrency(total, formData.get('currency'))}</td>
-                    </tr>
-                `;
-            });
-            ratesHTML += '</table>';
-
-            // Get haulier details
-            const haulierDoc = await db.collection('hauliers').doc(haulierId).get();
-            const haulierData = haulierDoc.data();
-
-            // Email parameters for internal notification
-            const emailParams = {
-                to_email: quoteData.userEmail,
-                subject: `Quote Response Received - ${quoteId}`,
-                quoteId: quoteId,
-                haulierName: haulierData.name,
-                haulierEmail: haulierData.email,
-                currency: formData.get('currency'),
-                validUntil: formData.get('validUntil'),
-                transitTime: formData.get('transitTime'),
-                fixedRateSurcharges: formData.get('fixedRateSurcharges') || '0',
-                percentSurcharge: formData.get('percentSurcharge') || '0',
-                hideDocuments: formData.get('hideDocuments') ? 'Yes' : 'No',
-                includeCustomsClearance: formData.get('includeCustomsClearance') ? 'Yes' : 'No',
-                ratesHTML: ratesHTML,
-                
-                // Route details
-                collectionCountry: quoteData.collection?.country || 'N/A',
-                collectionPostcode: quoteData.collection?.postcode || 'N/A',
-                deliveryCountry: quoteData.delivery?.country || 'N/A',
-                deliveryPostcode: quoteData.delivery?.postcode || 'N/A',
-                deliveryLocation: quoteData.delivery?.location || 'N/A',
-                
-                // Transport details
-                transportMode: quoteData.transportMode,
-                weightBucket: quoteData.weightBucket,
-                deliveryType: quoteData.deliveryType,
-                loadType: quoteData.loadType,
-                containerType: quoteData.containerType || 'N/A',
-                airWeight: quoteData.airWeight || 'N/A',
-                volume: quoteData.volume || 'N/A',
-                
-                // Additional details
-                isPeakSeason: quoteData.isPeakSeason ? 'Yes' : 'No',
-                peakSeasonDetails: quoteData.peakSeasonDetails || 'N/A',
-                urgency: quoteData.urgency || 'N/A',
-                preferredDeliveryDate: quoteData.preferredDeliveryDate || 'N/A'
-            };
-
-            // Add waypoints to email parameters
-            for (let i = 1; i <= 5; i++) {
-                const waypoint = quoteData.waypoints?.[i - 1];
-                emailParams[`waypoint${i}`] = waypoint ? 
-                    `${waypoint.country} - ${waypoint.postcode}` : 
-                    'N/A';
-            }
-
-            // Send email notification
-            await emailjs.send('Azelis_Logistics', 'template_12utb0n', emailParams);
-
-            // Update quote in Firestore
-            const quoteUpdate = {
-                responses: firebase.firestore.FieldValue.arrayUnion({
+        // Handle form submission
+        document.getElementById('submitQuoteForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+        
+            try {
+                if (!quoteData) throw new Error('Quote data not loaded');
+        
+                // Get all rates
+                const rates = {};
+                const rateInputs = document.querySelectorAll('[name^="rateInput_"]');
+                rateInputs.forEach(rateInput => {
+                    const index = rateInput.getAttribute('data-identifier');
+                    const totalInput = document.querySelector(`[name="totalInput_${index}"]`);
+                    const identifier = rateInput.closest('tr').querySelector('td').textContent;
+                    const rate = parseFloat(rateInput.value) || 0;
+                    const total = parseFloat(totalInput.value) || 0;
+                    rates[identifier] = { rate, total };
+                });
+        
+                // Generate rates HTML for email
+                let ratesHTML = '<table style="width:100%; border-collapse:collapse;">';
+                ratesHTML += '<tr><th style="border:1px solid #ddd;padding:8px;">Description</th><th style="border:1px solid #ddd;padding:8px;">Rate</th><th style="border:1px solid #ddd;padding:8px;">Total</th></tr>';
+                Object.entries(rates).forEach(([identifier, { rate, total }]) => {
+                    ratesHTML += `
+                        <tr>
+                            <td style="border:1px solid #ddd;padding:8px;">${identifier}</td>
+                            <td style="border:1px solid #ddd;padding:8px;">${formatCurrency(rate, formData.get('currency'))}</td>
+                            <td style="border:1px solid #ddd;padding:8px;">${formatCurrency(total, formData.get('currency'))}</td>
+                        </tr>
+                    `;
+                });
+                ratesHTML += '</table>';
+        
+                // Get haulier details
+                const haulierDoc = await db.collection('hauliers').doc(haulierId).get();
+                const haulierData = haulierDoc.data();
+        
+                // Email parameters for internal notification
+                const emailParams = {
+                    to_email: quoteData.userEmail,
+                    subject: `Quote Response Received - ${quoteId}`,
+                    quoteId: quoteId,
+                    haulierName: haulierData.name,
+                    haulierEmail: haulierData.email,
+                    currency: formData.get('currency'),
+                    validUntil: formData.get('validUntil'),
+                    transitTime: formData.get('transitTime'),
+                    fixedRateSurcharges: formData.get('fixedRateSurcharges') || '0',
+                    percentSurcharge: formData.get('percentSurcharge') || '0',
+                    hideDocuments: formData.get('hideDocuments') ? 'Yes' : 'No',
+                    includeCustomsClearance: formData.get('includeCustomsClearance') ? 'Yes' : 'No',
+                    ratesHTML: ratesHTML,
+                    
+                    // Route details
+                    collectionCountry: quoteData.collection?.country || 'N/A',
+                    collectionPostcode: quoteData.collection?.postcode || 'N/A',
+                    deliveryCountry: quoteData.delivery?.country || 'N/A',
+                    deliveryPostcode: quoteData.delivery?.postcode || 'N/A',
+                    deliveryLocation: quoteData.delivery?.location || 'N/A',
+                    
+                    // Transport details
+                    transportMode: quoteData.transportMode,
+                    weightBucket: quoteData.weightBucket,
+                    deliveryType: quoteData.deliveryType,
+                    loadType: quoteData.loadType,
+                    containerType: quoteData.containerType || 'N/A',
+                    airWeight: quoteData.airWeight || 'N/A',
+                    volume: quoteData.volume || 'N/A',
+                    
+                    // Additional details
+                    isPeakSeason: quoteData.isPeakSeason ? 'Yes' : 'No',
+                    peakSeasonDetails: quoteData.peakSeasonDetails || 'N/A',
+                    urgency: quoteData.urgency || 'N/A',
+                    preferredDeliveryDate: quoteData.preferredDeliveryDate || 'N/A'
+                };
+        
+                // Add waypoints to email parameters
+                for (let i = 1; i <= 5; i++) {
+                    const waypoint = quoteData.waypoints?.[i - 1];
+                    emailParams[`waypoint${i}`] = waypoint ? 
+                        `${waypoint.country} - ${waypoint.postcode}` : 
+                        'N/A';
+                }
+        
+                let emailSent = false;
+                try {
+                    // Attempt to send email notification
+                    await emailjs.send('Azelis_Logistics', 'template_12utb0n', emailParams);
+                    emailSent = true;
+                } catch (emailError) {
+                    console.log('Email notification could not be sent:', emailError);
+                    // Continue with the submission process even if email fails
+                }
+        
+                // Update quote in Firestore
+                const quoteUpdate = {
+                    responses: firebase.firestore.FieldValue.arrayUnion({
+                        haulierId: haulierId,
+                        haulierName: haulierData.name,
+                        currency: formData.get('currency'),
+                        validUntil: formData.get('validUntil'),
+                        transitTime: parseInt(formData.get('transitTime')),
+                        fixedRateSurcharges: parseFloat(formData.get('fixedRateSurcharges')) || 0,
+                        percentSurcharge: parseFloat(formData.get('percentSurcharge')) || 0,
+                        hideDocuments: formData.get('hideDocuments') === 'on',
+                        includeCustomsClearance: formData.get('includeCustomsClearance') === 'on',
+                        rates: rates,
+                        submittedAt: new Date(),
+                        emailNotificationSent: emailSent
+                    })
+                };
+        
+                await db.collection('quotes').doc(quoteId).update(quoteUpdate);
+        
+                // Save to 'rates' collection
+                const rateData = {
+                    quoteId: quoteId,
                     haulierId: haulierId,
                     haulierName: haulierData.name,
+                    haulierEmail: haulierData.email,
+                    userEmail: quoteData.userEmail,
                     currency: formData.get('currency'),
                     validUntil: formData.get('validUntil'),
                     transitTime: parseInt(formData.get('transitTime')),
@@ -514,62 +543,46 @@
                     hideDocuments: formData.get('hideDocuments') === 'on',
                     includeCustomsClearance: formData.get('includeCustomsClearance') === 'on',
                     rates: rates,
-                    submittedAt: new Date()
-                })
-            };
-
-            await db.collection('quotes').doc(quoteId).update(quoteUpdate);
-
-            // Save to 'rates' collection
-            const rateData = {
-                quoteId: quoteId,
-                haulierId: haulierId,
-                haulierName: haulierData.name,
-                haulierEmail: haulierData.email,
-                userEmail: quoteData.userEmail,
-                currency: formData.get('currency'),
-                validUntil: formData.get('validUntil'),
-                transitTime: parseInt(formData.get('transitTime')),
-                fixedRateSurcharges: parseFloat(formData.get('fixedRateSurcharges')) || 0,
-                percentSurcharge: parseFloat(formData.get('percentSurcharge')) || 0,
-                hideDocuments: formData.get('hideDocuments') === 'on',
-                includeCustomsClearance: formData.get('includeCustomsClearance') === 'on',
-                rates: rates,
-                submittedAt: new Date(),
-                transportMode: quoteData.transportMode,
-                haulierTransportModes: haulierData.transportModes,
-                collection: quoteData.collection || {},
-                delivery: quoteData.delivery || {},
-                weightBucket: quoteData.weightBucket || 'N/A',
-                weightType: quoteData.weightType || 'N/A',
-                incoterms: quoteData.incoterms || 'N/A',
-                deliveryType: quoteData.deliveryType || 'N/A',
-                loadType: quoteData.loadType || 'N/A',
-                pallets: quoteData.pallets || 'N/A',
-                volume: quoteData.volume || 'N/A',
-                palletType: quoteData.palletType || 'N/A',
-                containerType: quoteData.containerType || 'N/A',
-                airWeight: quoteData.airWeight || 'N/A',
-                isPeakSeason: quoteData.isPeakSeason || false,
-                peakSeasonDetails: quoteData.peakSeasonDetails || 'N/A',
-                urgency: quoteData.urgency || 'N/A',
-                preferredDeliveryDate: quoteData.preferredDeliveryDate || 'N/A',
-                waypoints: quoteData.waypoints || []
-            };
-            await db.collection('rates').add(rateData);
-
-            displayMessage('Quote submitted successfully!');
-            
-            // Disable form after successful submission
-            document.getElementById('submitQuoteForm').style.opacity = '0.5';
-            document.getElementById('submitQuoteForm').style.pointerEvents = 'none';
-
-        } catch (error) {
-            console.error('Error submitting quote:', error);
-            displayMessage('Error submitting quote. Please try again.', true);
-        }
-    });
-
+                    submittedAt: new Date(),
+                    transportMode: quoteData.transportMode,
+                    haulierTransportModes: haulierData.transportModes,
+                    collection: quoteData.collection || {},
+                    delivery: quoteData.delivery || {},
+                    weightBucket: quoteData.weightBucket || 'N/A',
+                    weightType: quoteData.weightType || 'N/A',
+                    incoterms: quoteData.incoterms || 'N/A',
+                    deliveryType: quoteData.deliveryType || 'N/A',
+                    loadType: quoteData.loadType || 'N/A',
+                    pallets: quoteData.pallets || 'N/A',
+                    volume: quoteData.volume || 'N/A',
+                    palletType: quoteData.palletType || 'N/A',
+                    containerType: quoteData.containerType || 'N/A',
+                    airWeight: quoteData.airWeight || 'N/A',
+                    isPeakSeason: quoteData.isPeakSeason || false,
+                    peakSeasonDetails: quoteData.peakSeasonDetails || 'N/A',
+                    urgency: quoteData.urgency || 'N/A',
+                    preferredDeliveryDate: quoteData.preferredDeliveryDate || 'N/A',
+                    waypoints: quoteData.waypoints || [],
+                    emailNotificationSent: emailSent
+                };
+                await db.collection('rates').add(rateData);
+        
+                // Show appropriate success message based on email status
+                if (emailSent) {
+                    displayMessage('Quote submitted successfully!');
+                } else {
+                    displayMessage('Quote submitted successfully! (Note: Email notification could not be sent)');
+                }
+                
+                // Disable form after successful submission
+                document.getElementById('submitQuoteForm').style.opacity = '0.5';
+                document.getElementById('submitQuoteForm').style.pointerEvents = 'none';
+        
+            } catch (error) {
+                console.error('Error submitting quote:', error);
+                displayMessage('Error submitting quote. Please try again.', true);
+            }
+        });
     // Initialize page
     window.addEventListener('DOMContentLoaded', populateTenderDetails);
 </script>
