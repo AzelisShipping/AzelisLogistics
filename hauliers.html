@@ -998,85 +998,82 @@
                                                 <div>{rate.incoterms}</div>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 min-w-[150px]">
-                                            <div className="text-sm">
-                    {/* Rate Table Columns */}
-                    <td className="px-6 py-4 min-w-[150px]">
-                        <div className="text-sm">
-                            {/* Full Truck Load Price */}
-                            {(rate.isFullTruckLoad || rate.loadType === 'Full Truck Load') && (
-                                <div className="font-medium">
-                                    {formatCurrency(
-                                        (rate.fullTruckLoadPrice || 0) + 
-                                        (rate.fixedRateSurcharges || 0) + 
-                                        ((rate.fullTruckLoadPrice || 0) * (rate.percentSurcharge || 0) / 100), 
-                                        rate.currency
+                            <td className="px-6 py-4 min-w-[150px]">
+                                <div className="text-sm">
+                                    {/* Full Truck Load Price */}
+                                    {(rate.isFullTruckLoad || rate.loadType === 'Full Truck Load') && (
+                                        <div className="font-medium">
+                                            {formatCurrency(
+                                                (rate.fullTruckLoadPrice || 0) + 
+                                                (rate.fixedRateSurcharges || 0) + 
+                                                ((rate.fullTruckLoadPrice || 0) * (rate.percentSurcharge || 0) / 100), 
+                                                rate.currency
+                                            )}
+                                        </div>
+                                    )}
+                                    
+                                    {/* Container Price */}
+                                    {rate.transportMode === 'Sea' && rate.containerType && (
+                                        <div className="font-medium">
+                                            {rate.rates && rate.rates[rate.containerType] ? (
+                                                formatCurrency(
+                                                    rate.rates[rate.containerType].total || 
+                                                    ((rate.rates[rate.containerType].rate || 0) + 
+                                                    (rate.fixedRateSurcharges || 0) + 
+                                                    ((rate.rates[rate.containerType].rate || 0) * (rate.percentSurcharge || 0) / 100)),
+                                                    rate.currency
+                                                )
+                                            ) : 'Price not set'}
+                                        </div>
+                                    )}
+                                    
+                                    {/* Single Rate (from new tender format) */}
+                                    {rate.rates?.['Rate']?.total && (
+                                        <div className="font-medium">
+                                            {formatCurrency(rate.rates['Rate'].total, rate.currency)}
+                                        </div>
+                                    )}
+                                    
+                                    {/* Air Freight Rate */}
+                                    {rate.transportMode === 'Air' && rate.airFreightPrice && (
+                                        <div className="font-medium">
+                                            {formatCurrency(
+                                                (rate.airFreightPrice || 0) + 
+                                                (rate.fixedRateSurcharges || 0) + 
+                                                ((rate.airFreightPrice || 0) * (rate.percentSurcharge || 0) / 100),
+                                                rate.currency
+                                            )}
+                                        </div>
+                                    )}
+                                    
+                                    {/* Regular Pallet Rates Display */}
+                                    {(!rate.isFullTruckLoad && !rate.containerType && rate.transportMode !== 'Air') && (
+                                        <div className="font-medium">
+                                            {rate.pallets && (rate.rates?.[`${rate.pallets} Pallet${rate.pallets > 1 ? 's' : ''}`]?.total || rate.prices?.[rate.pallets]) ? 
+                                                formatCurrency(
+                                                    rate.rates?.[`${rate.pallets} Pallet${rate.pallets > 1 ? 's' : ''}`]?.total ||
+                                                    (rate.prices[rate.pallets] + 
+                                                    (rate.fixedRateSurcharges || 0) + 
+                                                    (rate.prices[rate.pallets] * (rate.percentSurcharge || 0) / 100)),
+                                                    rate.currency
+                                                ) : 'Price not set'
+                                            }
+                                        </div>
+                                    )}
+                                    
+                                    {/* Weight-based Rate */}
+                                    {rate.weightBasedPrice && (
+                                        <div className="font-medium">
+                                            {formatCurrency(
+                                                (rate.weightBasedPrice || 0) + 
+                                                (rate.fixedRateSurcharges || 0) + 
+                                                ((rate.weightBasedPrice || 0) * (rate.percentSurcharge || 0) / 100),
+                                                rate.currency
+                                            )}
+                                        </div>
                                     )}
                                 </div>
-                            )}
-                            
-                            {/* Container Price */}
-                            {rate.transportMode === 'Sea' && rate.containerType && (
-                                <div className="font-medium">
-                                    {rate.rates && rate.rates[rate.containerType] ? (
-                                        formatCurrency(
-                                            rate.rates[rate.containerType].total || 
-                                            ((rate.rates[rate.containerType].rate || 0) + 
-                                            (rate.fixedRateSurcharges || 0) + 
-                                            ((rate.rates[rate.containerType].rate || 0) * (rate.percentSurcharge || 0) / 100)),
-                                            rate.currency
-                                        )
-                                    ) : 'Price not set'}
-                                </div>
-                            )}
-                                                
-                                                {/* Single Rate (from new tender format) */}
-                                                {rate.rates?.['Rate']?.total && (
-                                                    <div className="font-medium">
-                                                        {formatCurrency(rate.rates['Rate'].total, rate.currency)}
-                                                    </div>
-                                                )}
-                                                
-                                                {/* Air Freight Rate */}
-                                                {rate.transportMode === 'Air' && rate.airFreightPrice && (
-                                                    <div className="font-medium">
-                                                        {formatCurrency(
-                                                            (rate.airFreightPrice || 0) + 
-                                                            (rate.fixedRateSurcharges || 0) + 
-                                                            ((rate.airFreightPrice || 0) * (rate.percentSurcharge || 0) / 100),
-                                                            rate.currency
-                                                        )}
-                                                    </div>
-                                                )}
-                                                
-                                                {/* Regular Pallet Rates Display */}
-                                                {(!rate.isFullTruckLoad && !rate.containerType && rate.transportMode !== 'Air') && (
-                                                    <div className="font-medium">
-                                                        {rate.pallets && (rate.rates?.[`${rate.pallets} Pallet${rate.pallets > 1 ? 's' : ''}`]?.total || rate.prices?.[rate.pallets]) ? 
-                                                            formatCurrency(
-                                                                rate.rates?.[`${rate.pallets} Pallet${rate.pallets > 1 ? 's' : ''}`]?.total ||
-                                                                (rate.prices[rate.pallets] + 
-                                                                (rate.fixedRateSurcharges || 0) + 
-                                                                (rate.prices[rate.pallets] * (rate.percentSurcharge || 0) / 100)),
-                                                                rate.currency
-                                                            ) : 'Price not set'
-                                                        }
-                                                    </div>
-                                                )}
-                                                
-                                                {/* Weight-based Rate */}
-                                                {rate.weightBasedPrice && (
-                                                    <div className="font-medium">
-                                                        {formatCurrency(
-                                                            (rate.weightBasedPrice || 0) + 
-                                                            (rate.fixedRateSurcharges || 0) + 
-                                                            ((rate.weightBasedPrice || 0) * (rate.percentSurcharge || 0) / 100),
-                                                            rate.currency
-                                                        )}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </td>
+                            </td>
                                         <td className="px-6 py-4 min-w-[150px]">
                                             <div className="text-sm space-y-1">
                                                 {rate.fixedRateSurcharges > 0 && (
