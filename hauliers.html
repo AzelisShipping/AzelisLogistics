@@ -1000,29 +1000,35 @@
                                         </td>
                                         <td className="px-6 py-4 min-w-[150px]">
                                             <div className="text-sm">
-                                                {/* Full Truck Load Price */}
-                                                {(rate.isFullTruckLoad || rate.loadType === 'Full Truck Load') && (
-                                                    <div className="font-medium">
-                                                        {formatCurrency(
-                                                            (rate.fullTruckLoadPrice || 0) + 
-                                                            (rate.fixedRateSurcharges || 0) + 
-                                                            ((rate.fullTruckLoadPrice || 0) * (rate.percentSurcharge || 0) / 100), 
-                                                            rate.currency
-                                                        )}
-                                                    </div>
-                                                )}
-                                                
-                                                {/* Container Price */}
-                                                {rate.containerType && rate.containerPrice && (
-                                                    <div className="font-medium">
-                                                        {formatCurrency(
-                                                            (rate.containerPrice || 0) + 
-                                                            (rate.fixedRateSurcharges || 0) + 
-                                                            ((rate.containerPrice || 0) * (rate.percentSurcharge || 0) / 100),
-                                                            rate.currency
-                                                        )}
-                                                    </div>
-                                                )}
+                    {/* Rate Table Columns */}
+                    <td className="px-6 py-4 min-w-[150px]">
+                        <div className="text-sm">
+                            {/* Full Truck Load Price */}
+                            {(rate.isFullTruckLoad || rate.loadType === 'Full Truck Load') && (
+                                <div className="font-medium">
+                                    {formatCurrency(
+                                        (rate.fullTruckLoadPrice || 0) + 
+                                        (rate.fixedRateSurcharges || 0) + 
+                                        ((rate.fullTruckLoadPrice || 0) * (rate.percentSurcharge || 0) / 100), 
+                                        rate.currency
+                                    )}
+                                </div>
+                            )}
+                            
+                            {/* Container Price */}
+                            {rate.transportMode === 'Sea' && rate.containerType && (
+                                <div className="font-medium">
+                                    {rate.rates && rate.rates[rate.containerType] ? (
+                                        formatCurrency(
+                                            rate.rates[rate.containerType].total || 
+                                            ((rate.rates[rate.containerType].rate || 0) + 
+                                            (rate.fixedRateSurcharges || 0) + 
+                                            ((rate.rates[rate.containerType].rate || 0) * (rate.percentSurcharge || 0) / 100)),
+                                            rate.currency
+                                        )
+                                    ) : 'Price not set'}
+                                </div>
+                            )}
                                                 
                                                 {/* Single Rate (from new tender format) */}
                                                 {rate.rates?.['Rate']?.total && (
