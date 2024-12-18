@@ -1522,7 +1522,6 @@ const RateFormModal = ({
                 </div>
                                         
                 <form onSubmit={handleRateSubmit} className="space-y-6">
-                    {/* Route Details */}
                     <div>
                         <h4 className="text-md font-semibold mb-2">Route Details</h4>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1575,7 +1574,6 @@ const RateFormModal = ({
                         </div>
                     </div>
 
-                    {/* Transport Details */}
                     <div>
                         <h4 className="text-md font-semibold mb-2">Transport Details</h4>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1634,7 +1632,6 @@ const RateFormModal = ({
                         </div>
                     </div>
 
-                    {/* Pricing and Validity */}
                     <div>
                         <h4 className="text-md font-semibold mb-2">Pricing and Validity</h4>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1677,7 +1674,6 @@ const RateFormModal = ({
                         </div>  
                     </div>
 
-                    {/* Load Type Pricing */}  
                     <div>
                         <h4 className="text-md font-semibold mb-2">Load Pricing</h4>
                         {loadType === 'ftl' ? (
@@ -1711,7 +1707,6 @@ const RateFormModal = ({
                         )}
                     </div>  
 
-                    {/* Haulier Selection */}
                     <div>
                         <label className="block text-sm font-medium mb-1">Haulier *</label>
                         <select   
@@ -1727,7 +1722,6 @@ const RateFormModal = ({
                         </select>  
                     </div>
 
-                    {/* Service and Additional Details */}
                     <div>  
                         <h4 className="text-md font-semibold mb-2">Service & Additional Details</h4>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1770,7 +1764,6 @@ const RateFormModal = ({
                         </div>
                     </div>
 
-                    {/* Additional Fields */}
                     {(transportMode === 'Sea' || editingRate?.transportMode === 'Sea') && (
                         <div>
                             <label className="block text-sm font-medium mb-1">Container Type</label>
@@ -1814,7 +1807,28 @@ const RateFormModal = ({
                         </div>
                     )}
 
-                    {/* Form Actions */}  
+                    <div>
+                        <h4 className="text-md font-semibold mb-2">Additional Options</h4>
+                        <div className="flex items-center space-x-2">
+                            <input 
+                                type="checkbox" 
+                                name="includeCustomsClearance"
+                                defaultChecked={editingRate?.includeCustomsClearance || false}
+                                className="mr-2"
+                            />
+                            <label className="text-sm">Include Customs Clearance</label>
+                        </div>
+                        <div className="flex items-center space-x-2 mt-2">
+                            <input 
+                                type="checkbox" 
+                                name="hideDocuments"
+                                defaultChecked={editingRate?.hideDocuments || false}
+                                className="mr-2"
+                            />
+                            <label className="text-sm">Hide Documents</label>
+                        </div>
+                    </div>
+
                     <div className="flex gap-2">
                         <button   
                             type="submit"
@@ -1838,6 +1852,7 @@ const RateFormModal = ({
         </div>
     );
 };
+
 
         // Render the HaulierManagement component to the DOM
         ReactDOM.render(<HaulierManagement />, document.getElementById('root'));
