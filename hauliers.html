@@ -1486,7 +1486,9 @@ const RateFormModal = ({
 }) => {
     const [transportMode, setTransportMode] = React.useState(editingRate?.transportMode || '');
     const [loadType, setLoadType] = React.useState(editingRate?.isFullTruckLoad ? 'ftl' : 'pl');
-    const [palletPrices, setPalletPrices] = React.useState(editingRate?.prices || {});
+    const [palletPrices, setPalletPrices] = React.useState(() => editingRate?.prices || {});
+    const [includeCustomsClearance, setIncludeCustomsClearance] = React.useState(editingRate?.includeCustomsClearance || false);
+    const [hideDocuments, setHideDocuments] = React.useState(editingRate?.hideDocuments || false);
 
     const handleTransportModeChange = (e) => {
         setTransportMode(e.target.value);
@@ -1521,7 +1523,30 @@ const RateFormModal = ({
                     </button>
                 </div>
                                         
-                <form onSubmit={handleRateSubmit} className="space-y-6">
+                <form onSubmit={(e) => {
+                    // Before submitting, we need to attach palletPrices, includeCustomsClearance and hideDocuments to the form
+                    // We can do this by appending hidden inputs to the form
+                    const formData = new FormData(e.target);
+                    for (let i = 1; i <= 24; i++) {
+                        if (loadType !== 'ftl') {
+                            formData.set(`${i}Pallet`, palletPrices[i] || '');
+                        } else {
+                            formData.delete(`${i}Pallet`);
+                        }
+                    }
+                    formData.set('includeCustomsClearance', includeCustomsClearance ? 'on' : '');
+                    formData.set('hideDocuments', hideDocuments ? 'on' : '');
+
+                    // Convert FormData back to a standard object for handleRateSubmit
+                    const entries = {};
+                    formData.forEach((value, key) => {
+                        entries[key] = value;
+                    });
+
+                    e.preventDefault();
+                    handleRateSubmit(e, entries);
+                }} className="space-y-6">
+
                     <div>
                         <h4 className="text-md font-semibold mb-2">Route Details</h4>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1697,7 +1722,7 @@ const RateFormModal = ({
                                             name={`${pallet}Pallet`}
                                             type="number" 
                                             step="0.01"
-                                            defaultValue={editingRate?.prices?.[pallet] || ''}
+                                            value={palletPrices[pallet] || ''}
                                             onChange={(e) => handlePalletPriceChange(pallet, e.target.value)}
                                             className="w-full p-2 border rounded"
                                         />
@@ -1813,7 +1838,8 @@ const RateFormModal = ({
                             <input 
                                 type="checkbox" 
                                 name="includeCustomsClearance"
-                                defaultChecked={editingRate?.includeCustomsClearance || false}
+                                checked={includeCustomsClearance}
+                                onChange={() => setIncludeCustomsClearance(!includeCustomsClearance)}
                                 className="mr-2"
                             />
                             <label className="text-sm">Include Customs Clearance</label>
@@ -1822,7 +1848,8 @@ const RateFormModal = ({
                             <input 
                                 type="checkbox" 
                                 name="hideDocuments"
-                                defaultChecked={editingRate?.hideDocuments || false}
+                                checked={hideDocuments}
+                                onChange={() => setHideDocuments(!hideDocuments)}
                                 className="mr-2"
                             />
                             <label className="text-sm">Hide Documents</label>
@@ -1852,6 +1879,7 @@ const RateFormModal = ({
         </div>
     );
 };
+
 
 
         // Render the HaulierManagement component to the DOM
