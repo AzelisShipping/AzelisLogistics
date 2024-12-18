@@ -350,17 +350,18 @@
                     {label} *
                 </label>
                 <div className="relative">
-                    <input
-                        type="text"
-                        className="combobox-input pr-10"
-                        value={searchTerm || currentCountryName}
-                        onChange={(e) => {
-                            setSearchTerm(e.target.value);
-                            if (!isOpen) setIsOpen(true);
-                        }}
-                        onClick={() => setIsOpen(true)}
-                        placeholder="Search or select country"
-                    />
+                <input
+                    type="text"
+                    className="combobox-input pr-10"
+                    value={searchTerm}
+                    onChange={(e) => {
+                        setSearchTerm(e.target.value);
+                        if (!isOpen) setIsOpen(true);
+                    }}
+                    onClick={() => setIsOpen(true)}
+                    placeholder="Search or select country"
+                />
+
                     <button
                         type="button"
                         className="absolute inset-y-0 right-0 px-3 flex items-center"
