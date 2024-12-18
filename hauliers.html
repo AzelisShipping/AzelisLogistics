@@ -1459,21 +1459,31 @@
 
                         {/* Rate Form Modal */}
                         {showRateForm && (
-                            <RateFormModal
-                                hauliers={hauliers}
-                                editingRate={editingRate}
-                                setShowRateForm={setShowRateForm}
-                                setEditingRate={setEditingRate}
-                                getHaulierNameById={getHaulierNameById}
-                            />
-                        )}
+                        <RateFormModal
+                            hauliers={hauliers}
+                            editingRate={editingRate}
+                            setShowRateForm={setShowRateForm}
+                            setEditingRate={setEditingRate}
+                            getHaulierNameById={getHaulierNameById}
+                            handleRateSubmit={handleRateSubmit}
+                        />
+                    )}
+
+
                     </div>
                 </div>
             );
         };
 
         // RateFormModal Component
-        const RateFormModal = ({ hauliers, editingRate, setShowRateForm, setEditingRate, getHaulierNameById }) => {
+            const RateFormModal = ({ 
+                hauliers, 
+                editingRate, 
+                setShowRateForm, 
+                setEditingRate, 
+                getHaulierNameById, 
+                handleRateSubmit 
+            }) => {
             const [transportMode, setTransportMode] = React.useState(editingRate?.transportMode || '');
             const [loadType, setLoadType] = React.useState(editingRate?.isFullTruckLoad ? 'ftl' : 'pl');
             const [palletPrices, setPalletPrices] = React.useState(editingRate?.prices || {});
