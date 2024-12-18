@@ -653,14 +653,14 @@ const PostcodeSelector = ({ isOpen, onClose, onSelect, savedPostcodes, country, 
                 const deliveryPostcodes = {};
 
                 routes.forEach(route => {
-                    const cc = route.collectionCountry;
-                    const pc = route.collectionPostcode || '';
+                    const cc = route.collection?.country || '';
+                    const pc = route.collection?.postcode ? route.collection.postcode.toString() : '';
                     if (pc.trim() !== '') {
                         if (!collectionPostcodes[cc]) collectionPostcodes[cc] = new Set();
                         collectionPostcodes[cc].add(pc);
                     }
-                    const dc = route.deliveryCountry;
-                    const dp = route.deliveryPostcode || '';
+                    const dc = route.delivery?.country || '';
+                    const dp = route.delivery?.postcode ? route.delivery.postcode.toString() : '';
                     if (dp.trim() !== '') {
                         if (!deliveryPostcodes[dc]) deliveryPostcodes[dc] = new Set();
                         deliveryPostcodes[dc].add(dp);
