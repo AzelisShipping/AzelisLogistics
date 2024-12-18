@@ -1484,9 +1484,25 @@ const RateFormModal = ({
     getHaulierNameById, 
     handleRateSubmit 
 }) => {
+    const initializePalletPrices = () => {
+        if (editingRate?.prices) {
+            return editingRate.prices;
+        } else if (editingRate?.rates) {
+            const converted = {};
+            for (let i = 1; i <= 24; i++) {
+                const key = `${i} Pallet${i > 1 ? 's' : ''}`;
+                if (editingRate.rates[key]?.rate != null) {
+                    converted[i] = editingRate.rates[key].rate;
+                }
+            }
+            return converted;
+        }
+        return {};
+    };
+
     const [transportMode, setTransportMode] = React.useState(editingRate?.transportMode || '');
     const [loadType, setLoadType] = React.useState(editingRate?.isFullTruckLoad ? 'ftl' : 'pl');
-    const [palletPrices, setPalletPrices] = React.useState(() => editingRate?.prices || {});
+    const [palletPrices, setPalletPrices] = React.useState(initializePalletPrices());
     const [includeCustomsClearance, setIncludeCustomsClearance] = React.useState(editingRate?.includeCustomsClearance || false);
     const [hideDocuments, setHideDocuments] = React.useState(editingRate?.hideDocuments || false);
 
@@ -1524,9 +1540,10 @@ const RateFormModal = ({
                 </div>
                                         
                 <form onSubmit={(e) => {
-                    // Before submitting, we need to attach palletPrices, includeCustomsClearance and hideDocuments to the form
-                    // We can do this by appending hidden inputs to the form
                     const formData = new FormData(e.target);
+                    e.preventDefault();
+
+                    // Set pallet prices in formData
                     for (let i = 1; i <= 24; i++) {
                         if (loadType !== 'ftl') {
                             formData.set(`${i}Pallet`, palletPrices[i] || '');
@@ -1534,16 +1551,15 @@ const RateFormModal = ({
                             formData.delete(`${i}Pallet`);
                         }
                     }
+
                     formData.set('includeCustomsClearance', includeCustomsClearance ? 'on' : '');
                     formData.set('hideDocuments', hideDocuments ? 'on' : '');
 
-                    // Convert FormData back to a standard object for handleRateSubmit
                     const entries = {};
                     formData.forEach((value, key) => {
                         entries[key] = value;
                     });
 
-                    e.preventDefault();
                     handleRateSubmit(e, entries);
                 }} className="space-y-6">
 
