@@ -707,16 +707,17 @@ const PostcodeSelector = ({ isOpen, onClose, onSelect, savedPostcodes, country, 
         const findSimilarRoutes = () => {
             if (!collection.country || !delivery.country) return;
 
-            let matches = savedRoutes.filter(route => 
-                route.collectionCountry === collection.country &&
-                route.deliveryCountry === delivery.country &&
-                route.deliveryType === deliveryType &&
-                route.transportMode === transportMode &&
-                route.weightBucket === weightBucket &&
-                route.incoterms === incoterms &&
-                route.loadType === loadType &&
-                route.weightType === weightType
-            );
+        let matches = savedRoutes.filter(route => 
+            route.collection?.country === collection.country &&
+            route.delivery?.country === delivery.country &&
+            route.deliveryType === deliveryType &&
+            route.transportMode === transportMode &&
+            route.weightBucket === weightBucket &&
+            route.incoterms === incoterms &&
+            route.loadType === loadType &&
+            route.weightType === weightType
+        );
+
 
             const exactMatch = matches.find(route =>
                 route.collectionPostcode === collection.postcode &&
