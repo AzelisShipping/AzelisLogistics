@@ -412,7 +412,6 @@ const PostcodeSelector = ({ isOpen, onClose, onSelect, savedPostcodes, country, 
     if (!isOpen) return null;
 
     const filteredPostcodes = (savedPostcodes || [])
-        .map(postcode => postcode.toString())
         .filter(postcode =>
             postcode.toLowerCase().includes(searchTerm.toLowerCase())
         );
