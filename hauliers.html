@@ -650,8 +650,8 @@
             const filterRates = (rates) => {
                 return rates.filter(rate => {
                     if (rateFilters.haulier && rate.haulierId !== rateFilters.haulier) return false;
-                    if (rateFilters.collectionCountry && rate.collectionCountry !== rateFilters.collectionCountry) return false;
-                    if (rateFilters.deliveryCountry && rate.deliveryCountry !== rateFilters.deliveryCountry) return false;
+                    if (rateFilters.collectionCountry && rate.collection?.country !== rateFilters.collectionCountry) return false;
+                    if (rateFilters.deliveryCountry && rate.delivery?.country !== rateFilters.deliveryCountry) return false;
                     if (rateFilters.transportMode && rate.transportMode !== rateFilters.transportMode) return false;
                     if (rateFilters.deliveryType && rate.deliveryType !== rateFilters.deliveryType) return false;
                     return true;
@@ -965,8 +965,8 @@
                                                 <div className="font-medium text-gray-900 mb-1">
                                                     {getHaulierNameById(rate.haulierId)}
                                                 </div>
-                                                <div>From: {rate.collection?.country || rate.collectionCountry} - {rate.collection?.postcode || rate.collectionPostcode}</div>
-                                                <div>To: {rate.delivery?.country || rate.deliveryCountry} - {rate.delivery?.postcode || rate.deliveryPostcode}</div>
+                                                <div>From: {rate.collection?.country} - {rate.collection?.postcode}</div>
+                                                <div>To: {rate.delivery?.country} - {rate.delivery?.postcode}</div>
                                                 <div className="text-xs text-gray-500 mt-1">
                                                     Valid until: {formatDate(rate.validUntil || rate.priceValidity)}
                                                 </div>
