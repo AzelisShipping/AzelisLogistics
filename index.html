@@ -416,6 +416,7 @@ const PostcodeSelector = ({ isOpen, onClose, onSelect, savedPostcodes, country, 
             postcode.toLowerCase().includes(searchTerm.toLowerCase())
         );
 
+
     const handlePostcodeSelect = (postcode) => {
         console.log("Postcode selected:", postcode); // Debugging
         onSelect(postcode);
@@ -653,13 +654,13 @@ const PostcodeSelector = ({ isOpen, onClose, onSelect, savedPostcodes, country, 
 
                 routes.forEach(route => {
                     const cc = route.collectionCountry;
-                    const pc = route.collectionPostcode ? route.collectionPostcode.toString() : '';
+                    const pc = route.collectionPostcode || '';
                     if (pc.trim() !== '') {
                         if (!collectionPostcodes[cc]) collectionPostcodes[cc] = new Set();
                         collectionPostcodes[cc].add(pc);
                     }
                     const dc = route.deliveryCountry;
-                    const dp = route.deliveryPostcode ? route.deliveryPostcode.toString() : '';
+                    const dp = route.deliveryPostcode || '';
                     if (dp.trim() !== '') {
                         if (!deliveryPostcodes[dc]) deliveryPostcodes[dc] = new Set();
                         deliveryPostcodes[dc].add(dp);
