@@ -1476,376 +1476,368 @@
         };
 
         // RateFormModal Component
-            const RateFormModal = ({ 
-                hauliers, 
-                editingRate, 
-                setShowRateForm, 
-                setEditingRate, 
-                getHaulierNameById, 
-                handleRateSubmit 
-            }) => {
-            const [transportMode, setTransportMode] = React.useState(editingRate?.transportMode || '');
-            const [loadType, setLoadType] = React.useState(editingRate?.isFullTruckLoad ? 'ftl' : 'pl');
-            const [palletPrices, setPalletPrices] = React.useState(editingRate?.prices || {});
+const RateFormModal = ({ 
+    hauliers, 
+    editingRate, 
+    setShowRateForm, 
+    setEditingRate, 
+    getHaulierNameById, 
+    handleRateSubmit 
+}) => {
+    const [transportMode, setTransportMode] = React.useState(editingRate?.transportMode || '');
+    const [loadType, setLoadType] = React.useState(editingRate?.isFullTruckLoad ? 'ftl' : 'pl');
+    const [palletPrices, setPalletPrices] = React.useState(editingRate?.prices || {});
 
-            const handleTransportModeChange = (e) => {
-                setTransportMode(e.target.value);
-                // Reset dependent fields when transport mode changes
-                if (e.target.value !== 'Sea') {
-                    // Reset container type and volume
-                }
-                if (e.target.value !== 'Air') {
-                    // Reset air weight and volume
-                }
-            };
+    const handleTransportModeChange = (e) => {
+        setTransportMode(e.target.value);
+    };
 
-            const handleLoadTypeChange = (e) => {
-                setLoadType(e.target.value);
-                // Reset pricing fields when load type changes
-            };
+    const handleLoadTypeChange = (e) => {
+        setLoadType(e.target.value);
+    };
 
-            const handlePalletPriceChange = (pallet, value) => {
-                setPalletPrices(prev => ({
-                    ...prev,
-                    [pallet]: value
-                }));
-            };
+    const handlePalletPriceChange = (pallet, value) => {
+        setPalletPrices(prev => ({
+            ...prev,
+            [pallet]: value
+        }));
+    };
 
-            return (
-                <div className="modal-overlay">
-                    <div className="modal-content max-w-4xl">
-                        <div className="flex justify-between items-start mb-4">
-                            <h3 className="text-lg font-semibold">
-                                {editingRate ? 'Edit Rate' : 'Add New Rate'}
-                            </h3>
-                            <button 
-                                onClick={() => {
-                                    setShowRateForm(false);
-                                    setEditingRate(null);
-                                }}
-                                className="text-gray-400 hover:text-gray-600"
-                            >
-                                ×
-                            </button>
-                        </div>
+    return (
+        <div className="modal-overlay">
+            <div className="modal-content max-w-4xl">
+                <div className="flex justify-between items-start mb-4">
+                    <h3 className="text-lg font-semibold">
+                        {editingRate ? 'Edit Rate' : 'Add New Rate'}
+                    </h3>
+                    <button 
+                        onClick={() => {
+                            setShowRateForm(false);
+                            setEditingRate(null);
+                        }}
+                        className="text-gray-400 hover:text-gray-600"
+                    >
+                        ×
+                    </button>
+                </div>
                                         
-                        <form onSubmit={handleRateSubmit} className="space-y-6">
-                            {/* Route Details */}
+                <form onSubmit={handleRateSubmit} className="space-y-6">
+                    {/* Route Details */}
+                    <div>
+                        <h4 className="text-md font-semibold mb-2">Route Details</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <h4 className="text-md font-semibold mb-2">Route Details</h4>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium mb-1">Collection Country *</label>
-                                        <select
-                                            name="collectionCountry"
-                                            required
-                                            defaultValue={editingRate?.collectionCountry || ''}
-                                            className="w-full p-2 border rounded"
-                                        >
-                                            <option value="">Select Country</option>
-                                            {allowedCountries.map(country => (
-                                                <option key={country} value={country}>{country}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium mb-1">Collection Postcode</label>
-                                        <input 
-                                            name="collectionPostcode"
-                                            type="text"
-                                            defaultValue={editingRate?.collectionPostcode}
-                                            className="w-full p-2 border rounded"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium mb-1">Delivery Country *</label>
-                                        <select
-                                            name="deliveryCountry"
-                                            required
-                                            defaultValue={editingRate?.deliveryCountry || ''}
-                                            className="w-full p-2 border rounded"
-                                        >
-                                            <option value="">Select Country</option>
-                                            {allowedCountries.map(country => (
-                                                <option key={country} value={country}>{country}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium mb-1">Delivery Postcode</label>
-                                        <input 
-                                            name="deliveryPostcode"
-                                            type="text"
-                                            defaultValue={editingRate?.deliveryPostcode}
-                                            className="w-full p-2 border rounded"
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Transport Details */}
-                            <div>
-                                <h4 className="text-md font-semibold mb-2">Transport Details</h4>
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium mb-1">Transport Mode *</label>
-                                        <select
-                                            name="transportMode"
-                                            required
-                                            value={transportMode}
-                                            onChange={handleTransportModeChange}
-                                            className="w-full p-2 border rounded"
-                                        >
-                                            <option value="">Select Mode</option>
-                                            <option value="Road">Road</option>  
-                                            <option value="Sea">Sea</option>
-                                            <option value="Air">Air</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium mb-1">Weight Bucket *</label>
-                                        <select
-                                            name="weightBucket"
-                                            required
-                                            defaultValue={editingRate?.weightBucket || ''}
-                                            className="w-full p-2 border rounded"
-                                        >
-                                            <option value="">Select Bucket</option>
-                                            <option value="<500kg">&lt;500kg</option>
-                                            <option value="500kg-1ton">500kg - 1 ton</option>
-                                            <option value="1ton-5tons">1 ton - 5 tons</option>  
-                                            <option value=">5tons">&gt;5 tons</option>
-                                        </select>  
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium mb-1">Incoterms *</label>
-                                        <select
-                                            name="incoterms"
-                                            required
-                                            defaultValue={editingRate?.incoterms || ''}
-                                            className="w-full p-2 border rounded"  
-                                        >
-                                            <option value="">Select Incoterms</option>
-                                            <option value="EXW">EXW</option>
-                                            <option value="FCA">FCA</option>
-                                            <option value="CPT">CPT</option>
-                                            <option value="CIP">CIP</option>
-                                            <option value="DAP">DAP</option>  
-                                            <option value="DPU">DPU</option>
-                                            <option value="DDP">DDP</option>
-                                            <option value="FAS">FAS</option>
-                                            <option value="FOB">FOB</option>
-                                            <option value="CFR">CFR</option>
-                                            <option value="CIF">CIF</option>  
-                                        </select>
-                                    </div>  
-                                </div>
-                            </div>
-
-                            {/* Pricing and Validity */}
-                            <div>
-                                <h4 className="text-md font-semibold mb-2">Pricing and Validity</h4>
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <div>  
-                                        <label className="block text-sm font-medium mb-1">Price Validity *</label>
-                                        <input 
-                                            name="priceValidity"
-                                            type="date"
-                                            required
-                                            defaultValue={editingRate?.priceValidity}
-                                            className="w-full p-2 border rounded"  
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium mb-1">Currency *</label>
-                                        <select  
-                                            name="currency"
-                                            required
-                                            defaultValue={editingRate?.currency || 'GBP'}
-                                            className="w-full p-2 border rounded"
-                                        >
-                                            <option value="GBP">GBP</option>
-                                            <option value="EUR">EUR</option>
-                                            <option value="USD">USD</option>
-                                        </select>
-                                    </div>
-                                    <div>    
-                                        <label className="block text-sm font-medium mb-1">Load Type *</label>
-                                        <select
-                                            name="loadType"  
-                                            required
-                                            value={loadType}
-                                            onChange={handleLoadTypeChange}
-                                            className="w-full p-2 border rounded"
-                                        >
-                                            <option value="pl">Partial Load</option>
-                                            <option value="ftl">Full Truck Load</option>   
-                                        </select>
-                                    </div>
-                                </div>  
-                            </div>
-
-                            {/* Load Type Pricing */}  
-                            <div>
-                                <h4 className="text-md font-semibold mb-2">Load Pricing</h4>
-                                {loadType === 'ftl' ? (
-                                    <div>
-                                        <label className="block text-sm font-medium mb-1">Full Truck Load Price *</label>
-                                        <input   
-                                            name="ftlPrice"
-                                            type="number"
-                                            step="0.01"
-                                            required={loadType === 'ftl'}  
-                                            defaultValue={editingRate?.fullTruckLoadPrice}
-                                            className="w-full p-2 border rounded"
-                                        />  
-                                    </div>
-                                ) : (  
-                                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">  
-                                        {Array.from({ length: 24 }, (_, i) => i + 1).map(pallet => (
-                                            <div key={pallet}>
-                                                <label className="block text-sm font-medium mb-1">{pallet} Pallet{pallet > 1 ? 's' : ''}</label>
-                                                <input   
-                                                    name={`${pallet}Pallet`}
-                                                    type="number" 
-                                                    step="0.01"
-                                                    value={palletPrices[pallet] || ''}
-                                                    onChange={(e) => handlePalletPriceChange(pallet, e.target.value)}
-                                                    className="w-full p-2 border rounded"  
-                                                />
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>  
-
-                            {/* Haulier Selection */}
-                            <div>
-                                <label className="block text-sm font-medium mb-1">Haulier *</label>
-                                <select   
-                                    name="haulierId"
+                                <label className="block text-sm font-medium mb-1">Collection Country *</label>
+                                <select
+                                    name="collectionCountry"
                                     required
-                                    defaultValue={editingRate?.haulierId || ''}
+                                    defaultValue={editingRate?.collection?.country || ''}
                                     className="w-full p-2 border rounded"
                                 >
-                                    <option value="">Select Haulier</option>
-                                    {hauliers.map(haulier => (  
-                                        <option key={haulier.id} value={haulier.id}>{haulier.name}</option>
-                                    ))} 
+                                    <option value="">Select Country</option>
+                                    {allowedCountries.map(country => (
+                                        <option key={country} value={country}>{country}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-1">Collection Postcode</label>
+                                <input 
+                                    name="collectionPostcode"
+                                    type="text"
+                                    defaultValue={editingRate?.collection?.postcode || editingRate?.collectionPostcode || ''}
+                                    className="w-full p-2 border rounded"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-1">Delivery Country *</label>
+                                <select
+                                    name="deliveryCountry"
+                                    required
+                                    defaultValue={editingRate?.delivery?.country || ''}
+                                    className="w-full p-2 border rounded"
+                                >
+                                    <option value="">Select Country</option>
+                                    {allowedCountries.map(country => (
+                                        <option key={country} value={country}>{country}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-1">Delivery Postcode</label>
+                                <input 
+                                    name="deliveryPostcode"
+                                    type="text"
+                                    defaultValue={editingRate?.delivery?.postcode || editingRate?.deliveryPostcode || ''}
+                                    className="w-full p-2 border rounded"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Transport Details */}
+                    <div>
+                        <h4 className="text-md font-semibold mb-2">Transport Details</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium mb-1">Transport Mode *</label>
+                                <select
+                                    name="transportMode"
+                                    required
+                                    value={transportMode}
+                                    onChange={handleTransportModeChange}
+                                    className="w-full p-2 border rounded"
+                                >
+                                    <option value="">Select Mode</option>
+                                    <option value="Road">Road</option>  
+                                    <option value="Sea">Sea</option>
+                                    <option value="Air">Air</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-1">Weight Bucket *</label>
+                                <select
+                                    name="weightBucket"
+                                    required
+                                    defaultValue={editingRate?.weightBucket || ''}
+                                    className="w-full p-2 border rounded"
+                                >
+                                    <option value="">Select Bucket</option>
+                                    <option value="<500kg">&lt;500kg</option>
+                                    <option value="500kg-1ton">500kg - 1 ton</option>
+                                    <option value="1ton-5tons">1 ton - 5 tons</option>  
+                                    <option value=">5tons">&gt;5 tons</option>
                                 </select>  
                             </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-1">Incoterms *</label>
+                                <select
+                                    name="incoterms"
+                                    required
+                                    defaultValue={editingRate?.incoterms || ''}
+                                    className="w-full p-2 border rounded"  
+                                >
+                                    <option value="">Select Incoterms</option>
+                                    <option value="EXW">EXW</option>
+                                    <option value="FCA">FCA</option>
+                                    <option value="CPT">CPT</option>
+                                    <option value="CIP">CIP</option>
+                                    <option value="DAP">DAP</option>  
+                                    <option value="DPU">DPU</option>
+                                    <option value="DDP">DDP</option>
+                                    <option value="FAS">FAS</option>
+                                    <option value="FOB">FOB</option>
+                                    <option value="CFR">CFR</option>
+                                    <option value="CIF">CIF</option>  
+                                </select>
+                            </div>  
+                        </div>
+                    </div>
 
-                            {/* Service and Additional Details */}
+                    {/* Pricing and Validity */}
+                    <div>
+                        <h4 className="text-md font-semibold mb-2">Pricing and Validity</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>  
-                                <h4 className="text-md font-semibold mb-2">Service & Additional Details</h4>
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium mb-1">Delivery Type</label> 
-                                        <select
-                                            name="deliveryType"
-                                            defaultValue={editingRate?.deliveryType || 'STD'}
-                                            className="w-full p-2 border rounded"
-                                        >
-                                            <option value="STD">Standard</option>
-                                            <option value="EXP">Express</option>  
-                                            <option value="ADR">ADR</option>
-                                            <option value="TEMP">Temperature Controlled</option>
-                                        </select>  
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium mb-1">Transit Time (Days)</label>
+                                <label className="block text-sm font-medium mb-1">Price Validity *</label>
+                                <input 
+                                    name="priceValidity"
+                                    type="date"
+                                    required
+                                    defaultValue={editingRate?.priceValidity || ''}
+                                    className="w-full p-2 border rounded"  
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-1">Currency *</label>
+                                <select  
+                                    name="currency"
+                                    required
+                                    defaultValue={editingRate?.currency || 'GBP'}
+                                    className="w-full p-2 border rounded"
+                                >
+                                    <option value="GBP">GBP</option>
+                                    <option value="EUR">EUR</option>
+                                    <option value="USD">USD</option>
+                                </select>
+                            </div>
+                            <div>    
+                                <label className="block text-sm font-medium mb-1">Load Type *</label>
+                                <select
+                                    name="loadType"  
+                                    required
+                                    value={loadType}
+                                    onChange={handleLoadTypeChange}
+                                    className="w-full p-2 border rounded"
+                                >
+                                    <option value="pl">Partial Load</option>
+                                    <option value="ftl">Full Truck Load</option>   
+                                </select>
+                            </div>
+                        </div>  
+                    </div>
+
+                    {/* Load Type Pricing */}  
+                    <div>
+                        <h4 className="text-md font-semibold mb-2">Load Pricing</h4>
+                        {loadType === 'ftl' ? (
+                            <div>
+                                <label className="block text-sm font-medium mb-1">Full Truck Load Price *</label>
+                                <input   
+                                    name="ftlPrice"
+                                    type="number"
+                                    step="0.01"
+                                    required={loadType === 'ftl'}
+                                    defaultValue={editingRate?.fullTruckLoadPrice || ''}
+                                    className="w-full p-2 border rounded"
+                                />
+                            </div>
+                        ) : (  
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">  
+                                {Array.from({ length: 24 }, (_, i) => i + 1).map(pallet => (
+                                    <div key={pallet}>
+                                        <label className="block text-sm font-medium mb-1">{pallet} Pallet{pallet > 1 ? 's' : ''}</label>
                                         <input   
-                                            name="transitTime"
-                                            type="number"
-                                            min="1"
-                                            defaultValue={editingRate?.transitTime}
-                                            className="w-full p-2 border rounded"
-                                        />
-                                    </div>  
-                                    <div>  
-                                        <label className="block text-sm font-medium mb-1">Services</label> 
-                                        <select
-                                            name="services"  
-                                            multiple
-                                            defaultValue={editingRate?.services || []}
-                                            className="w-full p-2 border rounded"
-                                        >
-                                            <option value="Tracking">Tracking</option>
-                                            <option value="Insurance">Insurance</option>
-                                            <option value="Customs">Customs</option>  
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Additional Fields */}
-                            {(transportMode === 'Sea' || (editingRate && editingRate.transportMode === 'Sea')) && (
-                                <div>
-                                    <label className="block text-sm font-medium mb-1">Container Type</label>
-                                    <select
-                                        name="containerType"
-                                        defaultValue={editingRate?.containerType || ''}
-                                        className="w-full p-2 border rounded"
-                                    >
-                                        <option value="">Select Container</option>
-                                        <option value="20ft">20ft</option>
-                                        <option value="40ft">40ft</option>
-                                        <option value="40ft HC">40ft HC</option>
-                                        <option value="45ft">45ft</option>
-                                        <option value="LCL">LCL</option>
-                                    </select>
-                                </div>
-                            )}
-
-                            {(transportMode === 'Air' || (editingRate && editingRate.transportMode === 'Air')) && (
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium mb-1">Air Weight (Kg)</label>
-                                        <input
-                                            name="airWeight" 
-                                            type="number"
-                                            step="0.1"
-                                            defaultValue={editingRate?.airWeight}
-                                            className="w-full p-2 border rounded"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium mb-1">Volume (CBM)</label>
-                                        <input
-                                            name="volume"
+                                            name={`${pallet}Pallet`}
                                             type="number" 
-                                            step="0.1"
-                                            defaultValue={editingRate?.volume}  
+                                            step="0.01"
+                                            defaultValue={editingRate?.prices?.[pallet] || ''}
+                                            onChange={(e) => handlePalletPriceChange(pallet, e.target.value)}
                                             className="w-full p-2 border rounded"
-                                        />  
+                                        />
                                     </div>
-                                </div>  
-                            )}
-
-                            {/* Form Actions */}  
-                            <div className="flex gap-2">
-                                <button   
-                                    type="submit"
-                                    className="flex-1 bg-blue-500 text-white p-2 rounded hover:bg-blue-600"  
-                                >
-                                    {editingRate ? 'Update' : 'Add'} Rate  
-                                </button>
-                                <button
-                                    type="button" 
-                                    onClick={() => {
-                                        setShowRateForm(false); 
-                                        setEditingRate(null);  
-                                    }}
-                                    className="flex-1 bg-gray-200 text-gray-700 p-2 rounded hover:bg-gray-300"
-                                >
-                                    Cancel
-                                </button>
+                                ))}
                             </div>
-                        </form>
+                        )}
                     </div>  
-                </div>
-            );
-        };
+
+                    {/* Haulier Selection */}
+                    <div>
+                        <label className="block text-sm font-medium mb-1">Haulier *</label>
+                        <select   
+                            name="haulierId"
+                            required
+                            defaultValue={editingRate?.haulierId || ''}
+                            className="w-full p-2 border rounded"
+                        >
+                            <option value="">Select Haulier</option>
+                            {hauliers.map(haulier => (  
+                                <option key={haulier.id} value={haulier.id}>{haulier.name}</option>
+                            ))} 
+                        </select>  
+                    </div>
+
+                    {/* Service and Additional Details */}
+                    <div>  
+                        <h4 className="text-md font-semibold mb-2">Service & Additional Details</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium mb-1">Delivery Type</label> 
+                                <select
+                                    name="deliveryType"
+                                    defaultValue={editingRate?.deliveryType || 'STD'}
+                                    className="w-full p-2 border rounded"
+                                >
+                                    <option value="STD">Standard</option>
+                                    <option value="EXP">Express</option>  
+                                    <option value="ADR">ADR</option>
+                                    <option value="TEMP">Temperature Controlled</option>
+                                </select>  
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-1">Transit Time (Days)</label>
+                                <input   
+                                    name="transitTime"
+                                    type="number"
+                                    min="1"
+                                    defaultValue={editingRate?.transitTime || ''}
+                                    className="w-full p-2 border rounded"
+                                />
+                            </div>  
+                            <div>  
+                                <label className="block text-sm font-medium mb-1">Services</label> 
+                                <select
+                                    name="services"
+                                    multiple
+                                    defaultValue={editingRate?.services || []}
+                                    className="w-full p-2 border rounded"
+                                >
+                                    <option value="Tracking">Tracking</option>
+                                    <option value="Insurance">Insurance</option>
+                                    <option value="Customs">Customs</option>  
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Additional Fields */}
+                    {(transportMode === 'Sea' || editingRate?.transportMode === 'Sea') && (
+                        <div>
+                            <label className="block text-sm font-medium mb-1">Container Type</label>
+                            <select
+                                name="containerType"
+                                defaultValue={editingRate?.containerType || ''}
+                                className="w-full p-2 border rounded"
+                            >
+                                <option value="">Select Container</option>
+                                <option value="20ft">20ft</option>
+                                <option value="40ft">40ft</option>
+                                <option value="40ft HC">40ft HC</option>
+                                <option value="45ft">45ft</option>
+                                <option value="LCL">LCL</option>
+                            </select>
+                        </div>
+                    )}
+
+                    {(transportMode === 'Air' || editingRate?.transportMode === 'Air') && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium mb-1">Air Weight (Kg)</label>
+                                <input
+                                    name="airWeight" 
+                                    type="number"
+                                    step="0.1"
+                                    defaultValue={editingRate?.airWeight || ''}
+                                    className="w-full p-2 border rounded"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-1">Volume (CBM)</label>
+                                <input
+                                    name="volume"
+                                    type="number" 
+                                    step="0.1"
+                                    defaultValue={editingRate?.volume || ''}
+                                    className="w-full p-2 border rounded"
+                                />
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Form Actions */}  
+                    <div className="flex gap-2">
+                        <button   
+                            type="submit"
+                            className="flex-1 bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
+                        >
+                            {editingRate ? 'Update' : 'Add'} Rate
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setShowRateForm(false); 
+                                setEditingRate(null);  
+                            }}
+                            className="flex-1 bg-gray-200 text-gray-700 p-2 rounded hover:bg-gray-300"
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                </form>
+            </div>  
+        </div>
+    );
+};
 
         // Render the HaulierManagement component to the DOM
         ReactDOM.render(<HaulierManagement />, document.getElementById('root'));
