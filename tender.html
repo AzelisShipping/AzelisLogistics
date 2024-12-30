@@ -413,25 +413,25 @@
         }
     }
 
-        // Handle form submission
-        document.getElementById('submitQuoteForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const formData = new FormData(e.target);
-        
-            try {
-                if (!quoteData) throw new Error('Quote data not loaded');
-        
-                // Get all rates
-                const rates = {};
-                const rateInputs = document.querySelectorAll('[name^="rateInput_"]');
-                rateInputs.forEach(rateInput => {
-                    const index = rateInput.getAttribute('data-identifier');
-                    const totalInput = document.querySelector(`[name="totalInput_${index}"]`);
-                    const identifier = rateInput.closest('tr').querySelector('td').textContent;
-                    const rate = parseFloat(rateInput.value) || 0;
-                    const total = parseFloat(totalInput.value) || 0;
-                    rates[identifier] = { rate, total };
-                });
+// Handle form submission
+document.getElementById('submitQuoteForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+
+    try {
+        if (!quoteData) throw new Error('Quote data not loaded');
+
+        // Get all rates
+        const rates = {};
+        const rateInputs = document.querySelectorAll('[name^="rateInput_"]');
+        rateInputs.forEach(rateInput => {
+            const index = rateInput.getAttribute('data-identifier');
+            const totalInput = document.querySelector(`[name="totalInput_${index}"]`);
+            const identifier = rateInput.closest('tr').querySelector('td').textContent.trim();
+            const rate = parseFloat(rateInput.value) || 0;
+            const total = parseFloat(totalInput.value) || 0;
+            rates[identifier] = { rate, total };
+        });
         
                 // Generate rates HTML for email
                 let ratesHTML = '<table style="width:100%; border-collapse:collapse;">';
@@ -578,11 +578,11 @@
                 document.getElementById('submitQuoteForm').style.opacity = '0.5';
                 document.getElementById('submitQuoteForm').style.pointerEvents = 'none';
         
-            } catch (error) {
-                console.error('Error submitting quote:', error);
-                displayMessage('Error submitting quote. Please try again.', true);
-            }
-        });
+               } catch (error) {
+                    console.error('Error submitting quote:', error);
+                    displayMessage('Error submitting quote. Please try again.', true);
+                }
+            });
     // Initialize page
     window.addEventListener('DOMContentLoaded', populateTenderDetails);
 </script>
