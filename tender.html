@@ -468,10 +468,10 @@ document.getElementById('submitQuoteForm').addEventListener('submit', async (e) 
                     ratesHTML: ratesHTML,
                     
                     // Route details
-                    collectionCountry: route.collection?.country || 'N/A',
-                    collectionPostcode: route.collection?.postcode || 'N/A',
-                    deliveryCountry: route.delivery?.country || 'N/A',
-                    deliveryPostcode: route.delivery?.postcode || 'N/A',
+                    collectionCountry: quoteData.collection?.country || 'N/A',
+                    collectionPostcode: quoteData.collection?.postcode || 'N/A',
+                    deliveryCountry: quoteData.delivery?.country || 'N/A',
+                    deliveryPostcode: quoteData.delivery?.postcode || 'N/A',
                     deliveryLocation: quoteData.delivery?.location || 'N/A',
                     
                     // Transport details
