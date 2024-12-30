@@ -1681,18 +1681,48 @@ const PostcodeSelector = ({ isOpen, onClose, onSelect, savedPostcodes, country, 
                                                                 Pallet Type: {route.palletType}
                                                             </p>
                                                         )}
-                                                    </div>
-                                                    <div className="text-right">
-                                                        <p className="font-semibold">
-                                                            {route.currency} {loadType === 'Full Truck Load' 
-                                                                ? route.fullTruckLoadPrice?.toFixed(2) || 'N/A'
-                                                                : route.prices ? route.prices[pallets]?.toFixed(2) || 'N/A' : 'N/A'
+                                                                      </div>
+                                                <div className="text-right">
+                                                    <p className="font-semibold">
+                                                        {route.currency} {(() => {
+                                                            if (route.isFullTruckLoad || route.loadType === 'Full Truck Load') {
+                                                                // Full Truck Load pricing
+                                                                const basePrice = route.fullTruckLoadPrice || 
+                                                                                (route.rates?.['Full Truck Load']?.rate) || 0;
+                                                                const surcharge = (basePrice * (route.percentSurcharge || 0) / 100) + 
+                                                                                (route.fixedRateSurcharges || 0);
+                                                                return basePrice ? (basePrice + surcharge).toFixed(2) : 'N/A';
+                                                            } else if (route.transportMode === 'Sea' && route.containerType) {
+                                                                // Container pricing
+                                                                const basePrice = route.rates?.[route.containerType]?.rate || 0;
+                                                                const surcharge = (basePrice * (route.percentSurcharge || 0) / 100) + 
+                                                                                (route.fixedRateSurcharges || 0);
+                                                                return basePrice ? (basePrice + surcharge).toFixed(2) : 'N/A';
+                                                            } else {
+                                                                // Pallet pricing
+                                                                let basePrice;
+                                                                if (route.rates) {
+                                                                    // New format with rates object
+                                                                    const palletKey = `${pallets} Pallet${pallets > 1 ? 's' : ''}`;
+                                                                    basePrice = route.rates[palletKey]?.rate;
+                                                                } else if (route.prices) {
+                                                                    // Legacy format with prices object
+                                                                    basePrice = route.prices[pallets];
+                                                                }
+                                                                
+                                                                if (basePrice) {
+                                                                    const surcharge = (basePrice * (route.percentSurcharge || 0) / 100) + 
+                                                                                    (route.fixedRateSurcharges || 0);
+                                                                    return (basePrice + surcharge).toFixed(2);
+                                                                }
+                                                                return 'N/A';
                                                             }
-                                                        </p>
-                                                    </div>
+                                                        })()}
+                                                    </p>
                                                 </div>
                                             </div>
-                                        ))}
+                                        </div>
+                                    ))}
                                     </div>
                                     <button
                                         onClick={() => setShowTenderForm(true)}
