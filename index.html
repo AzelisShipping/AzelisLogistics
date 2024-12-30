@@ -708,16 +708,106 @@ const PostcodeSelector = ({ isOpen, onClose, onSelect, savedPostcodes, country, 
         const findSimilarRoutes = () => {
             if (!collection.country || !delivery.country) return;
 
-        let matches = savedRoutes.filter(route => 
-            route.collection?.country === collection.country &&
-            route.delivery?.country === delivery.country &&
-            route.deliveryType === deliveryType &&
-            route.transportMode === transportMode &&
-            route.weightBucket === weightBucket &&
-            route.incoterms === incoterms &&
-            route.loadType === loadType &&
-            route.weightType === weightType
-        );
+        let matches = savedRoutes.filter(route => {
+            const standardizePostcode = (postcode) => {
+                if (!postcode) return null;
+                const cleaned = postcode.replace(/[^A-Z0-9]/gi, '').toUpperCase();
+                
+                if (/^[A-Z]{1,2}[0-9]{1,2}[A-Z0-9]?[A-Z]{2}$/i.test(cleaned)) {
+                    const length = cleaned.length;
+                    const inwardStart = length - 3;
+                    const outward = cleaned.slice(0, inwardStart);
+                    const area = outward.match(/^[A-Z]{1,2}/i)[0];
+                    const district = outward.slice(area.length);
+                    
+                    return {
+                        type: 'UK',
+                        area,
+                        district,
+                        standardized: cleaned
+                    };
+                }
+                
+                if (/^[0-9]+$/.test(cleaned)) {
+                    return {
+                        type: 'NUMERIC',
+                        area: cleaned.slice(0, 2),
+                        district: cleaned.slice(2, 3),
+                        standardized: cleaned
+                    };
+                }
+                return null;
+            };
+        
+            const isSimilarPostcode = (code1, code2) => {
+                const parsed1 = standardizePostcode(code1);
+                const parsed2 = standardizePostcode(code2);
+        
+                if (!parsed1 || !parsed2) return false;
+                if (parsed1.type !== parsed2.type) return false;
+                if (parsed1.standardized === parsed2.standardized) return true;
+                if (parsed1.area !== parsed2.area) return false;
+        
+                if (parsed1.type === 'UK') {
+                    const district1Num = parsed1.district.match(/\d+/)?.[0] || '';
+                    const district2Num = parsed2.district.match(/\d+/)?.[0] || '';
+                    return district1Num.charAt(0) === district2Num.charAt(0);
+                } else {
+                    const diff = Math.abs(parseInt(parsed1.district) - parseInt(parsed2.district));
+                    return diff <= 2;
+                }
+            };
+        
+            // Weight bucket comparison
+            const getWeightRange = (bucket) => {
+                const numbers = bucket.match(/\d+/g).map(Number);
+                return { min: Math.min(...numbers), max: Math.max(...numbers) };
+            };
+            
+            const currentWeight = getWeightRange(weightBucket);
+            const routeWeight = getWeightRange(route.weightBucket);
+            const weightDifference = Math.abs(currentWeight.min - routeWeight.min) / currentWeight.min;
+            const isWeightSimilar = weightDifference <= 0.3;
+        
+            // Delivery type similarity
+            const deliveryTypeMap = {
+                'STD': ['STD', 'STANDARD'],
+                'EXP': ['EXP', 'EXPRESS'],
+                'ADR': ['ADR', 'HAZARDOUS'],
+                'TEMP': ['TEMP', 'TEMPERATURE', 'CONTROLLED']
+            };
+            const isDeliveryTypeSimilar = deliveryTypeMap[deliveryType]?.includes(route.deliveryType) ||
+                                         deliveryTypeMap[route.deliveryType]?.includes(deliveryType);
+        
+            // Load type similarity
+            const loadTypeMap = {
+                'Partial Load': ['Partial Load', 'LTL', 'Groupage'],
+                'Full Truck Load': ['Full Truck Load', 'FTL'],
+                'Container': ['Container', 'FCL'],
+                'LCL': ['LCL', 'Less Container Load'],
+                'Pallets': ['Pallets', 'Pallet Load']
+            };
+            const isLoadTypeSimilar = loadTypeMap[loadType]?.includes(route.loadType) ||
+                                     loadTypeMap[route.loadType]?.includes(loadType);
+        
+            // Weight type similarity
+            const weightTypeMap = {
+                'perPallet': ['perPallet', 'per_pallet', 'per pallet'],
+                'total': ['total', 'total_load', 'total load']
+            };
+            const isWeightTypeSimilar = weightTypeMap[weightType]?.includes(route.weightType) ||
+                                       weightTypeMap[route.weightType]?.includes(weightType);
+        
+            return route.collection?.country === collection.country &&
+                   route.delivery?.country === delivery.country &&
+                   route.transportMode === transportMode &&
+                   isSimilarPostcode(collection.postcode, route.collection?.postcode) &&
+                   isSimilarPostcode(delivery.postcode, route.delivery?.postcode) &&
+                   isWeightSimilar &&
+                   isDeliveryTypeSimilar &&
+                   isLoadTypeSimilar &&
+                   isWeightTypeSimilar;
+        });
 
 
             const exactMatch = matches.find(route =>
